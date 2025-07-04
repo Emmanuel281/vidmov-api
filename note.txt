@@ -1,0 +1,14 @@
+intall mongodb
+1. docker pull mongodb/mongodb-community-server:latest
+2. docker run --name mongodb --network gnusa --ip 172.18.0.9 -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=cDBS38zv6k2EwbEO -d mongodb/mongodb-community-server:latest
+
+install and running rabbit-mq
+1. docker pull rabbitmq:management
+2. docker run -d --name rabbitmq --network gnusa --ip 172.2.0.10 -p 10.200.202.234:15672:15672 -p 10.200.202.234:5672:5672 -p 10.200.202.234:15674:15674 rabbitmq:management rabbitmq-plugins enable rabbitmq_web_stomp
+
+install langchain
+langchain
+
+install pandas
+pandas==1.5.3
+pandasai
