@@ -234,7 +234,8 @@ class CRUD:
                     "parent_mod":1,
                     "_id": 0
                 }
-
+                
+                self.logger.debug(f"Retrieving enums with filters: {query_filter}, page: {page}, per_page: {per_page}, sort_field: {sort_field}, sort_order: {sort_order}")
                 # Aggregation pipeline
                 pipeline = [
                     {"$match": query_filter},  # Filter stage

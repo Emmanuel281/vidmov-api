@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Depends, Request
-from typing import Optional
+from typing import Optional, List, Dict
 
-from baseapp.model.common import ApiResponse, CurrentUser
+from baseapp.model.common import ApiResponse, CurrentUser, StatusContent, TypeContent
 from baseapp.utils.jwt import get_current_user
 from baseapp.utils.utility import cbor_or_json, parse_request_body
 
@@ -17,6 +17,17 @@ from baseapp.services.permission_check_service import PermissionChecker
 permission_checker = PermissionChecker()
 
 router = APIRouter(prefix="/v1/_enum", tags=["Enum"])
+
+def format_enum_to_json(enum_class: Enum) -> List[Dict[str, str]]:
+    """Fungsi bantuan untuk mengubah kelas Enum menjadi format JSON yang diinginkan."""
+    # Menggunakan list comprehension untuk membuat daftar kamus
+    # Setiap item dalam daftar akan memiliki 'name' dan 'value' dari anggota enum.
+    return [{"name": member.name, "value": member.value} for member in enum_class]
+
+HARDCODED_ENUMS = {
+    "StatusContent": StatusContent,
+    "TypeContent": TypeContent,
+}
 
 @router.post("/create", response_model=ApiResponse)
 @cbor_or_json
@@ -88,7 +99,7 @@ async def get_all_data(
     
     if module:
         filters["mod"] = module
-        if module == "_enum" or module == "dmsDataType" or module == "CATEGORY": 
+        if module == "_enum" or module == "dmsDataType" or module == "GENRE": 
             del filters["org_id"]
 
     # Call CRUD function
@@ -115,7 +126,11 @@ async def find_by_id(enum_id: str, cu: CurrentUser = Depends(get_current_user)) 
         user_agent=cu.user_agent   # Jika ada
     )
 
-    response = _crud.get_by_id(enum_id)
+    if enum_id in HARDCODED_ENUMS:
+        enum_class = HARDCODED_ENUMS[enum_id]
+        response = format_enum_to_json(enum_class)
+    else:
+        response = _crud.get_by_id(enum_id)
     return ApiResponse(status=0, message="Data found", data=response)
     
 @router.delete("/delete/{enum_id}", response_model=ApiResponse)

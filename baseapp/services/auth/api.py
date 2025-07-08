@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Request, Response, Form, Depends
+from typing import Optional
+from fastapi import APIRouter, Request, Response, Form, Depends, Header
 from datetime import datetime, timezone, timedelta
 import logging
 import random
@@ -17,7 +18,7 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
 @router.post("/login", response_model=ApiResponse)
-async def login(response: Response, req: UserLoginModel) -> ApiResponse:
+async def login(response: Response, req: UserLoginModel, x_client_type: Optional[str] = Header(None)) -> ApiResponse:
     username = req.username
     password = req.password
 
@@ -48,25 +49,25 @@ async def login(response: Response, req: UserLoginModel) -> ApiResponse:
             ex=timedelta(days=expire_refresh_in),
         )
 
-    # Hitung waktu kedaluwarsa akses token
-    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
     data = {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "expired_at": expired_at.isoformat(),
+        "access_token": access_token
     }
 
-    # Atur cookie refresh token
-    response.set_cookie(
-        key="refresh_token",
-        path="/",
-        value=refresh_token,
-        httponly=True,
-        max_age=timedelta(days=expire_refresh_in),
-        secure=config.app_env == "production",  # Gunakan secure hanya di production
-        samesite="Lax",  # Prevent CSRF
-        domain=config.domain
-    )
+    if x_client_type == 'mobile':
+        data["refresh_token"] = refresh_token
+
+    # Atur cookie refresh token for web clients
+    if x_client_type == 'web':
+        response.set_cookie(
+            key="refresh_token",
+            path="/",
+            value=refresh_token,
+            httponly=True,
+            max_age=timedelta(days=expire_refresh_in),
+            secure=config.app_env == "production",  # Gunakan secure hanya di production
+            samesite="Lax",  # Prevent CSRF
+            domain=config.domain
+        )
 
     # Return response berhasil
     return ApiResponse(status=0, data=data)
@@ -93,7 +94,7 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
     return ApiResponse(status=0, data={"status": "queued", "message": "OTP has been sent"})
 
 @router.post("/verify-otp", response_model=ApiResponse)
-async def verify_otp(response: Response, req: VerifyOTPRequest) -> ApiResponse:
+async def verify_otp(response: Response, req: VerifyOTPRequest, x_client_type: Optional[str] = Header(None)) -> ApiResponse:
     username = req.username
     otp = req.otp
 
@@ -130,25 +131,25 @@ async def verify_otp(response: Response, req: VerifyOTPRequest) -> ApiResponse:
             # hapus otp dari redis
             redis_conn.delete(f"otp:{username}")
 
-            # Hitung waktu kedaluwarsa akses token
-            expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
             data = {
-                "access_token": access_token,
-                "token_type": "bearer",
-                "expired_at": expired_at.isoformat(),
+                "access_token": access_token
             }
 
-            # Atur cookie refresh token
-            response.set_cookie(
-                key="refresh_token",
-                path="/",
-                value=refresh_token,
-                httponly=True,
-                max_age=timedelta(days=expire_refresh_in),
-                secure=config.app_env == "production",  # Gunakan secure hanya di production
-                samesite="Lax",  # Prevent CSRF
-                domain=config.domain
-            )
+            if x_client_type == 'mobile':
+                data["refresh_token"] = refresh_token
+
+            # Atur cookie refresh token for web clients
+            if x_client_type == 'web':
+                response.set_cookie(
+                    key="refresh_token",
+                    path="/",
+                    value=refresh_token,
+                    httponly=True,
+                    max_age=timedelta(days=expire_refresh_in),
+                    secure=config.app_env == "production",  # Gunakan secure hanya di production
+                    samesite="Lax",  # Prevent CSRF
+                    domain=config.domain
+                )
     
             # Return response berhasil
             return ApiResponse(status=0, data=data)
@@ -213,8 +214,14 @@ async def token(
     )
 
 @router.post("/refresh-token", response_model=ApiResponse)
-async def refresh_token(request: Request) -> ApiResponse:
-    refresh_token = request.cookies.get("refresh_token")
+async def refresh_token(request: Request, x_client_type: Optional[str] = Header(None)) -> ApiResponse:
+    if x_client_type == 'web':
+        refresh_token = request.cookies.get("refresh_token")
+    else:
+        refresh_token = request.headers.get("Authorization")
+        if refresh_token and refresh_token.startswith("Bearer "):
+            refresh_token = refresh_token.split(" ")[1]
+
     if not refresh_token:
         raise ValueError("Refresh token missing")
     
@@ -231,11 +238,8 @@ async def refresh_token(request: Request) -> ApiResponse:
 
     # Create new access token
     access_token, expire_access_in = create_access_token(payload)
-    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
     data = {
-        "access_token": access_token, 
-        "token_type": "bearer",
-        "expired_at": expired_at.isoformat()
+        "access_token": access_token
     }
     return ApiResponse(status=0, data=data)
     

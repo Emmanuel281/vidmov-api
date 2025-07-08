@@ -66,3 +66,16 @@ class UpdateStatus(BaseModel):
 class DMSOperationType(str, Enum):
     TO_TRASH = "to_trash"
     RESTORE = "restore"
+
+class StatusContent(str, Enum):
+    """Status of a content"""
+    PUBLISHED = "PUBLISHED"
+    UNPUBLISHED = "UNPUBLISHED"
+    SCHEDULED = "SCHEDULED"
+    DRAFT = "DRAFT"
+    ARCHIVED = "ARCHIVED"
+
+class TypeContent(str, Enum):
+    """Status of a content"""
+    MOVIE = "MOVIE"
+    SERIES = "SERIES"
