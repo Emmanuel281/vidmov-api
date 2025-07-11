@@ -8,7 +8,7 @@ from baseapp.utils.utility import cbor_or_json, parse_request_body
 from baseapp.config import setting
 config = setting.get_settings()
 
-from baseapp.services.content_detail.model import ContentDetail, UpdateStatus
+from baseapp.services.content_detail.model import ContentDetail, ContentDetailUpdate, ContentDetailUpdateStatus, ContentDetailSetTier
 
 from baseapp.services.content_detail.crud import CRUD
 _crud = CRUD()
@@ -52,7 +52,7 @@ async def update_by_id(video_id: str, req: Request, cu: CurrentUser = Depends(ge
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, ContentDetail)
+    req = await parse_request_body(req, ContentDetailUpdate)
     response = _crud.update_by_id(video_id,req)
     
     return ApiResponse(status=0, message="Data updated", data=response)
@@ -71,7 +71,26 @@ async def update_status(video_id: str, req: Request, cu: CurrentUser = Depends(g
     )
     
     # Buat instance model langsung
-    req = await parse_request_body(req, UpdateStatus)
+    req = await parse_request_body(req, ContentDetailUpdateStatus)
+    response = _crud.update_by_id(video_id,req)
+
+    return ApiResponse(status=0, message="Data updated", data=response)
+
+@router.put("/set_tier/{video_id}", response_model=ApiResponse)
+@cbor_or_json
+async def set_tier(video_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    if not permission_checker.has_permission(cu.roles, "content", 4):  # 4 untuk izin simpan perubahan
+        raise PermissionError("Access denied")
+    
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+    
+    # Buat instance model langsung
+    req = await parse_request_body(req, ContentDetailSetTier)
     response = _crud.update_by_id(video_id,req)
 
     return ApiResponse(status=0, message="Data updated", data=response)

@@ -85,6 +85,7 @@ class CRUD:
                         "status": 1,
                         "thumbnail": 1,
                         "release_date": 1,
+                        "required_tier": 1,
                         "_id": 0
                     }
 
@@ -182,7 +183,7 @@ class CRUD:
                         minio_client = conn.get_minio_client()
                         url = minio_client.presigned_get_object(config.minio_bucket, content_data['thumbnail']['filename'])
                         if url:
-                            content_data['thumbnail']['url'] = url
+                            content_data['thumbnail']['url'] = url.replace(minio_client.get_minio_endpoint(),minio_client.get_domain_endpoint())
 
                     return content_data
                 except PyMongoError as pme:
@@ -202,7 +203,7 @@ class CRUD:
                     self.logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                     raise
 
-    def update_by_id(self, content_id: str, data: Content):
+    def update_by_id(self, content_id: str, data):
         """
         Update a role's data by ID.
         """
@@ -297,6 +298,7 @@ class CRUD:
                         "status": 1,
                         "thumbnail": 1,
                         "release_date": 1,
+                        "required_tier": 1,
                         "_id": 0
                     }
 
@@ -388,7 +390,7 @@ class CRUD:
                             minio_client = conn.get_minio_client()
                             url = minio_client.presigned_get_object(config.minio_bucket, data['thumbnail']['filename'])
                             if url:
-                                data['thumbnail']['url'] = url
+                                data['thumbnail']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
 
                     return {
                         "data": results,

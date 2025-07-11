@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Any, Literal, List
-from enum import Enum
+from enum import Enum, IntEnum
 from datetime import datetime, timezone
 
 REDIS_QUEUE_BASE_KEY: str = "reimburse_app"
@@ -79,3 +79,16 @@ class TypeContent(str, Enum):
     """Status of a content"""
     MOVIE = "MOVIE"
     SERIES = "SERIES"
+
+class MonetizationType(str, Enum):
+    PAY_PER_VIEW = "PAY_PER_VIEW"
+    WATCH_ADS = "WATCH_ADS"
+
+class SubscriptionTier(IntEnum):
+    """
+    Mendefinisikan tingkatan langganan dengan nilai numerik
+    untuk kemudahan perbandingan (misal: VIP >= PREMIUM).
+    """
+    FREE = 0
+    PREMIUM = 10
+    VIP = 20

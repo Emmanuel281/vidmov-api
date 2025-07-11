@@ -74,14 +74,15 @@ class CRUD:
                         "id": "$_id",
                         "content_id": 1,
                         "title": 1,
+                        "description": 1,
                         "episode": 1,
                         "duration": 1,
-                        "is_free":1,
                         "rating": 1,
                         "status": 1,
                         "thumbnail": 1,
                         "video": 1,
                         "release_date": 1,
+                        "required_tier": 1,
                         "_id": 0
                     }
 
@@ -186,14 +187,14 @@ class CRUD:
                         minio_client = conn.get_minio_client()
                         url = minio_client.presigned_get_object(config.minio_bucket, content_data['thumbnail']['filename'])
                         if url:
-                            content_data['thumbnail']['url'] = url
+                            content_data['thumbnail']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
 
                     if "video" in content_data:
                         content_data['video']['url'] = None
                         minio_client = conn.get_minio_client()
                         url = minio_client.presigned_get_object(config.minio_bucket, content_data['video']['filename'])
                         if url:
-                            content_data['video']['url'] = url
+                            content_data['video']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
 
                     return content_data
                 except PyMongoError as pme:
@@ -213,7 +214,7 @@ class CRUD:
                     self.logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                     raise
 
-    def update_by_id(self, content_id: str, data: ContentDetail):
+    def update_by_id(self, content_id: str, data):
         """
         Update a role's data by ID.
         """
@@ -288,14 +289,15 @@ class CRUD:
                         "id": "$_id",
                         "content_id": 1,
                         "title": 1,
+                        "description": 1,
                         "episode": 1,
                         "duration": 1,
-                        "is_free":1,
                         "rating": 1,
                         "status": 1,
                         "thumbnail": 1,
                         "video": 1,
                         "release_date": 1,
+                        "required_tier": 1,
                         "_id": 0
                     }
 
@@ -393,14 +395,14 @@ class CRUD:
                             minio_client = conn.get_minio_client()
                             url = minio_client.presigned_get_object(config.minio_bucket, data['thumbnail']['filename'])
                             if url:
-                                data['thumbnail']['url'] = url
+                                data['thumbnail']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
 
                         if "video" in data:
                             data['video']['url'] = None
                             minio_client = conn.get_minio_client()
                             url = minio_client.presigned_get_object(config.minio_bucket, data['video']['filename'])
                             if url:
-                                data['video']['url'] = url
+                                data['video']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
 
                     return {
                         "data": results,

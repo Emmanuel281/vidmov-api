@@ -8,7 +8,7 @@ from baseapp.utils.utility import cbor_or_json, parse_request_body
 from baseapp.config import setting
 config = setting.get_settings()
 
-from baseapp.services.content.model import Content, UpdateStatus
+from baseapp.services.content.model import Content, ContentUpdate, ContentUpdateStatus, ContentSetTier
 
 from baseapp.services.content.crud import CRUD
 _crud = CRUD()
@@ -52,7 +52,7 @@ async def update_by_id(content_id: str, req: Request, cu: CurrentUser = Depends(
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, Content)
+    req = await parse_request_body(req, ContentUpdate)
     response = _crud.update_by_id(content_id,req)
     
     return ApiResponse(status=0, message="Data updated", data=response)
@@ -71,7 +71,26 @@ async def update_status(content_id: str, req: Request, cu: CurrentUser = Depends
     )
     
     # Buat instance model langsung
-    req = await parse_request_body(req, UpdateStatus)
+    req = await parse_request_body(req, ContentUpdateStatus)
+    response = _crud.update_by_id(content_id,req)
+
+    return ApiResponse(status=0, message="Data updated", data=response)
+
+@router.put("/set_tier/{content_id}", response_model=ApiResponse)
+@cbor_or_json
+async def set_tier(content_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    if not permission_checker.has_permission(cu.roles, "content", 4):  # 4 untuk izin simpan perubahan
+        raise PermissionError("Access denied")
+    
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+    
+    # Buat instance model langsung
+    req = await parse_request_body(req, ContentSetTier)
     response = _crud.update_by_id(content_id,req)
 
     return ApiResponse(status=0, message="Data updated", data=response)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Depends, Request
 from typing import Optional, List, Dict
 
-from baseapp.model.common import ApiResponse, CurrentUser, StatusContent, TypeContent
+from baseapp.model.common import ApiResponse, CurrentUser, StatusContent, TypeContent, SubscriptionTier, Status
 from baseapp.utils.jwt import get_current_user
 from baseapp.utils.utility import cbor_or_json, parse_request_body
 
@@ -25,8 +25,10 @@ def format_enum_to_json(enum_class: Enum) -> List[Dict[str, str]]:
     return [{"name": member.name, "value": member.value} for member in enum_class]
 
 HARDCODED_ENUMS = {
+    "Status": Status,
     "StatusContent": StatusContent,
     "TypeContent": TypeContent,
+    "SubscriptionTier": SubscriptionTier,
 }
 
 @router.post("/create", response_model=ApiResponse)
