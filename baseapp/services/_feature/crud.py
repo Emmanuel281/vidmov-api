@@ -1,4 +1,4 @@
-import logging, uuid
+import logging
 
 from pymongo.errors import PyMongoError
 from typing import Optional, Dict, Any
@@ -6,15 +6,15 @@ from typing import Optional, Dict, Any
 from baseapp.config import setting, mongodb
 from baseapp.services._feature.model import Feature
 from baseapp.services.audit_trail_service import AuditTrailService
-from baseapp.utils.utility import get_enum
+from baseapp.utils.utility import get_enum, generate_uuid
 
 config = setting.get_settings()
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self):
         self.collection_feature = "_feature"
         self.collection_feature_on_role = "_featureonrole"
-        self.logger = logging.getLogger()
 
     def set_context(self, user_id: str, org_id: str, authority: int, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
@@ -38,10 +38,9 @@ class CRUD:
         """
         Update a role's data by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection_feature = mongo._db[self.collection_feature]
-            collection_role = mongo._db[self.collection_feature_on_role]
+        with mongodb.MongoConn() as mongo:
+            collection_feature = mongo.get_database()[self.collection_feature]
+            collection_role = mongo.get_database()[self.collection_feature_on_role]
             bitRA = get_enum(mongo,"ROLEACTION")
             bitRA = bitRA["value"]
             obj = data.model_dump()
@@ -86,7 +85,7 @@ class CRUD:
                 else:
                     resPerm = bitRA[obj['key_action']]
                     obj_add = {}
-                    obj_add["_id"] = str(uuid.uuid4())
+                    obj_add["_id"] = generate_uuid()
                     obj_add["r_id"] = obj["r_id"]
                     obj_add["f_id"] = obj["f_id"]
                     obj_add["permission"] = resPerm
@@ -94,20 +93,19 @@ class CRUD:
                     result = collection_role.insert_one(obj_add) 
                     return obj
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 raise ValueError("Database error occurred while update document.") from pme
             except Exception as e:
-                self.logger.exception(f"Error updating role: {str(e)}")
+                logger.exception(f"Error updating role: {str(e)}")
                 raise
 
     def get_all(self, filters: Optional[Dict[str, Any]] = None):
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection_feature = mongo._db[self.collection_feature]
-            collection_feature_on_role = mongo._db[self.collection_feature_on_role]
+        with mongodb.MongoConn() as mongo:
+            collection_feature = mongo.get_database()[self.collection_feature]
+            collection_feature_on_role = mongo.get_database()[self.collection_feature_on_role]
             bitRA = get_enum(mongo,"ROLEACTION")
             bitRA = bitRA["value"]
             try:
@@ -192,7 +190,7 @@ class CRUD:
 
                 return results
             except PyMongoError as pme:
-                self.logger.error(f"Error retrieving role with filters and pagination: {str(e)}")
+                logger.error(f"Error retrieving role with filters and pagination: {str(e)}")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -204,5 +202,5 @@ class CRUD:
                 )
                 raise ValueError("Database error while retrieve document") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                logger.exception(f"Unexpected error during deletion: {str(e)}")
                 raise

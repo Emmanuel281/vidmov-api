@@ -1,4 +1,4 @@
-import logging,uuid
+import logging
 
 from pymongo.errors import PyMongoError
 from typing import Optional
@@ -6,12 +6,14 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime, timezone
 
+from baseapp.utils.utility import generate_uuid
 from baseapp.config.setting import get_settings
 config = get_settings()
+logger = logging.getLogger(__name__)
 
 class AuditTrailModel(BaseModel):
-    rec_date: Optional[datetime] = Field(default=datetime.now(timezone.utc), description="This enum is created at.")
-    org_id: Optional[str] = Field(default=None, description="Organization associated with the enum.")
+    rec_date: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc), description="This is created at.")
+    org_id: Optional[str] = Field(default=None, description="Organization associated with the log data.")
     uid: str = Field(..., description="User ID performing the action")
     action: str = Field(..., description="Action performed, e.g., create, update, delete")
     target: str = Field(..., description="Target entity of the action, e.g., user, product")
@@ -29,23 +31,22 @@ class AuditTrailService:
         self.ip_address = ip_address
         self.user_agent = user_agent
         self.collection_name = collection_name
-        self.logger = logging.getLogger()
 
     def create(self, mongo_conn, data: AuditTrailModel):
         """
         Insert a new audittrail into the collection.
         """
-        collection = mongo_conn._db[self.collection_name]
-        data["_id"] = str(uuid.uuid4())
+        collection = mongo_conn.get_database()[self.collection_name]
+        data["_id"] = generate_uuid()
         try:
             result = collection.insert_one(data)
-            self.logger.info(f"Inserted document with ID: {result.inserted_id}")
+            logger.info(f"Inserted document with ID: {result.inserted_id}")
             return {"inserted_id": str(result.inserted_id)}
         except PyMongoError as pme:
-            self.logger.error(f"Database error occurred: {str(pme)}")
+            logger.error(f"Database error occurred: {str(pme)}")
             raise ValueError("Database error occurred while creating document.") from pme
         except Exception as e:
-            self.logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
+            logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
             raise
 
     def log_audittrail(self, mongo_conn, action, target, target_id, details=None, status="success", error_message=None):

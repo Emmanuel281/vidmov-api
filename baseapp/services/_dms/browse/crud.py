@@ -11,6 +11,7 @@ from baseapp.services.audit_trail_service import AuditTrailService
 from baseapp.services._dms.upload.model import MoveToTrash
 
 config = setting.get_settings()
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self):
@@ -41,9 +42,8 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
             with self.minio_conn as conn:
                 try:
                     # Apply filters
@@ -91,21 +91,6 @@ class CRUD:
                         details={"aggregate": pipeline},
                         status="success"
                     )
-                    
-                    # retData = {}
-                    # for x in results:
-                    #     retData[x['refkey_name']] = {
-                    #         'id':x['id'],
-                    #         'folder_id':x['folder_id'],
-                    #         'folder_path':x['folder_path'],
-                    #         'filename':x['filename'],
-                    #         'filestat':x['filestat'],
-                    #         'metadata':x['metadata'],
-                    #     }
-                    #     # presigned url
-                    #     minio_client = conn.get_minio_client()
-                    #     url = minio_client.presigned_get_object(config.minio_bucket, x['filename'])
-                    #     retData[x['refkey_name']]['url'] = url
 
                     for i, data in enumerate(results):
                         # presigned url
@@ -117,7 +102,7 @@ class CRUD:
                         "data": results
                     }
                 except PyMongoError as pme:
-                    self.logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
+                    logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
                     # write audit trail for success
                     self.audit_trail.log_audittrail(
                         mongo,
@@ -129,16 +114,15 @@ class CRUD:
                     )
                     raise ValueError("Database error while retrieve document") from pme
                 except Exception as e:
-                    self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                    logger.exception(f"Unexpected error during deletion: {str(e)}")
                     raise
 
     def list_folder(self, filters: Optional[Dict[str, Any]] = None):
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_folder]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_folder]
             try:
                 # Apply filters
                 query_filter = {}
@@ -166,7 +150,7 @@ class CRUD:
                     {"$project": selected_fields}  # Project only selected fields
                 ]
 
-                self.logger.debug(f"Pipeline data: {pipeline}")
+                logger.debug(f"Pipeline data: {pipeline}")
 
                 # Execute aggregation pipeline
                 cursor = collection.aggregate(pipeline)
@@ -200,7 +184,7 @@ class CRUD:
                     "data": retData
                 }
             except PyMongoError as pme:
-                self.logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
+                logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -212,16 +196,15 @@ class CRUD:
                 )
                 raise ValueError("Database error while retrieve document") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                logger.exception(f"Unexpected error during deletion: {str(e)}")
                 raise
 
     def list_file(self, filters: Optional[Dict[str, Any]] = None, page: int = 1, per_page: int = 10, sort_field: str = "_id", sort_order: str = "asc"):
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
             with self.minio_conn as conn:
                 try:
                     # Apply filters
@@ -308,7 +291,7 @@ class CRUD:
                         },
                     }
                 except PyMongoError as pme:
-                    self.logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
+                    logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
                     # write audit trail for success
                     self.audit_trail.log_audittrail(
                         mongo,
@@ -320,16 +303,15 @@ class CRUD:
                     )
                     raise ValueError("Database error while retrieve document") from pme
                 except Exception as e:
-                    self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                    logger.exception(f"Unexpected error during deletion: {str(e)}")
                     raise
 
     def check_storage(self):
         """
         Retrieve a free space by org id (session).
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_organization]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_organization]
             try:
                 obj = collection.find_one({"_id": self.org_id})
                 if not obj:
@@ -355,7 +337,7 @@ class CRUD:
                 )
                 return {"storage":obj["storage"],"usedstorage":obj["usedstorage"]}
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -368,16 +350,15 @@ class CRUD:
                 )
                 raise ValueError("Database error occurred while find document.") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
+                logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                 raise
     
     def move_to_trash_restore(self, file_id: str, data: MoveToTrash):
         """
         File move to trash by ID.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
             obj = data.model_dump()
             obj["mod_by"] = self.user_id
             obj["mod_date"] = datetime.now(timezone.utc)
@@ -395,7 +376,7 @@ class CRUD:
                         error_message="File not found"
                     )
                     raise ValueError("File not found")
-                self.logger.info(f"File {file_id} status updated.")
+                logger.info(f"File {file_id} status updated.")
                 # write audit trail for success
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -407,7 +388,7 @@ class CRUD:
                 )
                 return update_role
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     mongo,
@@ -420,7 +401,7 @@ class CRUD:
                 )
                 raise ValueError("Database error occurred while update document.") from pme
             except Exception as e:
-                self.logger.exception(f"Error updating status: {str(e)}")
+                logger.exception(f"Error updating status: {str(e)}")
                 raise
 
     def delete_file_by_id(self, file_id: str):
@@ -433,10 +414,9 @@ class CRUD:
         Returns:
             Dict berisi status dan pesan
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
-            collection_org = mongo._db[self.collection_organization]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
+            collection_org = mongo.get_database()[self.collection_organization]
             with self.minio_conn as conn:
                 try:
                     minio_client = conn.get_minio_client()
@@ -475,7 +455,7 @@ class CRUD:
 
                     return result.deleted_count
                 except PyMongoError as pme:
-                    self.logger.error(f"Database error while deleting document with ID {file_id}: {str(pme)}")
+                    logger.error(f"Database error while deleting document with ID {file_id}: {str(pme)}")
                     # write audit trail for success
                     self.audit_trail.log_audittrail(
                         mongo,
@@ -487,7 +467,7 @@ class CRUD:
                     )
                     raise ValueError("Database error while delete document") from pme
                 except Exception as e:
-                    self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                    logger.exception(f"Unexpected error during deletion: {str(e)}")
                     raise
 
     def delete_folder_by_id(self, folder_id: str) -> Dict[str, Any]:
@@ -529,14 +509,13 @@ class CRUD:
                 recurse(start, depth) # starts the recursion
                 return {'folders':folder_ids,'files':file_ids,'root':root_folder}
             except Exception as e:
-                self.logger.error(f"Database error while recursive folders with ID {start}: {str(e)}")
+                logger.error(f"Database error while recursive folders with ID {start}: {str(e)}")
                 return None
             
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection_file = mongo._db[self.collection_file]
-            collection_folder = mongo._db[self.collection_folder]
-            collection_org = mongo._db[self.collection_organization]
+        with mongodb.MongoConn() as mongo:
+            collection_file = mongo.get_database()[self.collection_file]
+            collection_folder = mongo.get_database()[self.collection_folder]
+            collection_org = mongo.get_database()[self.collection_organization]
             with self.minio_conn as conn:
                 try:
                     minio_client = conn.get_minio_client()
@@ -583,7 +562,7 @@ class CRUD:
 
                     return recursive_folder
                 except PyMongoError as pme:
-                    self.logger.error(f"Database error while deleting folder with ID {folder_id}: {str(pme)}")
+                    logger.error(f"Database error while deleting folder with ID {folder_id}: {str(pme)}")
                     # write audit trail for success
                     self.audit_trail.log_audittrail(
                         mongo,
@@ -595,5 +574,5 @@ class CRUD:
                     )
                     raise ValueError("Database error while delete folder") from pme
                 except Exception as e:
-                    self.logger.exception(f"Unexpected error during deletion: {str(e)}")
+                    logger.exception(f"Unexpected error during deletion: {str(e)}")
                     raise

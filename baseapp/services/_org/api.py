@@ -3,7 +3,6 @@ from typing import Optional
 
 from baseapp.config import setting
 from baseapp.model.common import ApiResponse, CurrentUser, Status, UpdateStatus
-from baseapp.utils.utility import cbor_or_json, parse_request_body
 
 from baseapp.config import setting
 config = setting.get_settings()
@@ -23,17 +22,12 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/_organization", tags=["Organization"])
 
 @router.post("/init_owner", response_model=ApiResponse)
-@cbor_or_json
-async def create(req: Request) -> ApiResponse:
-    request_body = await parse_request_body(req, model.InitRequest)
-
-    response = _crud.init_owner_org(request_body.org, request_body.user)
-    # response = _crud.init_owner_org(org,user)
+async def create(req: model.InitRequest) -> ApiResponse:
+    response = _crud.init_owner_org(req.org, req.user)
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.post("/init_partner", response_model=ApiResponse)
-@cbor_or_json
-async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def create(req: model.InitRequest, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_organization", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
     
@@ -48,17 +42,13 @@ async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> A
         user_agent=cu.user_agent   # Jika ada
     )
 
-    request_body = await parse_request_body(req, model.InitRequest)
-    request_body.org.authority = 2
-    # org.authority = 2
+    req.org.authority = 2
 
-    response = _crud.init_partner_client_org(request_body.org, request_body.user)
-    # response = _crud.init_partner_client_org(org,user)
+    response = _crud.init_partner_client_org(req.org, req.user)
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.post("/init_client", response_model=ApiResponse)
-@cbor_or_json
-async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def create(req: model.InitRequest, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_organization", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
     
@@ -73,17 +63,33 @@ async def create(req: Request, cu: CurrentUser = Depends(get_current_user)) -> A
         user_agent=cu.user_agent   # Jika ada
     )
     
-    request_body = await parse_request_body(req, model.InitRequest)
-    request_body.org.authority = 4
+    req.org.authority = 4
 
-    # org.authority = 4
+    response = _crud.init_partner_client_org(req.org, req.user)
+    return ApiResponse(status=0, message="Data created", data=response)
 
-    response = _crud.init_partner_client_org(request_body.org, request_body.user)
-    # response = _crud.init_partner_client_org(org,user)
+@router.post("/init_brand", response_model=ApiResponse)
+async def create(req: model.InitRequest, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    if not permission_checker.has_permission(cu.roles, "_organization", 2):  # 2 untuk izin simpan baru
+        raise PermissionError("Access denied")
+    
+    # check authority is not partner
+    if cu.authority != 2:
+        raise PermissionError("Access denied")
+    
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+    
+    req.org.authority = 8
+
+    response = _crud.init_partner_client_org(req.org, req.user)
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.get("", response_model=ApiResponse)
-@cbor_or_json
 async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
@@ -126,7 +132,6 @@ async def get_all_data(
     return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
 
 @router.get("/find/{org_id}", response_model=ApiResponse)
-@cbor_or_json
 async def find_by_id(org_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not (permission_checker.has_permission(cu.roles, "_organization", 1) or permission_checker.has_permission(cu.roles, "_myorg", 1)):  # 1 untuk izin baca
         raise PermissionError("Access denied")
@@ -142,8 +147,7 @@ async def find_by_id(org_id: str, cu: CurrentUser = Depends(get_current_user)) -
     return ApiResponse(status=0, message="Data found", data=response)
 
 @router.put("/update/{org_id}", response_model=ApiResponse)
-@cbor_or_json
-async def update_by_id(org_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_by_id(org_id: str, req: model.OrganizationUpdate, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not (permission_checker.has_permission(cu.roles, "_organization", 4) or permission_checker.has_permission(cu.roles, "_myorg", 4)):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -154,13 +158,11 @@ async def update_by_id(org_id: str, req: Request, cu: CurrentUser = Depends(get_
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, model.OrganizationUpdate)
     response = _crud.update_by_id(org_id,req)
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.put("/update_status/{org_id}", response_model=ApiResponse)
-@cbor_or_json
-async def update_status_by_id(org_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_status_by_id(org_id: str, req: UpdateStatus, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not (permission_checker.has_permission(cu.roles, "_organization", 4)):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -171,12 +173,10 @@ async def update_status_by_id(org_id: str, req: Request, cu: CurrentUser = Depen
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, UpdateStatus)
     response = _crud.update_status(org_id,req)
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.delete("/delete/{org_id}", response_model=ApiResponse)
-@cbor_or_json
 async def update_status(org_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_organization", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
@@ -190,14 +190,12 @@ async def update_status(org_id: str, cu: CurrentUser = Depends(get_current_user)
     
     # Buat instance model langsung
     manual_data = UpdateStatus(
-        id=org_id,
-        status=Status.DELETED  # nilai yang Anda tentukan
+        status=Status.DELETE  # nilai yang Anda tentukan
     )
     response = _crud.update_status(org_id,manual_data)
     return ApiResponse(status=0, message="Data deleted", data=response)
 
 @router.post("/is_owner_exist", response_model=ApiResponse)
-@cbor_or_json
 async def check_owner_exist() -> ApiResponse:
     owner_exists = _crud.is_owner_exist()
     message = ""
@@ -206,3 +204,9 @@ async def check_owner_exist() -> ApiResponse:
     else:
         message="No owner found in the system"
     return ApiResponse(status=0, message=message, data=owner_exists)
+
+@router.post("/reg_client", response_model=ApiResponse)
+async def create(req: model.InitRequest) -> ApiResponse:   
+    req.org.authority = 4
+    response = _crud.reg_partner_client_org(req.org, req.user)
+    return ApiResponse(status=0, message="Register Succeed", data=response)

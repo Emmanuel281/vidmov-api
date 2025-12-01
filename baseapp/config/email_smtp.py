@@ -9,11 +9,11 @@ from email import encoders
 
 from baseapp.config import setting
 
+config = setting.get_settings()
 logger = logging.getLogger()
 
 class EmailSender:
     def __init__(self, host=None, port=None, username=None, password=None, use_tls=True):
-        config = setting.get_settings()
         self.smtp_server = host or config.smtp_host
         self.smtp_port = port or config.smtp_port
         self.email_user = username or config.smtp_username

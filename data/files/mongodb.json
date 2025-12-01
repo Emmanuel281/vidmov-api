@@ -1,0 +1,467 @@
+{
+    "_audittrail": {
+        "index": ["rec_date","org_id","uid"]
+    },
+    "_enum": {
+        "index": ["app", "mod", "code", "rec_date", "org_id", "type", {
+            "app_mod": ["app", "mod"]
+        },{
+            "app_mod_org": ["app", "mod", "org_id"]
+        },{
+            "org_type": ["org_id", "type"]
+        },{
+            "app_mod_sort": ["app", "mod", "_sort"]
+        }],
+        "data": [{
+            "id": "AUTHORITY",
+            "app": "baseapp",
+            "mod": "AUTHORITY",
+            "code": "AUTHORITY",
+            "type": "hardcoded",
+            "value": {
+                "owner": 1,
+                "partner": 2,
+                "client": 4,
+                "affiliator": 8
+            }
+        }, {
+            "id": "ROLEACTION",
+            "app": "baseapp",
+            "mod": "ROLEACTION",
+            "code": "ROLEACTION",
+            "type": "hardcoded",
+            "value": {
+                "add": 2,
+                "approval": 64,
+                "delete": 8,
+                "edit": 4,
+                "export": 16,
+                "import": 32,
+                "setting": 128,
+                "view": 1
+            }
+        }, {
+            "id": "dmsDataType",
+            "app": "baseapp",
+            "mod": "dmsDataType",
+            "code": "dmsDataType",
+            "type": "hardcoded",
+            "value": ["String","Integer","Datetime"]
+        }, {
+            "id": "SEX",
+            "app": "baseapp",
+            "mod": "SEX",
+            "code": "SEX",
+            "type": "hardcoded",
+            "value": ["Male","Female"]
+        }, {
+            "id": "GENRE",
+            "app": "baseapp",
+            "mod": "_enum",
+            "code": "genre",
+            "type": "hardcoded",
+            "value": "Genre"
+        }]
+    },
+    "_organization": {
+        "index": ["rec_date", "authority", "ref_id", "plan_id"]
+    },
+    "_feature": {
+        "index": ["feature_name"],
+        "data": [
+            {
+                "id": "_user",
+                "feature_name": "_user",
+                "negasiperm": {
+                    "1": 248,
+                    "2": 248,
+                    "4": 248,
+                    "8": 248
+                },
+                "authority": 15
+            },
+            {
+                "id": "_role",
+                "feature_name": "_role",
+                "negasiperm": {
+                    "1": 248,
+                    "2": 248,
+                    "4": 255,
+                    "8": 255
+                },
+                "authority": 3
+            },
+            {
+                "id": "_enum",
+                "feature_name": "_enum",
+                "negasiperm": {
+                    "1": 240,
+                    "2": 255,
+                    "4": 255,
+                    "8": 255
+                },
+                "authority": 1
+            },
+            {
+                "id": "_audittrail",
+                "feature_name": "_audittrail",
+                "negasiperm": {
+                    "1": 254,
+                    "2": 254,
+                    "4": 254,
+                    "8": 254
+                },
+                "authority": 15
+            },
+            {
+                "id": "_feature",
+                "feature_name": "_feature",
+                "negasiperm": {
+                    "1": 250,
+                    "2": 250,
+                    "4": 255,
+                    "8": 255
+                },
+                "authority": 3
+            },
+            {
+                "id": "_menu",
+                "feature_name": "_menu",
+                "negasiperm": {
+                    "1": 250,
+                    "2": 255,
+                    "4": 255,
+                    "8": 255
+                },
+                "authority": 1
+            },
+            {
+                "id": "_organization",
+                "feature_name": "_organization",
+                "negasiperm": {
+                    "1": 248,
+                    "2": 250,
+                    "4": 250,
+                    "8": 250
+                },
+                "authority": 15
+            },
+            {
+                "id": "_dashboard",
+                "feature_name": "_dashboard",
+                "negasiperm": {
+                    "1": 254,
+                    "2": 254,
+                    "4": 254,
+                    "8": 254
+                },
+                "authority": 15
+            },
+            {
+                "id": "_myorg",
+                "feature_name": "_myorg",
+                "negasiperm": {
+                    "1": 250,
+                    "2": 250,
+                    "4": 250,
+                    "8": 250
+                },
+                "authority": 15
+            },
+            {
+                "id": "_myprofile",
+                "feature_name": "_myprofile",
+                "negasiperm": {
+                    "1": 250,
+                    "2": 250,
+                    "4": 250,
+                    "8": 250
+                },
+                "authority": 15
+            },
+            {
+                "id": "_dmsindexlist",
+                "feature_name": "_dmsindexlist",
+                "negasiperm": {
+                    "1": 248,
+                    "2": 255,
+                    "4": 255,
+                    "8": 255
+                },
+                "authority": 1
+            },
+            {
+                "id": "_dmsdoctype",
+                "feature_name": "_dmsdoctype",
+                "negasiperm": {
+                    "1": 248,
+                    "2": 255,
+                    "4": 255,
+                    "8": 255
+                },
+                "authority": 1
+            },
+            {
+                "id": "_dmsbrowse",
+                "feature_name": "_dmsbrowse",
+                "negasiperm": {
+                    "1": 96,
+                    "2": 255,
+                    "4": 255,
+                    "8": 255
+                },
+                "authority": 1
+            },
+            {
+                "id": "content",
+                "feature_name": "content",
+                "negasiperm": {
+                    "1": 64,
+                    "2": 254,
+                    "4": 254,
+                    "8": 254
+                },
+                "authority": 15
+            },
+            {
+                "id": "register",
+                "feature_name": "register",
+                "negasiperm": {
+                    "1": 255,
+                    "2": 255,
+                    "4": 252,
+                    "8": 255
+                },
+                "authority": 4
+            },
+            {
+                "id": "wallet",
+                "feature_name": "wallet",
+                "negasiperm": {
+                    "1": 248,
+                    "2": 252,
+                    "4": 252,
+                    "8": 252
+                },
+                "authority": 15
+            },
+            {
+                "id": "topup",
+                "feature_name": "topup",
+                "negasiperm": {
+                    "1": 248,
+                    "2": 252,
+                    "4": 252,
+                    "8": 252
+                },
+                "authority": 15
+            },
+            {
+                "id": "ads",
+                "feature_name": "ads",
+                "negasiperm": {
+                    "1": 254,
+                    "2": 240,
+                    "4": 255,
+                    "8": 255
+                },
+                "authority": 3
+            },
+            {
+                "id": "qr_product",
+                "feature_name": "qr_product",
+                "negasiperm": {
+                    "1": 254,
+                    "2": 240,
+                    "4": 255,
+                    "8": 255
+                },
+                "authority": 3
+            },
+            {
+                "id": "bundling",
+                "feature_name": "bundling",
+                "negasiperm": {
+                    "1": 254,
+                    "2": 240,
+                    "4": 255,
+                    "8": 255
+                },
+                "authority": 3
+            },
+            {
+                "id": "giveaway",
+                "feature_name": "giveaway",
+                "negasiperm": {
+                    "1": 254,
+                    "2": 240,
+                    "4": 255,
+                    "8": 252
+                },
+                "authority": 11
+            }
+        ]
+    },
+    "_featureonrole": {
+        "index": ["f_id", "r_id", "org_id", {
+            "rf_id": ["r_id", "f_id"]
+        }]
+    },
+    "_role": {
+        "index": ["rec_date", "name", "org_id"]
+    },
+    "_menu": {
+        "index": ["feature", "parent", "sortnumber"],
+        "data": [
+            {
+                "feature": "_dashboard",
+                "value": "Dashboard",
+                "icon": "gauge",
+                "details": "Dashboard",
+                "parent": "",
+                "sortnumber": 10
+            },
+            {
+                "value": "User",
+                "icon": "account",
+                "details": "User",
+                "feature": "_user",
+                "parent": "",
+                "sortnumber": 20
+            },
+            {
+                "value": "Role",
+                "icon": "account-group",
+                "details": "Role",
+                "feature": "_role",
+                "parent": "",
+                "sortnumber": 30
+            },
+            {
+                "value": "Enum",
+                "icon": "format-list-bulleted-type",
+                "details": "Enum",
+                "feature": "_enum",
+                "parent": "",
+                "sortnumber": 31
+            },
+            {
+                "value": "Menu",
+                "icon": "menu-open",
+                "details": "Menu",
+                "feature": "_menu",
+                "parent": "",
+                "sortnumber": 40
+            },
+            {
+                "value": "Feature",
+                "icon": "star",
+                "details": "Feature",
+                "feature": "_feature",
+                "parent": "",
+                "sortnumber": 50
+            },
+            {
+                "value": "Organization",
+                "icon": "triangle",
+                "details": "Organization",
+                "feature": "_organization",
+                "parent": "",
+                "sortnumber": 60
+            },
+            {
+                "value": "DMS",
+                "icon": "folder-multiple",
+                "details": "DMS",
+                "feature": "",
+                "parent": "",
+                "id": "5e755fd6-2155-406f-858c-237b884f7ce1",
+                "sortnumber": 32
+            },
+            {
+                "value": "DMS Index",
+                "icon": "format-list-checks",
+                "details": "DMS Index",
+                "feature": "_dmsindexlist",
+                "parent": "5e755fd6-2155-406f-858c-237b884f7ce1",
+                "sortnumber": 32
+            },
+            {
+                "value": "DMS Doctype",
+                "icon": "file-document-box-multiple",
+                "details": "DMS Doctype",
+                "feature": "_dmsdoctype",
+                "parent": "5e755fd6-2155-406f-858c-237b884f7ce1",
+                "sortnumber": 33
+            },
+            {
+                "value": "DMS Browse",
+                "icon": "folder-multiple",
+                "details": "DMS Browse",
+                "feature": "_dmsbrowse",
+                "parent": "5e755fd6-2155-406f-858c-237b884f7ce1",
+                "sortnumber": 34
+            },
+            {
+                "value": "Content",
+                "icon": "folder-multiple",
+                "details": "Content",
+                "feature": "content",
+                "parent": "5e755fd6-2155-406f-858c-237b884f7ce1",
+                "sortnumber": 70
+            }
+        ]
+    },
+    "_user": {
+        "oauth": 1,
+        "index": ["rec_date", "username", "email", "org_id", "r_id", {
+            "id_orgid": ["id", "org_id"]
+        }, {
+            "username_orgid": ["username", "org_id"]
+        }, {
+            "email_orgid": ["email", "org_id"]
+        }]
+    },
+    "_dmsindexlist": {
+        "index": ["rec_date", "name", "org_id", {
+            "index_orgid": ["name", "org_id"]
+        }]
+    },
+    "_dmsdoctype": {
+        "index": ["rec_date","org_id",{
+            "name_orgid": ["name", "org_id"]
+        }]
+    },
+    "_dmsfolder":{
+        "index":["rec_date", "folder_name", "level", "pid", "org_id", {
+            "_lo":["level","org_id"]
+        },{
+            "_flo":["folder_name","level","org_id"]
+        },{
+            "_flop":["folder_name","level","org_id","pid"]
+        }]
+    },
+    "_dmsfile":{
+        "index":["rec_date","doctype","folder_id","refkey_id","org_id",{
+            "refkey_id_table": ["refkey_id", "refkey_table"]
+        }]
+    },
+    "content":{
+        "index":["rec_date","org_id"]
+    },
+    "content_video":{
+        "index":["rec_date","content_id","org_id"]
+    },
+    "ads":{
+        "index":["rec_date","uid","org_id"]
+    },
+    "qr_product":{
+        "index":["rec_date","uid","org_id"]
+    },
+    "bundling":{
+        "index":["rec_date","uid","org_id"]
+    },
+    "giveaway":{
+        "index":["rec_date","uid","org_id"]
+    }
+}

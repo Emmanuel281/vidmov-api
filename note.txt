@@ -6,9 +6,17 @@ install and running rabbit-mq
 1. docker pull rabbitmq:management
 2. docker run -d --name rabbitmq --network gnusa --ip 172.2.0.10 -p 10.200.202.234:15672:15672 -p 10.200.202.234:5672:5672 -p 10.200.202.234:15674:15674 rabbitmq:management rabbitmq-plugins enable rabbitmq_web_stomp
 
-install langchain
-langchain
 
-install pandas
-pandas==1.5.3
-pandasai
+alembic migration
+1. run "pip install alembic" or add into your requirement.txt file
+2. initiate alembic "alembic init alembic"
+3. setup migration "alembic revision --autogenerate -m 'Initial migration'" --rev-id "001"
+4. run "alembic upgrade head" -> run this when development
+5. if run production, setup CI/CD for alembic migration
+
+
+struktur ARENA
+owner = ARENA
+partner = ... (perusahaan telco, bisa bundling paket kouta data ke arena dengan reward koin pada bundling mereka atau brand)
+client = end user (menikmati konten video)
+advertiser = upload konten video iklan

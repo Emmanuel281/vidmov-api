@@ -20,3 +20,14 @@ class UserInfo(BaseModel):
 class VerifyOTPRequest(BaseModel):
     username: str = Field(description="Email")
     otp: str = Field(description="OTP Code.")
+
+class ClientInfo(BaseModel):
+    """Representation of a client information."""
+    id: str = Field(default=None, description="Id of the client.")
+    org_id: str = Field(default=None, description="Organization associated with the client.")
+    client_id: str = Field(default=None, description="Client ID.")
+
+class ClientAuthCredential(BaseModel):
+    """Representation of a client authentication credential."""
+    client_id: str = Field(description="Client ID for authentication.")
+    client_secret: str = Field(default=None, description="Client secret for authentication.")

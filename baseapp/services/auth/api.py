@@ -3,13 +3,14 @@ from fastapi import APIRouter, Request, Response, Form, Depends, Header
 from datetime import datetime, timezone, timedelta
 import logging
 import random
+import uuid
 
-from baseapp.model.common import ApiResponse, REDIS_QUEUE_BASE_KEY, TokenResponse, CurrentUser
+from baseapp.model.common import ApiResponse, TokenResponse, CurrentUser
 from baseapp.config.setting import get_settings
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
-from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_jwt_token, get_current_user
-from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest
+from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_jwt_token, get_current_user, revoke_all_refresh_tokens
+from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest, ClientAuthCredential
 from baseapp.services.auth.crud import CRUD
 
 config = get_settings()
@@ -41,16 +42,23 @@ async def login(response: Response, req: UserLoginModel, x_client_type: Optional
     access_token, expire_access_in = create_access_token(token_data)
     refresh_token, expire_refresh_in = create_refresh_token(token_data)
 
+    # Hitung waktu kedaluwarsa akses token
+    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+
     # Simpan refresh token ke Redis
+    session_id = uuid.uuid4().hex
+    redis_key = f"refresh_token:{user_info.id}:{session_id}"
     with RedisConn() as redis_conn:
         redis_conn.set(
-            username,
+            redis_key,
             refresh_token,
             ex=timedelta(days=expire_refresh_in),
         )
 
     data = {
-        "access_token": access_token
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expired_at": expired_at.isoformat()
     }
 
     if x_client_type == 'mobile':
@@ -87,8 +95,8 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
     with RedisConn() as redis_conn:
         redis_conn.setex(f"otp:{username}", 300, otp)
     
-    queue_manager = RedisQueueManager(queue_name=REDIS_QUEUE_BASE_KEY)
-    queue_manager.enqueue_task({"func":"otp","email": username, "otp": otp, "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: {otp}"})
+    queue_manager = RedisQueueManager(queue_name="otp_tasks")  # Pass actual RedisConn here
+    queue_manager.enqueue_task({"email": username, "otp": otp, "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: {otp}"})
 
     # Return response berhasil
     return ApiResponse(status=0, data={"status": "queued", "message": "OTP has been sent"})
@@ -122,8 +130,10 @@ async def verify_otp(response: Response, req: VerifyOTPRequest, x_client_type: O
             refresh_token, expire_refresh_in = create_refresh_token(token_data)
 
             # Simpan refresh token ke Redis
+            session_id = uuid.uuid4().hex
+            redis_key = f"refresh_token:{user_info.id}:{session_id}"
             redis_conn.set(
-                username,
+                redis_key,
                 refresh_token,
                 ex=timedelta(days=expire_refresh_in),
             )
@@ -131,8 +141,12 @@ async def verify_otp(response: Response, req: VerifyOTPRequest, x_client_type: O
             # hapus otp dari redis
             redis_conn.delete(f"otp:{username}")
 
+            # Hitung waktu kedaluwarsa akses token
+            expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
             data = {
-                "access_token": access_token
+                "access_token": access_token,
+                "token_type": "bearer",
+                "expired_at": expired_at.isoformat(),
             }
 
             if x_client_type == 'mobile':
@@ -147,7 +161,7 @@ async def verify_otp(response: Response, req: VerifyOTPRequest, x_client_type: O
                     httponly=True,
                     max_age=timedelta(days=expire_refresh_in),
                     secure=config.app_env == "production",  # Gunakan secure hanya di production
-                    samesite="Lax",  # Prevent CSRF
+                    samesite="lax",  # Prevent CSRF
                     domain=config.domain
                 )
     
@@ -184,9 +198,11 @@ async def token(
     refresh_token, expire_refresh_in = create_refresh_token(token_data)
 
     # Simpan refresh token ke Redis
+    session_id = uuid.uuid4().hex
+    redis_key = f"refresh_token:{user_info.id}:{session_id}"
     with RedisConn() as redis_conn:
         redis_conn.set(
-            username,
+            redis_key,
             refresh_token,
             ex=timedelta(days=expire_refresh_in),
         )
@@ -238,25 +254,30 @@ async def refresh_token(request: Request, x_client_type: Optional[str] = Header(
 
     # Create new access token
     access_token, expire_access_in = create_access_token(payload)
+    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
     data = {
-        "access_token": access_token
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "expired_at": expired_at.isoformat()
     }
     return ApiResponse(status=0, data=data)
     
 @router.post("/logout", response_model=ApiResponse)
-async def logout(request: Request, response: Response) -> ApiResponse:
-    refresh_token = request.cookies.get("refresh_token")
-    if not refresh_token:
-        raise ValueError("Refresh token missing")
-    
-    # Decode refresh token
-    payload = decode_jwt_token(refresh_token)
-    if not payload:
-        raise ValueError("Invalid refresh token")
+async def logout(response: Response, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    # Revoke access token
+    access_token = cu.token 
+    payload_access_token = decode_jwt_token(access_token)
+    jti = payload_access_token.get("jti")
+    exp = payload_access_token.get("exp")
 
     # Check token in Redis
     with RedisConn() as redis_conn:
-        redis_conn.delete(payload["sub"])
+        revoke_all_refresh_tokens(cu.id, redis_conn)
+        if jti and exp:
+            sisa_waktu_detik = exp - datetime.now(timezone.utc).timestamp()
+            if sisa_waktu_detik > 0:
+                # Simpan jti ke Redis dengan TTL
+                redis_conn.setex(f"deny_list:{jti}", int(sisa_waktu_detik), "revoked")
 
     # Hapus cookie di klien
     response.delete_cookie("refresh_token")
@@ -269,3 +290,34 @@ async def auth_status(request: Request, cu: CurrentUser = Depends(get_current_us
     cu_data = cu.model_dump(exclude={"log_id", "ip_address", "user_agent", "token"})
     # Return response berhasil
     return ApiResponse(status=0, data=cu_data)
+
+@router.post("/client-token", response_model=ApiResponse)
+async def login(req: ClientAuthCredential) -> ApiResponse:
+    client_id = req.client_id
+    client_secret = req.client_secret
+
+    # Validasi client
+    with _crud:
+        client_info = _crud.validate_client(client_id, client_secret)
+
+    # Data token
+    token_data = {
+        "sub": client_id,
+        "id": client_info.id,
+        "org_id": client_info.org_id
+    }
+
+    # Buat akses token dan refresh token
+    access_token, expire_access_in = create_access_token(token_data,60)
+
+    # Hitung waktu kedaluwarsa akses token
+    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+
+    data = {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expired_at": expired_at.isoformat()
+    }
+
+    # Return response berhasil
+    return ApiResponse(status=0, data=data)

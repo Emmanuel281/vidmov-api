@@ -1,28 +1,25 @@
-import logging, random, uuid
+import logging, random
 from datetime import datetime, timezone
 
-from baseapp.model.common import REDIS_QUEUE_BASE_KEY, Status
+from baseapp.model.common import Status
 from baseapp.config import setting, mongodb
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.services._forgot_password.model import OTPRequest, VerifyOTPRequest, ResetPasswordRequest
-from baseapp.utils.utility import hash_password
+from baseapp.utils.utility import hash_password, generate_uuid
+from baseapp.utils.jwt import revoke_all_refresh_tokens
 
 config = setting.get_settings()
-
-# In-memory storage for simplicity
-user_data = {}
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self):
-        self.logger = logging.getLogger()
         self.redis_conn = RedisConn()
-        self.queue_manager = RedisQueueManager(queue_name=REDIS_QUEUE_BASE_KEY)  # Pass actual RedisConn here
+        self.queue_manager = RedisQueueManager(redis_conn=self.redis_conn,queue_name="otp_tasks")
 
     def is_valid_user(self,username: str) -> bool:
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db["_user"]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()["_user"]
             query = {"$or": [{"username": username}, {"email": username}]}
             user_info = collection.find_one(query)
             if not user_info:
@@ -41,20 +38,11 @@ class CRUD:
             
             otp = str(random.randint(100000, 999999))  # Generate random 6-digit OTP
 
-            # msg_val = {
-            #     "to":req.email, # mandatory | kalau lebih dari satu jadi array ["aldian@gai.co.id","charly@gai.co.id"]
-            #     "subject": "Request Forgot Password",
-            #     "body_mail": f"Berikut kode OTP Anda: {otp}"
-            # }
-
-            # body_mail, bcc_recipients = self.mail_manager.body_msg(msg_val)
-            # mail_sending = self.mail_manager.send_email(body_mail, bcc_recipients)
-
             # Simpan OTP di Redis dengan TTL (misalnya 300 detik)
             with self.redis_conn as conn:
                 conn.setex(f"otp:{req.email}", 300, otp)
 
-            self.queue_manager.enqueue_task({"func":"otp","email": req.email, "otp": otp, "subject":"Request Forgot Password", "body":f"Berikut kode OTP Anda: {otp}"})
+            self.queue_manager.enqueue_task({"email": req.email, "otp": otp, "subject":"Request Forgot Password", "body":f"Berikut kode OTP Anda: {otp}"})
             return {"status": "queued", "message": "OTP has been sent"}
         except Exception as e:
             raise
@@ -69,7 +57,7 @@ class CRUD:
                 stored_otp = conn.get(f"otp:{req.email}")
 
             if stored_otp and stored_otp == req.otp:
-                reset_token = str(uuid.uuid4())  # Use UUID for secure random token
+                reset_token = generate_uuid()  # Use UUID for secure random token
                 with self.redis_conn as conn:
                     conn.delete(f"otp:{req.email}")
                     conn.setex(f"reset_token:{req.email}", 900, reset_token)  # TTL: 15 minutes
@@ -94,14 +82,12 @@ class CRUD:
                 if not userinfo:
                     raise ValueError("User not found")
                 
-                salt, hashed_password = hash_password(req.new_password)
+                hashed_password = hash_password(req.new_password)
 
-                client = mongodb.MongoConn()
-                with client as mongo:
-                    collection = mongo._db["_user"]
+                with mongodb.MongoConn() as mongo:
+                    collection = mongo.get_database()["_user"]
                     obj = {}
                     obj["password"] = hashed_password
-                    obj["salt"] = salt
                     obj["mod_by"] = userinfo
                     obj["mod_date"] = datetime.now(timezone.utc)
 
@@ -110,6 +96,9 @@ class CRUD:
                         raise ValueError("Reset password failed")
                     
                     with self.redis_conn as conn:
+                        # Revoke all refresh tokens for the user
+                        revoke_all_refresh_tokens(userinfo, conn)
+                        # Hapus token reset setelah berhasil
                         conn.delete(f"reset_token:{req.email}")
 
                     return {"status": "success", "message": "Password has been reset"}

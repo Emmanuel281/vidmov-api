@@ -2,32 +2,68 @@ from pymongo import MongoClient,errors
 import logging,uuid
 from baseapp.config import setting
 
+config = setting.get_settings()
 logger = logging.getLogger()
 
 class MongoConn:
-    def __init__(self, host=None, port=None, database=None, username=None, password=None):
-        config = setting.get_settings()
-        self.host = host or config.mongodb_host
-        self.port = port or config.mongodb_port
+    _client = None
+
+    def __init__(self, database=None):
         self.database = database or config.mongodb_db
-        self.username = username or config.mongodb_user
-        self.password = password or config.mongodb_pass
-        self._conn = None
         self._db = None
+
+    @classmethod
+    def initialize(cls):
+        """
+        Inisialisasi Global Connection Pool.
+        Wajib dipanggil SEKALI saat aplikasi start (misal di main.py).
+        """
+        if cls._client is None:
+            try:
+                # Konstruksi URI dengan/tanpa autentikasi
+                if config.mongodb_user and config.mongodb_pass:
+                    uri = f"mongodb://{config.mongodb_user}:{config.mongodb_pass}@{config.mongodb_host}:{config.mongodb_port}"
+                else:
+                    uri = f"mongodb://{config.mongodb_host}:{config.mongodb_port}"
+
+                # Membuat MongoClient (Otomatis mengatur pooling)
+                # maxPoolSize=100 (default)
+                cls._client = MongoClient(
+                    uri,
+                    minPoolSize=config.mongodb_min_pool_size, 
+                    maxPoolSize=config.mongodb_max_pool_size,
+                )
+                
+                # Test koneksi ringan (opsional)
+                # cls._client.admin.command('ping')
+                
+                logger.info(f"MongoDB Pool initialized (Min: {config.mongodb_min_pool_size}, Max: {config.mongodb_max_pool_size})")
+                
+            except errors.ConnectionFailure as e:
+                logger.error(f"Failed to connect to MongoDB: {e}")
+                raise ConnectionError("Failed to connect to MongoDB")
+            except Exception as e:
+                logger.exception(f"Unexpected error initializing MongoDB: {e}")
+                raise
+
+    @classmethod
+    def close_connection(cls):
+        """
+        Menutup seluruh koneksi di pool. Dipanggil saat aplikasi shutdown.
+        """
+        if cls._client:
+            cls._client.close()
+            cls._client = None
+            logger.info("MongoDB Connection Pool closed.")
 
     def __enter__(self):
         try:
-            # Buat URL koneksi
-            uri = f"mongodb://{self.username}:{self.password}@{self.host}:{self.port}" if self.username and self.password else f"mongodb://{self.host}:{self.port}"
-            
-            # Membuka koneksi ke MongoDB
-            self._conn = MongoClient(uri)
-            logger.info("Connected to MongoDB")
+            # Lazy Init: Jaga-jaga jika lupa panggil initialize() di main.py
+            if self.__class__._client is None:
+                self.__class__.initialize()
 
-            if self.database:
-                self._db = self._conn[self.database]
-                logger.info(f"Selected database: {self.database}")
-
+            # Pilih Database dari client yang sudah ada (sangat cepat)
+            self._db = self.__class__._client[self.database]
             return self
         except errors.ServerSelectionTimeoutError as e:
             logger.error(f"Failed to connect to MongoDB: {e}")
@@ -43,13 +79,22 @@ class MongoConn:
             raise
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        if self._conn:
-            self._conn.close()
-            logger.info("MongoDB connection closed.")
+        self._db = None
+        
         if exc_type:
-            logger.exception(f"Error type: {exc_type}, value: {exc_value}")
+            logger.error(f"Error in MongoDB Context: {exc_type.__name__}: {exc_value}")
+            # Return False agar exception tetap naik (raise) ke pemanggil
             return False
 
+    def __getattr__(self, name):
+        """
+        Memungkinkan akses collection langsung via attribute.
+        Contoh: mongo.users.find() daripada mongo.get_database()['users'].find()
+        """
+        if self._db is not None:
+            return self._db[name]
+        raise AttributeError(f"Database context not active or attribute '{name}' not found.")
+    
     def get_database(self):
         if self._db is None:
             logger.warning("Database is not selected. Use __enter__ method with a database name.")
@@ -57,30 +102,26 @@ class MongoConn:
         return self._db
 
     def get_connection(self):
-        if not self._conn:
-            self.__enter__()
-        return self._conn
-
-    def close(self):
-        if self._conn:
-            logger.info("Closing connection to MongoDB")
-            self._conn.close()
-            self._conn = None
-            self._db = None
+        if not self.__class__._client:
+            self.__class__.initialize()
+        return self.__class__._client
 
     def create_database(self, config_json):
         """
         Create database, collections, and initialize data based on a JSON configuration.
         """
-        if self._db is None:
-            logger.error("Database is not selected.")
-            raise ValueError("Database is not selected.")
+        db_target = self._db
+        if db_target is None:
+             # Fallback jika dipanggil di luar context manager
+             if self.__class__._client is None:
+                self.__class__.initialize()
+             db_target = self.__class__._client[self.database]
 
-        logger.info("Starting database creation...")
+        logger.info(f"Starting schema creation for database: {self.database}...")
 
         for collection_name, collection_config in config_json.items():
             logger.info(f"Processing collection: {collection_name}")
-            collection = self._db[collection_name]
+            collection = db_target[collection_name]
 
             # 1. Membuat Indeks
             indexes = collection_config.get("index", [])
@@ -126,9 +167,13 @@ class MongoConn:
         """
         Function to check if a database exists in MongoDB.
         """
+        if self.__class__._client is None:
+            self.__class__.initialize()
+
         try:
-            existing_databases = self._conn.list_database_names()
-            if self._db.name in existing_databases:
+            existing_databases = self.__class__._client.list_database_names()
+            exists = self.database in existing_databases
+            if exists:
                 return True
             else:
                 logger.info(f"Database {self._db.name} does not exist.")

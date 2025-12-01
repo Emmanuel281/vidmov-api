@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends
 
 from baseapp.model.common import ApiResponse, CurrentUser
 from baseapp.utils.jwt import get_current_user
-from baseapp.utils.utility import cbor_or_json
 
 from baseapp.config import setting
 config = setting.get_settings()
@@ -13,7 +12,6 @@ _crud = CRUD()
 router = APIRouter(prefix="/v1/_menu", tags=["Menu"])
     
 @router.get("/sidemenu", response_model=ApiResponse)
-@cbor_or_json
 async def sidemenu(cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     _crud.set_context(
         user_id=cu.id,

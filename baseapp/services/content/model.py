@@ -1,7 +1,13 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from baseapp.model.common import StatusContent, TypeContent, SubscriptionTier
+from baseapp.model.common import ContentStatus, ContentType
 from datetime import datetime
+
+class BrandPlacement(BaseModel):
+    brand_id: str = Field(..., description="ID dari user/organisasi Brand (Authority 8)")
+    campaign_name: str
+    # logo_url: str = Field(..., description="URL logo brand yang akan muncul di player")
+    # cta_url: Optional[str] = Field(None, description="Link redirect jika user klik logo")
 
 class Content(BaseModel):
     name: str = Field(description="Name of movie or series.")
@@ -10,12 +16,16 @@ class Content(BaseModel):
     genre: List[str] = Field(description="Genre of the movie or series.")
     release_date: datetime = Field(description="Release date of the movie or series (YYYY-MM-DD). example: 2025-03-20T00:00:00Z")
     duration: Optional[int] = Field(default=None, description="Duration in minutes.")
-    type: TypeContent = Field(description="Type of content: 'MOVIE' or 'SERIES'.")
+    type: ContentType = Field(description="Type of content: 'MOVIE' or 'SERIES'.")
     episodes: Optional[int] = Field(default=None, description="Number of episodes (if series).")
     language: Optional[str] = Field(default="Indonesia", description="Primary language of the content.")
     rating: Optional[float] = Field(default=None, ge=0.0, le=10.0, description="Rating score of the content.")
-    status: StatusContent = Field(default=None, description="Status of the content (e.g., Published, Draft, Archived).")
-    required_tier: Optional[SubscriptionTier] = Field(default=None, description="Minimum subscription tier to access this entire series.")
+    # Monetization & Branding (Level Series)
+    is_full_paid: bool = Field(default=False, description="Jika True, user harus beli 1 paket full. Jika False, beli per episode.")
+    full_price_coins: Optional[int] = Field(default=None, description="Harga koin jika user ingin beli langsung 1 season.")
+    # Sponsorship (Contoh: 'Presented by Kopi Kenangan')
+    main_sponsor: Optional[BrandPlacement] = Field(default=None, description="Sponsor utama series ini.")
+    status: ContentStatus = Field(default=None, description="Status of the content (e.g., Published, Draft, Archived).")
 
 class ContentUpdate(BaseModel):
     name: str = Field(description="Name of movie or series.")
@@ -24,14 +34,15 @@ class ContentUpdate(BaseModel):
     genre: List[str] = Field(description="Genre of the movie or series.")
     release_date: datetime = Field(description="Release date of the movie or series (YYYY-MM-DD). example: 2025-03-20T00:00:00Z")
     duration: Optional[int] = Field(default=None, description="Duration in minutes.")
-    type: TypeContent = Field(description="Type of content: 'MOVIE' or 'SERIES'.")
+    type: ContentType = Field(description="Type of content: 'MOVIE' or 'SERIES'.", default="SERIES")
     episodes: Optional[int] = Field(default=None, description="Number of episodes (if series).")
     language: Optional[str] = Field(default="Indonesia", description="Primary language of the content.")
+    # Monetization & Branding (Level Series)
+    is_full_paid: bool = Field(default=False, description="Jika True, user harus beli 1 paket full. Jika False, beli per episode.")
+    full_price_coins: Optional[int] = Field(default=None, description="Harga koin jika user ingin beli langsung 1 season.")
+    # Sponsorship (Contoh: 'Presented by Kopi Kenangan')
+    main_sponsor: Optional[BrandPlacement] = Field(default=None, description="Sponsor utama series ini.")
 
 class ContentUpdateStatus(BaseModel):
     """Representation of update status model."""
-    status: StatusContent = Field(description="Status of the content (e.g., Published, Draft, Archived).")    
-
-class ContentSetTier(BaseModel):
-    """Representation of set rating model."""
-    required_tier: Optional[SubscriptionTier] = Field(default=None, description="Minimum subscription tier to access this entire series.")
+    status: ContentStatus = Field(description="Status of the content (e.g., Published, Draft, Archived).")    

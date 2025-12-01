@@ -30,7 +30,6 @@ include/
 sample/
 share/
 temp/
-data/
 
 .env
 .venv
@@ -39,4 +38,4 @@ bin/
 lib/
 .
 
-!data/files/initdata.json
+!data/files/mongodb.json

@@ -1,9 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Any, Literal, List
 from enum import Enum, IntEnum
-from datetime import datetime, timezone
 
-REDIS_QUEUE_BASE_KEY: str = "reimburse_app"
+MINIO_STORAGE_SIZE_LIMIT : int = 10737418240  # 10 GB in bytes
 
 class Status(str, Enum):
     """Status of a user and client"""
@@ -67,7 +66,7 @@ class DMSOperationType(str, Enum):
     TO_TRASH = "to_trash"
     RESTORE = "restore"
 
-class StatusContent(str, Enum):
+class ContentStatus(str, Enum):
     """Status of a content"""
     PUBLISHED = "PUBLISHED"
     UNPUBLISHED = "UNPUBLISHED"
@@ -75,20 +74,15 @@ class StatusContent(str, Enum):
     DRAFT = "DRAFT"
     ARCHIVED = "ARCHIVED"
 
-class TypeContent(str, Enum):
+class ContentType(str, Enum):
     """Status of a content"""
     MOVIE = "MOVIE"
     SERIES = "SERIES"
 
-class MonetizationType(str, Enum):
-    PAY_PER_VIEW = "PAY_PER_VIEW"
-    WATCH_ADS = "WATCH_ADS"
-
-class SubscriptionTier(IntEnum):
-    """
-    Mendefinisikan tingkatan langganan dengan nilai numerik
-    untuk kemudahan perbandingan (misal: VIP >= PREMIUM).
-    """
-    FREE = 0
-    PREMIUM = 10
-    VIP = 20
+class WalletType(str, Enum):
+    """Type of a wallet"""
+    TOPUP = "TOPUP"
+    TRF_IN = "TRF_IN"
+    TRF_OUT = "TRF_OUT"
+    REWARD = "REWARD"
+    USE = "USE"

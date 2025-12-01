@@ -17,17 +17,14 @@ class UpdateByAdmin(BaseModel):
 
 class UpdateUsername(BaseModel):
     """Representation of update username model."""
-    id: str = Field(description="Id of the user.")
     username: str = Field(description="User name use for login.")
 
 class UpdateEmail(BaseModel):
     """Representation of update email model."""
-    id: str = Field(description="Id of the user.")
     email: str = Field(description="Email of the user.")
 
 class UpdateRoles(BaseModel):
     """Representation of update roles model."""
-    id: str = Field(description="Id of the user.")
     roles: List[str] = Field(description="Roles of the user")
 
 class ChangePassword(BaseModel):
@@ -40,3 +37,7 @@ class ResetPassword(BaseModel):
     """Representation of reset password model."""
     new_password: str = Field(description="New password.")
     verify_password: str = Field(description="Retype new password.")
+
+class UpdateCoin(BaseModel):
+    """Representation of update balance coin model."""
+    balance_coin: int = Field(description="Balance coin of the user.")

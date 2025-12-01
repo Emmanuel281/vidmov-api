@@ -3,11 +3,11 @@ from minio import Minio
 from minio.error import S3Error, InvalidResponseError
 from baseapp.config import setting
 
+config = setting.get_settings()
 logger = logging.getLogger()
 
 class MinioConn:
     def __init__(self, host=None, port=None, access_key=None, secret_key=None, secure=False, bucket="baseapp", verify=False):
-        config = setting.get_settings()
         self.host = host or config.minio_host
         self.port = port or config.minio_port
         self.access_key = access_key or config.minio_access_key
@@ -92,8 +92,12 @@ class MinioConn:
             logger.exception(f"mod: Minio.__exit__, exc_type: {exc_type}, exc_value: {exc_value}, exc_traceback: {exc_traceback}")
             return False
 
-    def get_minio_endpoint(self):
+    def get_minio_endpoint(self) -> str:
         """
         Get MinIO endpoint from settings
         """
-        return f"{self.host}:{self.port}"
+        return f"http://{self.host}:{self.port}"
+
+    def get_domain_endpoint(self) -> str:
+        # return "https://vidmov.gai.co.id"
+        return f"http://{self.host}:{self.port}"

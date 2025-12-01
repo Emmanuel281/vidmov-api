@@ -2,7 +2,6 @@ import os
 from typing import ClassVar
 from pydantic_settings import SettingsConfigDict, BaseSettings
 
-
 class Settings(BaseSettings):
     # common
     app_env:str
@@ -26,15 +25,17 @@ class Settings(BaseSettings):
     mongodb_user: str
     mongodb_pass: str
     mongodb_db: str
+    mongodb_min_pool_size: int
+    mongodb_max_pool_size: int
 
-    # clickhouse
-    clickhouse_host: str
-    clickhouse_port: int
-    clickhouse_user: str
-    clickhouse_pass: str
-    clickhouse_db: str
-    clickhouse_secure: bool = False
-    clickhouse_verify: bool = False
+    # postgresql
+    postgresql_host: str
+    postgresql_port: int
+    postgresql_user: str
+    postgresql_pass: str
+    postgresql_db: str
+    postgresql_min_pool_size: int
+    postgresql_max_pool_size: int
     
     # redis
     redis_host: str
@@ -44,6 +45,8 @@ class Settings(BaseSettings):
     # rabbit mq
     rabbitmq_host: str
     rabbitmq_port: int
+    rabbitmq_user: str
+    rabbitmq_pass: str
 
     # Minio
     minio_host: str

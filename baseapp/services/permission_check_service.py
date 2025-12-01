@@ -1,9 +1,11 @@
 from pymongo.errors import PyMongoError
 from typing import List
+import logging
 
 from baseapp.config import setting, mongodb
 
 config = setting.get_settings()
+logger = logging.getLogger(__name__)
 
 class PermissionChecker:
     def __init__(self, permissions_collection="_featureonrole"):
@@ -18,9 +20,9 @@ class PermissionChecker:
         :param required_permission: Izin yang dibutuhkan (contoh: 1 untuk read).
         :return: True jika salah satu role memiliki izin, False jika tidak.
         """
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.permissions_collection]
+        
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.permissions_collection]
             try:               
                 # Cari semua role yang relevan di database
                 permissions = collection.find({"r_id": {"$in": roles}, "f_id": f_id})
@@ -32,8 +34,8 @@ class PermissionChecker:
 
                 return False
             except PyMongoError as pme:
-                self.logger.error(f"Database error occurred: {str(pme)}")
+                logger.error(f"Database error occurred: {str(pme)}")
                 raise ValueError("Database error occurred while checking permission.") from pme
             except Exception as e:
-                self.logger.exception(f"Unexpected error occurred while checking permission: {str(e)}")
+                logger.exception(f"Unexpected error occurred while checking permission: {str(e)}")
                 raise

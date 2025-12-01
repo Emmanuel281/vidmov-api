@@ -1,24 +1,27 @@
 import logging
-logger = logging.getLogger()
+logger = logging.getLogger("rabbit")
 
+from baseapp.services._redis_worker.base_worker import BaseWorker
 from pymongo.errors import PyMongoError
 from baseapp.config import setting, minio, mongodb
-
 config = setting.get_settings()
 
-class MinioManager:
-    def __init__(self):
+class DeleteFileWorker(BaseWorker):
+    def __init__(self, queue_manager):
+        super().__init__(queue_manager)
         self.minio_conn = minio.MinioConn()        
         self.collection_file = "_dmsfile"
         self.collection_organization = "_organization"
 
-    def delete_file(self, data: dict):
+    def process_task(self, data: dict):
+        """
+        Process a task (e.g., send OTP).
+        """
         logger.info(f"data task: {data} type data: {type(data)}")
 
-        client = mongodb.MongoConn()
-        with client as mongo:
-            collection = mongo._db[self.collection_file]
-            collection_org = mongo._db[self.collection_organization]
+        with mongodb.MongoConn() as mongo:
+            collection = mongo.get_database()[self.collection_file]
+            collection_org = mongo.get_database()[self.collection_organization]
             with self.minio_conn as conn:
                 try:
                     minio_client = conn.get_minio_client()

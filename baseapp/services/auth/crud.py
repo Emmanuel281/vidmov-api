@@ -1,18 +1,18 @@
 import logging
-from hmac import compare_digest
 from baseapp.config import setting, mongodb
-from baseapp.services.auth.model import UserInfo
-from baseapp.model.common import Status, REDIS_QUEUE_BASE_KEY
-from baseapp.utils.utility import hash_password, get_enum
+from baseapp.services.auth.model import UserInfo, ClientInfo
+from baseapp.model.common import Status
+from baseapp.utils.utility import get_enum, check_password
 
 config = setting.get_settings()
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class CRUD:
     def __init__(self):
         self.user_collection = "_user"
         self.org_collection = "_organization"
         self.permissions_collection = "_featureonrole"
+        self.api_credentials = "_api_credentials"
 
         self.mongo = mongodb.MongoConn()  # Inisialisasi MongoDB di sini
 
@@ -26,7 +26,7 @@ class CRUD:
         self.mongo.__exit__(exc_type, exc_value, traceback)
 
     def check_org(self, org_id) -> int:
-        collection = self.mongo._db[self.org_collection]
+        collection = self.mongo.get_database()[self.org_collection]
         query = {"_id": org_id}
         find_org = collection.find_one(query)
         if not find_org:
@@ -41,7 +41,7 @@ class CRUD:
     
     def get_feature(self, roles):
         _featureDict = {}
-        collection = self.mongo._db[self.permissions_collection]
+        collection = self.mongo.get_database()[self.permissions_collection]
         query = {"r_id": {"$in": roles}}
         find_role = collection.find(query)
         for i in find_role:
@@ -56,21 +56,14 @@ class CRUD:
             logger.warning(f"User {user_info.get('username')} is not active.")
             raise ValueError("User is not active.")
         
-        usalt = user_info.get("salt")
-        if not usalt:
-            logger.error(f"Salt missing for user {user_info.get('username')}.")
-            raise ValueError("User data is invalid.")
-
-        hashed_password = user_info.get("password")
-        if not hashed_password:
+        stored_hash = user_info.get("password")
+        if not stored_hash:
             logger.error(f"Password missing for user {user_info.get('username')}.")
             raise ValueError("User data is invalid.")
 
-        salt, claim_password = hash_password(password, usalt)
-
-        if not compare_digest(claim_password, hashed_password):
+        if not check_password(password, stored_hash):
             logger.warning(f"User {user_info.get('username')} provided invalid password.")
-            raise ValueError("Invalid password.")
+            raise ValueError("Invalid password.") 
         
         return UserInfo(
             id=user_info["_id"], 
@@ -82,7 +75,7 @@ class CRUD:
         )
 
     def find_user(self, username: str) -> dict:
-        collection = self.mongo._db[self.user_collection]
+        collection = self.mongo.get_database()[self.user_collection]
         query = {"$or": [{"username": username}, {"email": username}]}
         user_info = collection.find_one(query)
         if not user_info:
@@ -98,7 +91,7 @@ class CRUD:
 
         user_data = {
             key: user_info.get(key, None)
-            for key in ["_id", "username", "org_id", "password", "salt", "roles", "status", "bitws", "feature"]
+            for key in ["_id", "username", "org_id", "password", "roles", "status", "bitws", "feature"]
         }
         user_data["authority"] = authority
         if password is None:
@@ -112,3 +105,36 @@ class CRUD:
             )
         else:
             return self.validate_password(user_data, password)
+        
+    def find_client_id(self, client_id: str) -> dict:
+        collection = self.mongo.get_database()[self.api_credentials]
+        query = {"client_id": client_id}
+        client_info = collection.find_one(query)
+        if not client_info:
+            logger.warning(f"Client with ID '{client_id}' not found.")
+            raise ValueError("Client not found")
+        return client_info
+    
+    def validate_client(self, client_id, client_secret) -> ClientInfo:
+        client_info = self.find_client_id(client_id)
+
+        client_data = {
+            key: client_info.get(key, None)
+            for key in ["_id", "org_id", "client_id", "client_secret_hash"]
+        }
+
+        if client_info.get("status") != Status.ACTIVE.value:
+            logger.warning(f"Client {client_id} is not active.")
+            raise ValueError("Client is not active.")
+
+        stored_hash = client_info.get("client_secret_hash")
+        
+        if not check_password(client_secret, stored_hash):
+            logger.warning(f"Client {client_id} provided invalid secret.")
+            raise ValueError("Invalid client secret.")
+        
+        return ClientInfo(
+            id=client_data["_id"], 
+            org_id=client_data["org_id"], 
+            client_id=client_data["client_id"]
+        )

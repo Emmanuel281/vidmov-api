@@ -1,9 +1,8 @@
 from typing import Optional
-from fastapi import APIRouter, Query, Depends, Request
+from fastapi import APIRouter, Query, Depends
 
 from baseapp.model.common import ApiResponse, CurrentUser
 from baseapp.utils.jwt import get_current_user, get_current_user_optional
-from baseapp.utils.utility import cbor_or_json, parse_request_body
 
 from baseapp.config import setting
 config = setting.get_settings()
@@ -19,9 +18,8 @@ permission_checker = PermissionChecker()
 router = APIRouter(prefix="/v1/content-detail", tags=["Content Detail"])
 
 @router.post("/create", response_model=ApiResponse)
-@cbor_or_json
 async def create(
-    req: Request,
+    req: ContentDetail,
     cu: CurrentUser = Depends(get_current_user)
 ) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "content", 2):  # 2 untuk izin simpan baru
@@ -34,14 +32,12 @@ async def create(
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, ContentDetail)
     response = _crud.create(req)
 
     return ApiResponse(status=0, message="Data created", data=response)
     
 @router.put("/update/{video_id}", response_model=ApiResponse)
-@cbor_or_json
-async def update_by_id(video_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_by_id(video_id: str, req: ContentDetailUpdate, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "content", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -52,14 +48,12 @@ async def update_by_id(video_id: str, req: Request, cu: CurrentUser = Depends(ge
         user_agent=cu.user_agent   # Jika ada
     )
 
-    req = await parse_request_body(req, ContentDetailUpdate)
     response = _crud.update_by_id(video_id,req)
     
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.put("/update_status/{video_id}", response_model=ApiResponse)
-@cbor_or_json
-async def update_status(video_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_status(video_id: str, req: ContentDetailUpdateStatus, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "content", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -70,15 +64,12 @@ async def update_status(video_id: str, req: Request, cu: CurrentUser = Depends(g
         user_agent=cu.user_agent   # Jika ada
     )
     
-    # Buat instance model langsung
-    req = await parse_request_body(req, ContentDetailUpdateStatus)
     response = _crud.update_by_id(video_id,req)
 
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.put("/set_tier/{video_id}", response_model=ApiResponse)
-@cbor_or_json
-async def set_tier(video_id: str, req: Request, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def set_tier(video_id: str, req: ContentDetailSetTier, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "content", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
     
@@ -89,14 +80,11 @@ async def set_tier(video_id: str, req: Request, cu: CurrentUser = Depends(get_cu
         user_agent=cu.user_agent   # Jika ada
     )
     
-    # Buat instance model langsung
-    req = await parse_request_body(req, ContentDetailSetTier)
     response = _crud.update_by_id(video_id,req)
 
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.get("", response_model=ApiResponse)
-@cbor_or_json
 async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
@@ -148,7 +136,6 @@ async def get_all_data(
     return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
     
 @router.get("/find/{video_id}", response_model=ApiResponse)
-@cbor_or_json
 async def find_by_id(video_id: str, cu: CurrentUser = Depends(get_current_user_optional)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "content", 1):  # 1 untuk izin baca
         raise PermissionError("Access denied")
@@ -164,7 +151,6 @@ async def find_by_id(video_id: str, cu: CurrentUser = Depends(get_current_user_o
     return ApiResponse(status=0, message="Data found", data=response)
 
 @router.get("/explore", response_model=ApiResponse)
-@cbor_or_json
 async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),

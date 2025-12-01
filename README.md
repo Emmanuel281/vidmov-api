@@ -1,5 +1,5 @@
-1. go to apps folder
-    cd vidmov-api/
+1. go to baseapp folder
+    cd baseapp/
 2. create a virtual environment on current folder
     virtualenv -p python3 venv
     python3.12 -m venv venv
@@ -11,9 +11,17 @@
 5. upgrade python library
     pip install --upgrade -r requirements.txt
 
-to run application:
+<!-- RUN APPS -->
+directly:
     uvicorn baseapp.app:app --host 0.0.0.0 --port 1899 --reload
 
 to run on docker:
-1. docker build -t api-reimburse .
-2. docker run -d --name api-vidmov --network dbr0 --ip 172.1.0.12 -p 17177:1899 -v /dvol/build/source/vidmov-api/baseapp:/app/baseapp api-vidmov:latest
+<!-- Without docker compose -->
+1. docker build -t api-baseapp .
+2. docker run -d --name api-baseapp --network dbr0 --ip 172.1.0.12 -p 17177:1899 -v /dvol/build/source/baseapp-v2/baseapp:/app/baseapp api-baseapp:latest
+
+<!-- With docker compose -->
+1. docker-compose up --build -d
+
+to run consumer (rabbitmq):
+1. python -m baseapp.services.consumer --queue {queue_name}

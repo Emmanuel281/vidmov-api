@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # Run the migration service to apply database migrations
+  migration:
+    build: .
+    command: migrate
+    networks: # <-- Tambahkan ini
+      - my-shared-network
+
+  # Run the API service
+  api:
+    build: .
+    command: api
+    ports:
+      - "1899:1899"
+    networks: # <-- Tambahkan ini
+      - my-shared-network
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+
+  # Run the worker service for processing other tasks using RabbitMQ
+  webhook_worker:
+    build: .
+    command: rabbit_worker --queue webhook_tasks
+    restart: always
+    # deploy:
+    #   replicas: 2
+    networks: # <-- Tambahkan ini
+      - my-shared-network
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+
+  # Run the worker service for processing OTP tasks using Redis
+  otp_worker:
+    build: .
+    command: redis_worker --queue otp_tasks
+    restart: always
+    networks: # <-- Tambahkan ini
+      - my-shared-network
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+
+# Definisikan network di level atas
+networks:
+  my-shared-network:
+    # Beri tahu Docker Compose bahwa network ini sudah ada
+    external: true
+    # Ganti 'nama-network-anda' dengan nama network yang sebenarnya
+    name: gnusa

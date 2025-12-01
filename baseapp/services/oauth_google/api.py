@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import json
 from urllib import parse
 import requests
+import uuid
 from fastapi import APIRouter, Response, Query, Depends
 from fastapi.responses import RedirectResponse
 
@@ -101,6 +102,17 @@ async def link_google_account(req: GoogleToken, cu: CurrentUser = Depends(get_cu
     response = _crud.link_to_google(req)
     return ApiResponse(status=0, message="Your account has been linked to a Google account.", data=response)
 
+@router.delete("/unlink-google-account", response_model=ApiResponse)
+async def unlink_google_account(cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    _crud.set_context(
+        user_id=cu.id,
+        org_id=cu.org_id,
+        ip_address=cu.ip_address,  # Jika ada
+        user_agent=cu.user_agent   # Jika ada
+    )
+    response = _crud.unlink_to_google()
+    return ApiResponse(status=0, message="Google account was removed from your account.", data=response)
+
 @router.post("/login-google-account", response_model=ApiResponse)
 async def login_google_account(response: Response, req: GoogleToken) -> ApiResponse:
     # Validasi user
@@ -125,9 +137,11 @@ async def login_google_account(response: Response, req: GoogleToken) -> ApiRespo
     refresh_token, expire_refresh_in = create_refresh_token(token_data)
 
     # Simpan refresh token ke Redis
+    session_id = uuid.uuid4().hex
+    redis_key = f"refresh_token:{user_info.id}:{session_id}"
     with RedisConn() as redis_conn:
         redis_conn.set(
-            user["username"],
+            redis_key,
             refresh_token,
             ex=timedelta(days=expire_refresh_in),
         )
@@ -154,14 +168,3 @@ async def login_google_account(response: Response, req: GoogleToken) -> ApiRespo
 
     # Return response berhasil
     return ApiResponse(status=0, data=data)
-
-@router.delete("/unlink-google-account", response_model=ApiResponse)
-async def unlink_google_account(cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    _crud.set_context(
-        user_id=cu.id,
-        org_id=cu.org_id,
-        ip_address=cu.ip_address,  # Jika ada
-        user_agent=cu.user_agent   # Jika ada
-    )
-    response = _crud.unlink_to_google()
-    return ApiResponse(status=0, message="Google account was removed from your account.", data=response)
