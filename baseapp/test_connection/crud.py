@@ -1,5 +1,5 @@
 import logging
-from baseapp.config import setting, redis, mongodb, minio, clickhouse
+from baseapp.config import setting, redis, mongodb, minio
 from baseapp.services import publisher
 from baseapp.services.redis_queue import RedisQueueManager
 
