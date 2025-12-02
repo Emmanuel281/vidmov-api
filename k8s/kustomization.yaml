@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: gai-arena
+
+resources:
+  - deployment.yaml
+
+secretGenerator:
+  - name: arena-env
+    envs:
+      - .env
+    options:
+      disableNameSuffixHash: false

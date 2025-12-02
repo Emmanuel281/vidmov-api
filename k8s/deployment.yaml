@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gai-arena
+---
+# API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arena-api
+  namespace: gai-arena
+  labels:
+    app: arena-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arena-api
+  template:
+    metadata:
+      labels:
+        app: arena-api
+    spec:
+      imagePullSecrets:
+        - name: gai-registry
+      containers:
+        - name: arena-api
+          image: registry.gai.co.id/gai/arena-api:latest
+          args: ["api"]
+          ports:
+            - containerPort: 1899
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          # Dynamically loads all variables from the generated secret
+          envFrom:
+            - secretRef:
+                name: arena-env
+---
+# API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: arena-api-service
+  namespace: gai-arena
+spec:
+  selector:
+    app: arena-api
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 1899
+---
+# Webhook Worker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arena-webhook-worker
+  namespace: gai-arena
+  labels:
+    app: arena-webhook-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arena-webhook-worker
+  template:
+    metadata:
+      labels:
+        app: arena-webhook-worker
+    spec:
+      imagePullSecrets:
+        - name: gai-registry
+      containers:
+        - name: webhook-worker
+          image: registry.gai.co.id/gai/arena-api:latest
+          args: ["rabbit_worker", "--queue", "webhook_tasks"]
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          envFrom:
+            - secretRef:
+                name: arena-env
+---
+# OTP Worker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arena-otp-worker
+  namespace: gai-arena
+  labels:
+    app: arena-otp-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arena-otp-worker
+  template:
+    metadata:
+      labels:
+        app: arena-otp-worker
+    spec:
+      imagePullSecrets:
+        - name: gai-registry
+      containers:
+        - name: otp-worker
+          image: registry.gai.co.id/gai/arena-api:latest
+          args: ["redis_worker", "--queue", "otp_tasks"]
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          envFrom:
+            - secretRef:
+                name: arena-env
