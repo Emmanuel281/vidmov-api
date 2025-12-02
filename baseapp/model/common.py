@@ -24,6 +24,16 @@ class CurrentUser(BaseModel):
     ip_address: Optional[str] = None
     user_agent : Optional[str] = None
 
+class CurrentClient(BaseModel):
+    """current client"""
+    id: str
+    client_id: str = Field(description="Client ID")
+    org_id: str
+    token: str
+    log_id: Optional[str] = None
+    ip_address: Optional[str] = None
+    user_agent : Optional[str] = None
+    
 class Pagination(BaseModel):
     """Pagination details."""
     total_items: int = Field(description="Total number of items.")
