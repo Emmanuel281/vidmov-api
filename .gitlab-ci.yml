@@ -1,0 +1,77 @@
+variables:
+  KUBE_CONTEXT: gai/devops/k8s_connection:k8s-gai-production
+  NAMESPACE: gai-ai
+
+stages:          # List of stages for jobs, and their order of execution
+  - build
+  - test
+  - deploy
+
+docker-build:
+  # Use the official docker image.
+  image: docker:cli
+  stage: build
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - docker login -u "$HARBOR_USERNAME" -p "$HARBOR_PASSWORD" $HARBOR_HOST
+  # All branches are tagged with $DOCKER_IMAGE_NAME (defaults to commit ref slug)
+  # Default branch is also tagged with `latest`
+  script:
+    - export PROJECT_PATH_LOWER=$(echo "$CI_PROJECT_PATH" | tr '[:upper:]' '[:lower:]')
+    - export DOCKER_IMAGE_NAME="registry.gai.co.id/$PROJECT_PATH_LOWER:$CI_COMMIT_REF_SLUG"
+    - docker version
+    - docker build -t "$DOCKER_IMAGE_NAME" .
+    - docker push "$DOCKER_IMAGE_NAME"
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        docker tag "$DOCKER_IMAGE_NAME" "registry.gai.co.id/$PROJECT_PATH_LOWER:latest"
+        docker push "registry.gai.co.id/$PROJECT_PATH_LOWER:latest"
+      fi
+  # Run this job in a branch where a Dockerfile exists
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      exists:
+        - Dockerfile
+
+deploy-app:
+  image:
+    name: boxboat/kubectl:latest
+    entrypoint: ['']
+  script:
+    - export APP_LABEL="app=gai-ai-owner" # IMPORTANT: Use the correct label for your app
+    - kubectl config get-contexts
+    - kubectl config use-context $KUBE_CONTEXT
+    - echo "--- Applying new Kubernetes manifests ---"
+    - kubectl apply -k $CI_PROJECT_DIR/k8s/. -n "$NAMESPACE"
+    - echo "--- Restarting the deployment ---"
+    - kubectl rollout restart deployment/arena-api -n "$NAMESPACE"
+    - kubectl rollout restart deployment/arena-webhook-worker -n "$NAMESPACE"
+    - kubectl rollout restart deployment/arena-otp-worker -n "$NAMESPACE"
+    # 5. Cleanup Stuck Pods (Updated for multiple apps)
+    - echo "--- Checking for stuck pods ---"
+    # This selector finds pods for all 3 apps in Terminating state
+    - >
+      PODS_TO_DELETE=$(kubectl get pods -n "$NAMESPACE" -l 'app in (arena-api, arena-webhook-worker, arena-otp-worker)' --field-selector=status.phase=Terminating -o jsonpath='{.items[*].metadata.name}')
+    - |
+      if [ -n "$PODS_TO_DELETE" ]; then
+        echo "Found stuck pods: $PODS_TO_DELETE. Force-deleting..."
+        kubectl delete pod $PODS_TO_DELETE --grace-period=0 --force -n "$NAMESPACE"
+      else
+        echo "No stuck pods found."
+      fi
+
+    # 6. Verify Rollout
+    - echo "--- Waiting for rollouts to complete ---"
+    - kubectl rollout status deployment/arena-api -n "$NAMESPACE"
+    - kubectl rollout status deployment/arena-webhook-worker -n "$NAMESPACE"
+    - kubectl rollout status deployment/arena-otp-worker -n "$NAMESPACE"
+    
+    - echo "--- Deployment Complete ---"
+    - kubectl get all -n "$NAMESPACE"
+
+
+
