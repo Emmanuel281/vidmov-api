@@ -25,7 +25,7 @@ spec:
         - name: gai-registry
       containers:
         - name: arena-api
-          image: registry.gai.co.id/gai/arena-api:latest
+          image: registry.gai.co.id/gai/vidmov-api:latest
           args: ["api"]
           ports:
             - containerPort: 1899
@@ -78,7 +78,7 @@ spec:
         - name: gai-registry
       containers:
         - name: webhook-worker
-          image: registry.gai.co.id/gai/arena-api:latest
+          image: registry.gai.co.id/gai/vidmov-api:latest
           args: ["rabbit_worker", "--queue", "webhook_tasks"]
           resources:
             requests:
@@ -113,7 +113,7 @@ spec:
         - name: gai-registry
       containers:
         - name: otp-worker
-          image: registry.gai.co.id/gai/arena-api:latest
+          image: registry.gai.co.id/gai/vidmov-api:latest
           args: ["redis_worker", "--queue", "otp_tasks"]
           resources:
             requests:

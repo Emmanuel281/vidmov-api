@@ -1,6 +1,6 @@
 variables:
   KUBE_CONTEXT: gai/devops/k8s_connection:k8s-gai-production
-  NAMESPACE: gai-ai
+  NAMESPACE: gai-arena
 
 stages:          # List of stages for jobs, and their order of execution
   - build
@@ -42,7 +42,6 @@ deploy-app:
     name: boxboat/kubectl:latest
     entrypoint: ['']
   script:
-    - export APP_LABEL="app=gai-ai-owner" # IMPORTANT: Use the correct label for your app
     - kubectl config get-contexts
     - kubectl config use-context $KUBE_CONTEXT
     - echo "--- Applying new Kubernetes manifests ---"
