@@ -1,4 +1,4 @@
-import logging,secrets,bcrypt
+import logging,secrets
 
 from pymongo.errors import PyMongoError
 from typing import Optional, Dict, Any

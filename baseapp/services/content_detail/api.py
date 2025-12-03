@@ -7,7 +7,7 @@ from baseapp.utils.jwt import get_current_user, get_current_user_optional
 from baseapp.config import setting
 config = setting.get_settings()
 
-from baseapp.services.content_detail.model import ContentDetail, ContentDetailUpdate, ContentDetailUpdateStatus, ContentDetailSetTier
+from baseapp.services.content_detail.model import ContentDetail, ContentDetailUpdate, ContentDetailUpdateStatus
 
 from baseapp.services.content_detail.crud import CRUD
 _crud = CRUD()

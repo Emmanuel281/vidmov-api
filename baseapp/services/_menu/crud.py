@@ -1,4 +1,4 @@
-import logging, uuid
+import logging
 
 from pymongo.errors import PyMongoError
 from pymongo import ASCENDING
