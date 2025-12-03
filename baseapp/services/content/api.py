@@ -68,22 +68,6 @@ async def update_status(content_id: str, req: ContentUpdateStatus, cu: CurrentUs
 
     return ApiResponse(status=0, message="Data updated", data=response)
 
-@router.put("/set_tier/{content_id}", response_model=ApiResponse)
-async def set_tier(content_id: str, req: ContentSetTier, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    if not permission_checker.has_permission(cu.roles, "content", 4):  # 4 untuk izin simpan perubahan
-        raise PermissionError("Access denied")
-    
-    _crud.set_context(
-        user_id=cu.id,
-        org_id=cu.org_id,
-        ip_address=cu.ip_address,  # Jika ada
-        user_agent=cu.user_agent   # Jika ada
-    )
-    
-    response = _crud.update_by_id(content_id,req)
-
-    return ApiResponse(status=0, message="Data updated", data=response)
-
 @router.get("", response_model=ApiResponse)
 async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
