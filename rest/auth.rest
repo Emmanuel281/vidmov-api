@@ -1,0 +1,122 @@
+@prod = https://arena.gai.co.id/service
+@dev = http://localhost:1899
+@host = {{prod}}
+@upload_host = {{prod}}
+
+# --- TOKENS ---
+# Token Owner (Arena)
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBnYWkuY28uaWQiLCJpZCI6ImY1NjM1ZjQyLWNlNWQtNGEwYy05ZGY2LWU4Njk2ZDdiOTgxOSIsInJvbGVzIjpbIjFkYjg3OWU2LTI1NTMtNDE5Ny1hZjc5LWQ1MDA2YTJjMGE4YiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImQzNzdlYjg5LTIyZjMtNDU2ZC04NmMzLTE1MDczZDUxNDhjYSIsImZlYXR1cmVzIjp7Il91c2VyIjo3LCJfcm9sZSI6MTUsIl9lbnVtIjoxNSwiX2F1ZGl0dHJhaWwiOjEsIl9mZWF0dXJlIjo1LCJfbWVudSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxNSwiX2Rtc2RvY3R5cGUiOjE1LCJfZG1zYnJvd3NlIjoxNTksInN1YnNjcmlwdGlvbl9wbGFuIjo3fSwiYml0d3MiOnsiYWRkIjoyLCJhcHByb3ZhbCI6NjQsImRlbGV0ZSI6OCwiZWRpdCI6NCwiZXhwb3J0IjoxNiwiaW1wb3J0IjozMiwic2V0dGluZyI6MTI4LCJ2aWV3IjoxfSwiZXhwIjoxNzUyMjk0MjM3fQ.Lq9NlGyHjlZ4f1Jk5iEtrxGSB1PKb7VDaS600suGrk4
+# Token Partner
+@partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
+# Token Client
+@client = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGV4X3BlamF0ZW5AZ21haWwuY29tIiwiaWQiOiIxZDYzODQ4Yy0xMzYyLTQwMzQtOTBiNS0xMmVmODYzZGMzZTMiLCJyb2xlcyI6WyJlNTBiMTdlYS0wM2E0LTQ0OWUtYThhZS1kOGY3M2FjMDM3NzEiXSwiYXV0aG9yaXR5Ijo0LCJvcmdfaWQiOiIyYjIyYjE1MS00NjQ0LTQ4NTMtYmM4ZS0zMTYyMjdkMTQxMzAiLCJmZWF0dXJlcyI6eyJfdXNlciI6NywiX3JvbGUiOjE1LCJfZW51bSI6MSwiX2F1ZGl0dHJhaWwiOjEsIl9mZWF0dXJlIjo1LCJfZGFzaGJvYXJkIjoxLCJfbXlvcmciOjUsIl9teXByb2ZpbGUiOjUsIl9kbXNpbmRleGxpc3QiOjE1LCJfZG1zZG9jdHlwZSI6MTUsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTd9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIyMTQxODd9.XfMS9TBBa9U-lI5bG9RHNO48i_H-LFKQmJqCcCQ5Jws
+# Refresh Token
+@refresh_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGV4X3BlamF0ZW5AZ21haWwuY29tIiwiaWQiOiIxZDYzODQ4Yy0xMzYyLTQwMzQtOTBiNS0xMmVmODYzZGMzZTMiLCJyb2xlcyI6WyJlNTBiMTdlYS0wM2E0LTQ0OWUtYThhZS1kOGY3M2FjMDM3NzEiXSwiYXV0aG9yaXR5Ijo0LCJvcmdfaWQiOiIyYjIyYjE1MS00NjQ0LTQ4NTMtYmM4ZS0zMTYyMjdkMTQxMzAiLCJmZWF0dXJlcyI6eyJfdXNlciI6NywiX3JvbGUiOjE1LCJfZW51bSI6MSwiX2F1ZGl0dHJhaWwiOjEsIl9mZWF0dXJlIjo1LCJfZGFzaGJvYXJkIjoxLCJfbXlvcmciOjUsIl9teXByb2ZpbGUiOjUsIl9kbXNpbmRleGxpc3QiOjE1LCJfZG1zZG9jdHlwZSI6MTUsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTd9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTI1NzAyMTh9.siyuYHRmxzB1Eh30MJ_oLqFbVQqURQMx9lkH_eNm5IM
+
+# DEFAULT TOKEN (Ubah variabel ini untuk mengganti role aktif)
+@token = {{owner}}
+
+###
+# GROUP: AUTH (OTP)
+###
+POST {{host}}/v1/auth/request-otp
+Content-Type: application/json
+
+{ 
+    "username": "aldian@gai.co.id", 
+    "password": "SecurePassword123" 
+}
+
+###
+# GROUP: AUTH (LOGIN)
+###
+### Login Owner
+POST {{host}}/v1/auth/login
+Content-Type: application/json
+X-Client-Type: web
+
+{ 
+    "username": "admin@gai.co.id", 
+    "password": "gai123" 
+}
+
+### Login Partner
+POST {{host}}/v1/auth/login
+Content-Type: application/json
+X-Client-Type: web
+
+{ 
+    "username": "admin.gudang_garam@gmail.com", 
+    "password": "SecurePassword123" 
+}
+
+### Login Client
+POST {{host}}/v1/auth/login
+Content-Type: application/json
+X-Client-Type: mobile
+
+{ 
+    "username": "alex_pejaten@gmail.com", 
+    "password": "SecurePassword123" 
+}
+
+### Auth Status
+POST {{host}}/v1/auth/status
+Authorization: Bearer {{token}}
+
+### Refresh Token
+POST {{host}}/v1/auth/refresh-token
+Authorization: Bearer {{refresh_token}}
+X-Client-Type: mobile
+
+###
+# GROUP: FORGOT PASSWORD
+###
+POST {{host}}/v1/forgot-password/send-otp
+Content-Type: application/json
+
+{ 
+    "email":"admin@playup.com" 
+}
+
+### Verify OTP
+POST {{host}}/v1/forgot-password/verify-otp
+Content-Type: application/json
+
+{ 
+    "email":"admin@playup.com", 
+    "otp":"" 
+}
+
+### Reset Password
+POST {{host}}/v1/forgot-password/reset-password
+Content-Type: application/json
+
+{ 
+    "email":"admin@playup.com", 
+    "reset_token":"", 
+    "new_password":"" 
+}
+
+###
+# GROUP: OAUTH
+###
+PUT {{host}}/v1/oauth/link-google-account
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ 
+    "access_token":"ya29.a0AZYkNZhPzqHTFZ28GCnWI4VnoSKQPHGh1OAXLgHiGQ9EPHjTcqL4OP2F0TzMoySZIM30tWhzIP-8d_zQnI0Ci6omHzcCnZ6jTCpIPc2UNq0r2enHLWXxaIO0yyH3XXJyc0tUYkPe3_TbIaRCV0YAKbynBIlKEz_GKweSd-x-aCgYKAbASARUSFQHGX2MiLNDiLXUYJxvSOifr7RRc9g0175" 
+}
+
+### Unlink Google
+DELETE {{host}}/v1/oauth/unlink-google-account
+Authorization: Bearer {{token}}
+
+### Login Google
+POST {{host}}/v1/oauth/login-google-account
+Content-Type: application/json
+
+{ 
+    "access_token":"ya29.a0AZYkNZiwHcRdgRLqGkefTrbHarQ90qNLUwCWCCxGpHDHBbKRU3o4chWG94nujS95Mp1GX60d8duZQl1Nq6MDlM6eK-VQ3Ow3TMZaQVnh2fhy9Enqa5Pn5ucg2i0-32y3z_VyL1mG_X_WXCZwhm8KheZoR5dFJYi5F-gw8xNeaCgYKAc8SARUSFQHGX2MiGhh20ZE82W_enZGNjh2sTw0175" 
+}

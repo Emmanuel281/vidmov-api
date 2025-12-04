@@ -81,7 +81,9 @@ class CRUD:
                         "thumbnail": 1,
                         "video": 1,
                         "release_date": 1,
-                        "required_tier": 1,
+                        "is_free": 1,
+                        "coin_price": 1,
+                        "episode_sponsor": 1,
                         "_id": 0
                     }
 
@@ -294,7 +296,9 @@ class CRUD:
                         "thumbnail": 1,
                         "video": 1,
                         "release_date": 1,
-                        "required_tier": 1,
+                        "is_free": 1,
+                        "coin_price": 1,
+                        "episode_sponsor": 1,
                         "_id": 0
                     }
 

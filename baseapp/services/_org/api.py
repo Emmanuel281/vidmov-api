@@ -68,27 +68,6 @@ async def create(req: model.InitRequest, cu: CurrentUser = Depends(get_current_u
     response = _crud.init_partner_client_org(req.org, req.user)
     return ApiResponse(status=0, message="Data created", data=response)
 
-@router.post("/init_brand", response_model=ApiResponse)
-async def create(req: model.InitRequest, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    if not permission_checker.has_permission(cu.roles, "_organization", 2):  # 2 untuk izin simpan baru
-        raise PermissionError("Access denied")
-    
-    # check authority is not partner
-    if cu.authority != 2:
-        raise PermissionError("Access denied")
-    
-    _crud.set_context(
-        user_id=cu.id,
-        org_id=cu.org_id,
-        ip_address=cu.ip_address,  # Jika ada
-        user_agent=cu.user_agent   # Jika ada
-    )
-    
-    req.org.authority = 8
-
-    response = _crud.init_partner_client_org(req.org, req.user)
-    return ApiResponse(status=0, message="Data created", data=response)
-
 @router.get("", response_model=ApiResponse)
 async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),

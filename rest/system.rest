@@ -1,0 +1,93 @@
+@prod = https://arena.gai.co.id/service
+@dev = http://localhost:1899
+@host = {{dev}}
+@upload_host = {{dev}}
+
+# --- TOKENS ---
+# Token Owner (Arena)
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBnYWkuY28uaWQiLCJpZCI6ImY1NjM1ZjQyLWNlNWQtNGEwYy05ZGY2LWU4Njk2ZDdiOTgxOSIsInJvbGVzIjpbIjFkYjg3OWU2LTI1NTMtNDE5Ny1hZjc5LWQ1MDA2YTJjMGE4YiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImQzNzdlYjg5LTIyZjMtNDU2ZC04NmMzLTE1MDczZDUxNDhjYSIsImZlYXR1cmVzIjp7Il91c2VyIjo3LCJfcm9sZSI6MTUsIl9lbnVtIjoxNSwiX2F1ZGl0dHJhaWwiOjEsIl9mZWF0dXJlIjo1LCJfbWVudSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxNSwiX2Rtc2RvY3R5cGUiOjE1LCJfZG1zYnJvd3NlIjoxNTksInN1YnNjcmlwdGlvbl9wbGFuIjo3fSwiYml0d3MiOnsiYWRkIjoyLCJhcHByb3ZhbCI6NjQsImRlbGV0ZSI6OCwiZWRpdCI6NCwiZXhwb3J0IjoxNiwiaW1wb3J0IjozMiwic2V0dGluZyI6MTI4LCJ2aWV3IjoxfSwiZXhwIjoxNzUyMjk0MjM3fQ.Lq9NlGyHjlZ4f1Jk5iEtrxGSB1PKb7VDaS600suGrk4
+# Token Partner
+@partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
+# Token Client
+@client = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGV4X3BlamF0ZW5AZ21haWwuY29tIiwiaWQiOiIxZDYzODQ4Yy0xMzYyLTQwMzQtOTBiNS0xMmVmODYzZGMzZTMiLCJyb2xlcyI6WyJlNTBiMTdlYS0wM2E0LTQ0OWUtYThhZS1kOGY3M2FjMDM3NzEiXSwiYXV0aG9yaXR5Ijo0LCJvcmdfaWQiOiIyYjIyYjE1MS00NjQ0LTQ4NTMtYmM4ZS0zMTYyMjdkMTQxMzAiLCJmZWF0dXJlcyI6eyJfdXNlciI6NywiX3JvbGUiOjE1LCJfZW51bSI6MSwiX2F1ZGl0dHJhaWwiOjEsIl9mZWF0dXJlIjo1LCJfZGFzaGJvYXJkIjoxLCJfbXlvcmciOjUsIl9teXByb2ZpbGUiOjUsIl9kbXNpbmRleGxpc3QiOjE1LCJfZG1zZG9jdHlwZSI6MTUsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTd9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIyMTQxODd9.XfMS9TBBa9U-lI5bG9RHNO48i_H-LFKQmJqCcCQ5Jws
+@refresh_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGV4X3BlamF0ZW5AZ21haWwuY29tIiwiaWQiOiIxZDYzODQ4Yy0xMzYyLTQwMzQtOTBiNS0xMmVmODYzZGMzZTMiLCJyb2xlcyI6WyJlNTBiMTdlYS0wM2E0LTQ0OWUtYThhZS1kOGY3M2FjMDM3NzEiXSwiYXV0aG9yaXR5Ijo0LCJvcmdfaWQiOiIyYjIyYjE1MS00NjQ0LTQ4NTMtYmM4ZS0zMTYyMjdkMTQxMzAiLCJmZWF0dXJlcyI6eyJfdXNlciI6NywiX3JvbGUiOjE1LCJfZW51bSI6MSwiX2F1ZGl0dHJhaWwiOjEsIl9mZWF0dXJlIjo1LCJfZGFzaGJvYXJkIjoxLCJfbXlvcmciOjUsIl9teXByb2ZpbGUiOjUsIl9kbXNpbmRleGxpc3QiOjE1LCJfZG1zZG9jdHlwZSI6MTUsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTd9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTI1NzAyMTh9.siyuYHRmxzB1Eh30MJ_oLqFbVQqURQMx9lkH_eNm5IM
+
+# DEFAULT TOKEN (Ubah variabel ini untuk mengganti role aktif)
+@token = {{owner}}
+
+###
+# GROUP: TEST & INIT
+###
+### DATABASE TESTING
+GET {{host}}/v1/test/database
+
+### REDIS TESTING
+GET {{host}}/v1/test/redis
+
+### MINIO TESTING
+GET {{host}}/v1/test/minio
+
+### INIT DATABASE
+POST {{host}}/v1/init/database
+
+### INIT MINIO BUCKET
+POST {{host}}/v1/init/minio-bucket
+
+###
+# GROUP: ENUM
+###
+
+### Create
+POST {{host}}/v1/_enum/create
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ 
+    "app":"baseapp", 
+    "mod":"GENRE", 
+    "code":"Romansa", 
+    "type":"user", 
+    "value":"Romansa", 
+    "sort":3 
+}
+
+### Update
+PUT {{host}}/v1/_enum/update/7c5d5208-c8ce-4bf4-b8e9-425a55c92aab
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ 
+    "app":"baseapp", 
+    "mod":"HISTORY_CATEGORY", 
+    "code":"HIST_CAT_1", 
+    "type":"user", 
+    "value":"Transport", 
+    "sort":1 
+}
+
+### List
+GET {{host}}/v1/_enum?app_name=baseapp&module=HISTORY_CATEGORY
+Authorization: Bearer {{token}}
+
+###
+# GROUP: FEATURE & MENU
+###
+
+### List Features
+GET {{host}}/v1/_feature/list/1db879e6-2553-4197-af79-d5006a2c0a8b
+Authorization: Bearer {{token}}
+
+### Update Feature
+PUT {{host}}/v1/_feature/update
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ 
+    "f_id":"subscription_plan", 
+    "r_id":"1db879e6-2553-4197-af79-d5006a2c0a8b", 
+    "key_action":"edit" 
+}
+
+### Get Side Menu
+GET {{host}}/v1/_menu/sidemenu
+Authorization: Bearer {{token}}

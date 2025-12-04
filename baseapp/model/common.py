@@ -84,11 +84,6 @@ class ContentStatus(str, Enum):
     DRAFT = "DRAFT"
     ARCHIVED = "ARCHIVED"
 
-class ContentType(str, Enum):
-    """Status of a content"""
-    MOVIE = "MOVIE"
-    SERIES = "SERIES"
-
 class WalletType(str, Enum):
     """Type of a wallet"""
     TOPUP = "TOPUP"

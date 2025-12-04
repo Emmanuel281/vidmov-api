@@ -1,0 +1,127 @@
+@prod = https://arena.gai.co.id/service
+@dev = http://localhost:1899
+@host = {{prod}}
+@upload_host = {{prod}}
+
+# --- TOKENS ---
+# Token Owner (Arena)
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBnYWkuY28uaWQiLCJpZCI6ImY1NjM1ZjQyLWNlNWQtNGEwYy05ZGY2LWU4Njk2ZDdiOTgxOSIsInJvbGVzIjpbIjFkYjg3OWU2LTI1NTMtNDE5Ny1hZjc5LWQ1MDA2YTJjMGE4YiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImQzNzdlYjg5LTIyZjMtNDU2ZC04NmMzLTE1MDczZDUxNDhjYSIsImZlYXR1cmVzIjp7Il91c2VyIjo3LCJfcm9sZSI6MTUsIl9lbnVtIjoxNSwiX2F1ZGl0dHJhaWwiOjEsIl9mZWF0dXJlIjo1LCJfbWVudSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxNSwiX2Rtc2RvY3R5cGUiOjE1LCJfZG1zYnJvd3NlIjoxNTksInN1YnNjcmlwdGlvbl9wbGFuIjo3fSwiYml0d3MiOnsiYWRkIjoyLCJhcHByb3ZhbCI6NjQsImRlbGV0ZSI6OCwiZWRpdCI6NCwiZXhwb3J0IjoxNiwiaW1wb3J0IjozMiwic2V0dGluZyI6MTI4LCJ2aWV3IjoxfSwiZXhwIjoxNzUyMjk0MjM3fQ.Lq9NlGyHjlZ4f1Jk5iEtrxGSB1PKb7VDaS600suGrk4
+# Token Partner
+@partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
+# Token Client
+@client = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGV4X3BlamF0ZW5AZ21haWwuY29tIiwiaWQiOiIxZDYzODQ4Yy0xMzYyLTQwMzQtOTBiNS0xMmVmODYzZGMzZTMiLCJyb2xlcyI6WyJlNTBiMTdlYS0wM2E0LTQ0OWUtYThhZS1kOGY3M2FjMDM3NzEiXSwiYXV0aG9yaXR5Ijo0LCJvcmdfaWQiOiIyYjIyYjE1MS00NjQ0LTQ4NTMtYmM4ZS0zMTYyMjdkMTQxMzAiLCJmZWF0dXJlcyI6eyJfdXNlciI6NywiX3JvbGUiOjE1LCJfZW51bSI6MSwiX2F1ZGl0dHJhaWwiOjEsIl9mZWF0dXJlIjo1LCJfZGFzaGJvYXJkIjoxLCJfbXlvcmciOjUsIl9teXByb2ZpbGUiOjUsIl9kbXNpbmRleGxpc3QiOjE1LCJfZG1zZG9jdHlwZSI6MTUsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTd9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIyMTQxODd9.XfMS9TBBa9U-lI5bG9RHNO48i_H-LFKQmJqCcCQ5Jws
+# Refresh Token
+@refresh_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGV4X3BlamF0ZW5AZ21haWwuY29tIiwiaWQiOiIxZDYzODQ4Yy0xMzYyLTQwMzQtOTBiNS0xMmVmODYzZGMzZTMiLCJyb2xlcyI6WyJlNTBiMTdlYS0wM2E0LTQ0OWUtYThhZS1kOGY3M2FjMDM3NzEiXSwiYXV0aG9yaXR5Ijo0LCJvcmdfaWQiOiIyYjIyYjE1MS00NjQ0LTQ4NTMtYmM4ZS0zMTYyMjdkMTQxMzAiLCJmZWF0dXJlcyI6eyJfdXNlciI6NywiX3JvbGUiOjE1LCJfZW51bSI6MSwiX2F1ZGl0dHJhaWwiOjEsIl9mZWF0dXJlIjo1LCJfZGFzaGJvYXJkIjoxLCJfbXlvcmciOjUsIl9teXByb2ZpbGUiOjUsIl9kbXNpbmRleGxpc3QiOjE1LCJfZG1zZG9jdHlwZSI6MTUsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTd9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTI1NzAyMTh9.siyuYHRmxzB1Eh30MJ_oLqFbVQqURQMx9lkH_eNm5IM
+
+# DEFAULT TOKEN (Ubah variabel ini untuk mengganti role aktif)
+@token = {{owner}}
+
+### Create Owner
+POST {{host}}/v1/_organization/init_owner
+Content-Type: application/json
+
+{
+    "org":{ 
+        "org_name":"PT. Gerbang Artifisial Internusa", 
+        "org_initial":"GAI", 
+        "org_email":"info@gai.co.id", 
+        "org_phone":"0217777777", 
+        "authority":1, 
+        "org_address":"Pejaten", 
+        "status":"ACTIVE" 
+    },
+    "user":{ 
+        "username":"admin@gai.co.id", 
+        "email":"admin@gai.co.id", 
+        "password":"gai123", 
+        "status":"ACTIVE" 
+    }
+}
+
+### Create Partner
+POST {{host}}/v1/_organization/init_partner
+Authorization: Bearer {{owner_token_raw}}
+Content-Type: application/json
+
+{
+    "org":{ 
+        "org_name":"PT. Film Pendek Pejaten", 
+        "org_initial":"PejatenPH", 
+        "org_email":"info@pejaten-ph.com", 
+        "org_phone":"0217777777", 
+        "authority":2, 
+        "org_address":"SCBD", 
+        "status":"ACTIVE" 
+    },
+    "user":{ 
+        "username":"admin@pejaten-ph.com", 
+        "email":"admin@pejaten-ph.com", 
+        "password":"pejaten123", 
+        "status":"ACTIVE" 
+    }
+}
+
+### Register Client (Public)
+POST {{host}}/v1/_organization/reg_client
+Content-Type: application/json
+
+{
+    "org":{ 
+        "org_name":"Aldian Eka Putra", 
+        "org_email":"aldian.gnusa@gmail.com", 
+        "org_phone":"081219047051", 
+        "authority":4, 
+        "org_address":"Pejaten", 
+        "status":"SUSPENDED" 
+    },
+    "user":{ 
+        "username":"aldian.gnusa@gmail.com", 
+        "email":"aldian.gnusa@gmail.com", 
+        "password":"SecurePassword123", 
+        "status":"SUSPENDED" 
+    }
+}
+
+### Check Owner
+POST {{host}}/v1/_organization/is_owner_exist
+
+### Find by ID
+GET {{host}}/v1/_organization/find/4752d4a1-3856-4db7-9463-5323328b3003
+Authorization: Bearer {{token}}
+
+### List Active
+GET {{host}}/v1/_organization?status=ACTIVE
+Authorization: Bearer {{token}}
+
+### Update
+PUT {{host}}/v1/_organization/update/9b6fbb0c-89e5-4411-8b23-421dd0ded21e
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ 
+    "org_name":"PT. GAI Satelite", 
+    "org_initial":"GAI Satelite", 
+    "org_email":"aldian@gai.co.id", 
+    "org_phone":"0217777777", 
+    "org_address": "SCBD", 
+    "org_desc": "SCBD" 
+}
+
+### Update Status
+PUT {{host}}/v1/_organization/update_status/661d396f-00ee-4e87-825a-c38a73049b90
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "ACTIVE" }
+
+### Delete
+DELETE {{host}}/v1/_organization/delete/5849d05d-43c5-4f8f-96cb-cdd6968fe01b
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ 
+    "username":"finance@countify.com", 
+    "email":"finance@countify.com", 
+    "roles":["c1b1d2fb-e21b-45a4-81e2-dba355868749"], 
+    "status":"ACTIVE" 
+}

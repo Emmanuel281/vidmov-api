@@ -1,10 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from baseapp.model.common import ContentStatus, ContentType
+from baseapp.model.common import ContentStatus
 from datetime import datetime
 
 class BrandPlacement(BaseModel):
-    brand_id: str = Field(..., description="ID dari user/organisasi Brand (Authority 8)")
+    org_id: str = Field(..., description="ID dari user/organisasi Brand (Authority 8)")
+    brand_name: str = Field(..., description="Nama brand yang akan muncul di player")
     campaign_name: str
     # logo_url: str = Field(..., description="URL logo brand yang akan muncul di player")
     # cta_url: Optional[str] = Field(None, description="Link redirect jika user klik logo")
@@ -16,7 +17,6 @@ class Content(BaseModel):
     genre: List[str] = Field(description="Genre of the movie or series.")
     release_date: datetime = Field(description="Release date of the movie or series (YYYY-MM-DD). example: 2025-03-20T00:00:00Z")
     duration: Optional[int] = Field(default=None, description="Duration in minutes.")
-    type: ContentType = Field(description="Type of content: 'MOVIE' or 'SERIES'.")
     episodes: Optional[int] = Field(default=None, description="Number of episodes (if series).")
     language: Optional[str] = Field(default="Indonesia", description="Primary language of the content.")
     rating: Optional[float] = Field(default=None, ge=0.0, le=10.0, description="Rating score of the content.")
@@ -34,7 +34,6 @@ class ContentUpdate(BaseModel):
     genre: List[str] = Field(description="Genre of the movie or series.")
     release_date: datetime = Field(description="Release date of the movie or series (YYYY-MM-DD). example: 2025-03-20T00:00:00Z")
     duration: Optional[int] = Field(default=None, description="Duration in minutes.")
-    type: ContentType = Field(description="Type of content: 'MOVIE' or 'SERIES'.", default="SERIES")
     episodes: Optional[int] = Field(default=None, description="Number of episodes (if series).")
     language: Optional[str] = Field(default="Indonesia", description="Primary language of the content.")
     # Monetization & Branding (Level Series)

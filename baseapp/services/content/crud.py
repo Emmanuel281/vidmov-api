@@ -84,6 +84,9 @@ class CRUD:
                         "status": 1,
                         "thumbnail": 1,
                         "release_date": 1,
+                        "is_full_paid": 1,
+                        "full_price_coins": 1,
+                        "main_sponsor": 1,
                         "_id": 0
                     }
 
@@ -294,6 +297,9 @@ class CRUD:
                         "status": 1,
                         "thumbnail": 1,
                         "release_date": 1,
+                        "is_full_paid": 1,
+                        "full_price_coins": 1,
+                        "main_sponsor": 1,
                         "_id": 0
                     }
 
