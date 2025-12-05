@@ -112,12 +112,12 @@ class CRUD:
                 logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                 raise
     
-    def get_from_model(self, model_name: str):
+    def get_from_model(self, model_from, model_name: str):
         """
         Retrieve a enum by ID.
         """
         try:
-            module = model_map[model_name]
+            module = model_map[model_from]
             enum_class = getattr(module, model_name)
             if not (isinstance(enum_class, type) and issubclass(enum_class, Enum)):
                 raise ValueError(f"{model_name} is not an Enum class")
