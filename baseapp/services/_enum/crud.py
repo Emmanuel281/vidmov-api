@@ -122,7 +122,7 @@ class CRUD:
             if not (isinstance(enum_class, type) and issubclass(enum_class, Enum)):
                 raise ValueError(f"{model_name} is not an Enum class")
             enum_data = {item.name: item.value for item in enum_class}
-            enum_data
+            return enum_data
         except AttributeError:
             error_message = f"Model {model_name} not found in model"
             logger.error(f"get_enum_from_model, Error: {error_message}")
