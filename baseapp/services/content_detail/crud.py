@@ -78,11 +78,10 @@ class CRUD:
                         "duration": 1,
                         "rating": 1,
                         "status": 1,
-                        "thumbnail": 1,
                         "video": 1,
                         "release_date": 1,
                         "is_free": 1,
-                        "coin_price": 1,
+                        "episode_price": 1,
                         "episode_sponsor": 1,
                         "_id": 0
                     }
@@ -90,36 +89,6 @@ class CRUD:
                     # Aggregation pipeline
                     pipeline = [
                         {"$match": query_filter},  # Filter stage
-                        # Lookup stage untuk thumbnail
-                        {
-                            "$lookup": {
-                                "from": "_dmsfile",
-                                "let": { "video_id": { "$toString": "$_id" } },
-                                "pipeline": [
-                                    {
-                                        "$match": {
-                                            "$expr": { "$eq": ["$refkey_id", "$$video_id"] },
-                                            "doctype": "fe91a458-4156-4b6d-ba61-87f809b93269"
-                                        }
-                                    },
-                                    {
-                                        "$project": {
-                                            "id": "$_id",
-                                            "_id": 0,
-                                            "filename": "$filename",
-                                            "path": "$folder_path",
-                                            "info_file": "$filestat"
-                                        }
-                                    }
-                                ],
-                                "as": "thumbnail_data"
-                            }
-                        },
-                        {
-                            "$addFields": {
-                                "thumbnail": { "$arrayElemAt": ["$thumbnail_data", 0] }
-                            }
-                        },
                         # Lookup stage untuk video
                         {
                             "$lookup": {
@@ -129,7 +98,7 @@ class CRUD:
                                     {
                                         "$match": {
                                             "$expr": { "$eq": ["$refkey_id", "$$video_id"] },
-                                            "doctype": "6599cb6e-5719-47e9-991d-2480759338a8"
+                                            "doctype": "95a871c8cc0c4225a064676031b4249f"
                                         }
                                     },
                                     {
@@ -183,13 +152,6 @@ class CRUD:
                     )
                     
                     # presigned url
-                    if "thumbnail" in content_data:
-                        content_data['thumbnail']['url'] = None
-                        minio_client = conn.get_minio_client()
-                        url = minio_client.presigned_get_object(config.minio_bucket, content_data['thumbnail']['filename'])
-                        if url:
-                            content_data['thumbnail']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
-
                     if "video" in content_data:
                         content_data['video']['url'] = None
                         minio_client = conn.get_minio_client()
@@ -293,11 +255,10 @@ class CRUD:
                         "duration": 1,
                         "rating": 1,
                         "status": 1,
-                        "thumbnail": 1,
                         "video": 1,
                         "release_date": 1,
                         "is_free": 1,
-                        "coin_price": 1,
+                        "episode_price": 1,
                         "episode_sponsor": 1,
                         "_id": 0
                     }
@@ -306,36 +267,6 @@ class CRUD:
                     pipeline = [
                         {"$match": query_filter},  # Filter stage
                         {"$sort": {sort_field: order}},  # Sorting stage
-                        # Lookup stage untuk thumbnail
-                        {
-                            "$lookup": {
-                                "from": "_dmsfile",
-                                "let": { "video_id": { "$toString": "$_id" } },
-                                "pipeline": [
-                                    {
-                                        "$match": {
-                                            "$expr": { "$eq": ["$refkey_id", "$$video_id"] },
-                                            "doctype": "fe91a458-4156-4b6d-ba61-87f809b93269"
-                                        }
-                                    },
-                                    {
-                                        "$project": {
-                                            "id": "$_id",
-                                            "_id": 0,
-                                            "filename": "$filename",
-                                            "path": "$folder_path",
-                                            "info_file": "$filestat"
-                                        }
-                                    }
-                                ],
-                                "as": "thumbnail_data"
-                            }
-                        },
-                        {
-                            "$addFields": {
-                                "thumbnail": { "$arrayElemAt": ["$thumbnail_data", 0] }
-                            }
-                        },
                         # Lookup stage untuk video
                         {
                             "$lookup": {
@@ -345,7 +276,7 @@ class CRUD:
                                     {
                                         "$match": {
                                             "$expr": { "$eq": ["$refkey_id", "$$video_id"] },
-                                            "doctype": "6599cb6e-5719-47e9-991d-2480759338a8"
+                                            "doctype": "95a871c8cc0c4225a064676031b4249f"
                                         }
                                     },
                                     {
@@ -391,13 +322,6 @@ class CRUD:
 
                     for i, data in enumerate(results):
                         # presigned url
-                        if "thumbnail" in data:
-                            data['thumbnail']['url'] = None
-                            minio_client = conn.get_minio_client()
-                            url = minio_client.presigned_get_object(config.minio_bucket, data['thumbnail']['filename'])
-                            if url:
-                                data['thumbnail']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
-
                         if "video" in data:
                             data['video']['url'] = None
                             minio_client = conn.get_minio_client()

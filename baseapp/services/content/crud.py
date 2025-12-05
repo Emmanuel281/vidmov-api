@@ -79,11 +79,12 @@ class CRUD:
                         "duration": 1,
                         "type": 1,
                         "episodes": 1,
-                        "language": 1,
+                        "origin": 1,
                         "rating": 1,
                         "status": 1,
-                        "thumbnail": 1,
+                        "poster": 1,
                         "release_date": 1,
+                        "licence_date": 1,
                         "is_full_paid": 1,
                         "full_price_coins": 1,
                         "main_sponsor": 1,
@@ -116,7 +117,7 @@ class CRUD:
                                 }
                             }
                         },
-                        # Lookup for thumbnail data
+                        # Lookup for poster data
                         {
                             "$lookup": {
                                 "from": "_dmsfile",
@@ -125,7 +126,7 @@ class CRUD:
                                     {
                                         "$match": {
                                             "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
-                                            "doctype": "723aa7d2-9326-4666-b9df-902d48c0543c"
+                                            "doctype": "8e79c84ee66542db9aa5a1252c47530d"
                                         }
                                     },
                                     {
@@ -138,12 +139,12 @@ class CRUD:
                                         }
                                     }
                                 ],
-                                "as": "thumbnail_data"
+                                "as": "poster_data"
                             }
                         },
                         {
                             "$addFields": {
-                                "thumbnail": { "$arrayElemAt": ["$thumbnail_data", 0] }
+                                "poster": { "$arrayElemAt": ["$poster_data", 0] }
                             }
                         },
                         {"$project": selected_fields}  # Project only selected fields
@@ -179,12 +180,12 @@ class CRUD:
                     )
 
                     # presigned url
-                    if "thumbnail" in content_data:
-                        content_data['thumbnail']['url'] = None
+                    if "poster" in content_data:
+                        content_data['poster']['url'] = None
                         minio_client = conn.get_minio_client()
-                        url = minio_client.presigned_get_object(config.minio_bucket, content_data['thumbnail']['filename'])
+                        url = minio_client.presigned_get_object(config.minio_bucket, content_data['poster']['filename'])
                         if url:
-                            content_data['thumbnail']['url'] = url.replace(minio_client.get_minio_endpoint(),minio_client.get_domain_endpoint())
+                            content_data['poster']['url'] = url.replace(minio_client.get_minio_endpoint(),minio_client.get_domain_endpoint())
 
                     return content_data
                 except PyMongoError as pme:
@@ -292,11 +293,12 @@ class CRUD:
                         "duration": 1,
                         "type": 1,
                         "episodes": 1,
-                        "language": 1,
+                        "origin": 1,
                         "rating": 1,
                         "status": 1,
-                        "thumbnail": 1,
+                        "poster": 1,
                         "release_date": 1,
+                        "licence_date": 1,
                         "is_full_paid": 1,
                         "full_price_coins": 1,
                         "main_sponsor": 1,
@@ -331,7 +333,7 @@ class CRUD:
                                 }
                             }
                         },
-                        # Lookup for thumbnail data
+                        # Lookup for poster data
                         {
                             "$lookup": {
                                 "from": "_dmsfile",
@@ -340,7 +342,7 @@ class CRUD:
                                     {
                                         "$match": {
                                             "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
-                                            "doctype": "723aa7d2-9326-4666-b9df-902d48c0543c"
+                                            "doctype": "8e79c84ee66542db9aa5a1252c47530d"
                                         }
                                     },
                                     {
@@ -353,12 +355,12 @@ class CRUD:
                                         }
                                     }
                                 ],
-                                "as": "thumbnail_data"
+                                "as": "poster_data"
                             }
                         },
                         {
                             "$addFields": {
-                                "thumbnail": { "$arrayElemAt": ["$thumbnail_data", 0] }
+                                "poster": { "$arrayElemAt": ["$poster_data", 0] }
                             }
                         },
                         {"$skip": skip},  # Pagination skip stage
@@ -386,12 +388,12 @@ class CRUD:
 
                     for i, data in enumerate(results):
                         # presigned url
-                        if "thumbnail" in data:
-                            data['thumbnail']['url'] = None
+                        if "poster" in data:
+                            data['poster']['url'] = None
                             minio_client = conn.get_minio_client()
-                            url = minio_client.presigned_get_object(config.minio_bucket, data['thumbnail']['filename'])
+                            url = minio_client.presigned_get_object(config.minio_bucket, data['poster']['filename'])
                             if url:
-                                data['thumbnail']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
+                                data['poster']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
 
                     return {
                         "data": results,
