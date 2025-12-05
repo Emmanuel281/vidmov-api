@@ -137,12 +137,12 @@ class CRUD:
         file_content = await file.read()
 
         # Validate file MIME type
-        allowed_mime_types = ["application/pdf", "image/jpeg", "image/png", "text/plain"]
+        allowed_mime_types = ["application/pdf", "image/jpeg", "image/png", "text/plain", "video/mp4", "video/mpeg"]
         self.validate_mime_type(file_content, allowed_mime_types)
 
         # Validate file extension
         file_extension = self.get_file_extension(file)
-        if file_extension not in [".pdf", ".jpg", ".png", ".txt"]:
+        if file_extension not in [".pdf", ".jpg", ".png", ".txt", ".mp4", ".mpeg"]:
             raise ValueError("Unsupported file extension")
         
         UUID = generate_uuid()
