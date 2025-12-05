@@ -4,11 +4,17 @@ from pymongo.errors import PyMongoError, DuplicateKeyError
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
+from enum import Enum
 
 from baseapp.utils.utility import generate_uuid
 from baseapp.config import setting, mongodb
 from baseapp.services._enum import model
 from baseapp.services.audit_trail_service import AuditTrailService
+from baseapp.model import common
+
+model_map = {
+    "common": common
+}
 
 config = setting.get_settings()
 logger = logging.getLogger(__name__)
@@ -105,6 +111,34 @@ class CRUD:
             except Exception as e:
                 logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                 raise
+    
+    def get_from_model(self, model_name: str):
+        """
+        Retrieve a enum by ID.
+        """
+        try:
+            module = model_map[model_name]
+            enum_class = getattr(module, model_name)
+            if not (isinstance(enum_class, type) and issubclass(enum_class, Enum)):
+                raise ValueError(f"{model_name} is not an Enum class")
+            enum_data = {item.name: item.value for item in enum_class}
+            enum_data
+        except AttributeError:
+            error_message = f"Model {model_name} not found in model"
+            logger.error(f"get_enum_from_model, Error: {error_message}")
+            raise ValueError(error_message)
+        except ValueError as err:
+            error_message = f"Invalid enum class: {str(err)}"
+            logger.error(
+                f"get_enum_from_model, Error: {error_message}"
+            )
+            raise ValueError(error_message)
+        except Exception as err:
+            error_message = f"Unexpected error: {str(err)}"
+            logger.error(
+                f"get_enum_from_model, Error: {error_message}"
+            )
+            raise
 
     def update_by_id(self, enum_id: str, data: model.EnumUpdate):
         """

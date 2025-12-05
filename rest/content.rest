@@ -24,7 +24,7 @@ GET {{host}}/v1/_enum?app_name=baseapp&module=GENRE
 Authorization: Bearer {{token}}
 
 ### GET CONTENT STATUS
-GET {{host}}/v1/_enum/find/ContentStatus
+GET {{host}}/v1/_enum/from_model/ContentStatus
 Authorization: Bearer {{token}}
 
 ###
@@ -55,7 +55,7 @@ Content-Type: application/json
     "status":"DRAFT"
 }
 
-### Upload Thumbnail (Content)
+### Upload Poster (Content)
 POST {{upload_host}}/v1/_dms/upload
 Authorization: Bearer {{token}}
 Content-Type: multipart/form-data; boundary=boundary
@@ -66,7 +66,7 @@ Content-Disposition: form-data; name="file"; filename="thumb.png"
 --boundary
 Content-Disposition: form-data; name="doctype"
 
-723aa7d2-9326-4666-b9df-902d48c0543c
+8e79c84ee66542db9aa5a1252c47530d
 --boundary
 Content-Disposition: form-data; name="metadata"
 
@@ -82,7 +82,7 @@ content
 --boundary
 Content-Disposition: form-data; name="refkey_name"
 
-thumbnail
+poster
 --boundary--
 
 ### Update
@@ -166,7 +166,7 @@ Content-Disposition: form-data; name="file"; filename="video.mp4"
 --boundary
 Content-Disposition: form-data; name="doctype"
 
-6599cb6e-5719-47e9-991d-2480759338a8
+8e79c84ee66542db9aa5a1252c47530d
 --boundary
 Content-Disposition: form-data; name="metadata"
 
@@ -208,7 +208,7 @@ Content-Type: application/json
     "status":"DRAFT" 
 }
 
-### Set Status Detail
+### Set Status Episode
 PUT {{host}}/v1/content-detail/update_status/40825a75-0a39-4dec-8dc6-ad1bcedc98cc
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -217,10 +217,10 @@ Content-Type: application/json
     "status":"PUBLISHED" 
 }
 
-### List Detail
+### List Episode
 GET {{host}}/v1/content-detail?content_id=728f1a79-b8e2-42ca-860d-6535aaa45a57
 Authorization: Bearer {{token}}
 
-### Find Detail
+### Find Episode
 GET {{host}}/v1/content-detail/find/40825a75-0a39-4dec-8dc6-ad1bcedc98cc
 Authorization: Bearer {{token}}
