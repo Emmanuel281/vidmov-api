@@ -14,7 +14,7 @@ class ContentDetail(BaseModel):
     rating: Optional[float] = Field(default=None, ge=0.0, le=10.0, description="Rating score of the content.")
     # --- LOGIKA KOIN DISINI (PENGGANTI TIER) ---
     is_free: bool = Field(default=False, description="Apakah episode ini gratis? (Biasanya eps 1-5 True)")
-    coin_price: int = Field(default=0, description="Harga koin untuk membuka episode ini. 0 jika is_free=True.")
+    episode_price: int = Field(default=0, description="Harga koin untuk membuka episode ini. 0 jika is_free=True.")
     # --- LOGIKA BRAND DISINI ---
     # Iklan spesifik di episode tertentu (misal: Episode 10 ada iklan sampo)
     episode_sponsor: Optional[BrandPlacement] = Field(default=None)
@@ -29,7 +29,7 @@ class ContentDetailUpdate(BaseModel):
     release_date: Optional[datetime] = Field(default=None, description="Release date of the video.")
     # --- LOGIKA KOIN DISINI (PENGGANTI TIER) ---
     is_free: bool = Field(default=False, description="Apakah episode ini gratis? (Biasanya eps 1-5 True)")
-    coin_price: int = Field(default=0, description="Harga koin untuk membuka episode ini. 0 jika is_free=True.")
+    episode_price: int = Field(default=0, description="Harga koin untuk membuka episode ini. 0 jika is_free=True.")
     # --- LOGIKA BRAND DISINI ---
     # Iklan spesifik di episode tertentu (misal: Episode 10 ada iklan sampo)
     episode_sponsor: Optional[BrandPlacement] = Field(default=None)

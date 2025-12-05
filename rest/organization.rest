@@ -68,17 +68,17 @@ Content-Type: application/json
 {
     "org":{ 
         "org_name":"Aldian Eka Putra", 
-        "org_email":"aldian.gnusa@gmail.com", 
-        "org_phone":"081219047051", 
+        "org_email":"aldian.mm.02@gmail.com", 
+        "org_phone":"081218191917", 
         "authority":4, 
         "org_address":"Pejaten", 
-        "status":"SUSPENDED" 
+        "status":"ACTIVE" 
     },
     "user":{ 
-        "username":"aldian.gnusa@gmail.com", 
-        "email":"aldian.gnusa@gmail.com", 
+        "username":"aldian.mm.02@gmail.com", 
+        "email":"aldian.mm.02@gmail.com", 
         "password":"SecurePassword123", 
-        "status":"SUSPENDED" 
+        "status":"ACTIVE" 
     }
 }
 

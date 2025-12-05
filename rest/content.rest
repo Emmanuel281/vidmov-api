@@ -41,11 +41,12 @@ Content-Type: application/json
     "cast":"Alex, Siska", 
     "genre":["23c41302-37f8-4fb5-8845-9dc721f76ffa"],
     "release_date": "2025-03-20T00:00:00Z", 
+    "license_date": "2025-03-20T00:00:00Z", 
     "episodes":60, 
     "duration":120,
-    "language":"Indonesia", 
+    "origin":"Indonesia", 
     "is_full_paid":true,
-    "full_price_coins":1500,
+    "full_price_coins":840,
     "main_sponsor":{
         "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
         "brand_name":"BrandX",
@@ -95,11 +96,12 @@ Content-Type: application/json
     "cast":"Alex", 
     "genre":[], 
     "release_date": "2025-03-20T00:00:00Z", 
+    "license_date": "2025-03-20T00:00:00Z", 
     "episodes":60, 
-     "duration":120,
-    "language":"Indonesia", 
+    "duration":120,
+    "origin":"Indonesia", 
     "is_full_paid":true,
-    "full_price_coins":1500,
+    "full_price_coins":840,
     "main_sponsor":{
         "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
         "brand_name":"BrandX",
@@ -129,7 +131,7 @@ GET {{host}}/v1/content/find/728f1a79-b8e2-42ca-860d-6535aaa45a57
 Authorization: Bearer {{token}}
 
 ###
-# GROUP: CONTENT (DETAIL)
+# GROUP: CONTENT (DETAIL/EPISODE)
 ###
 ### Create Episode
 POST {{host}}/v1/content-detail/create
@@ -142,9 +144,9 @@ Content-Type: application/json
     "description":"Episode 1 Description", 
     "episode":1, 
     "duration":1, 
-    "release_date": "2025-03-20T00:00:00Z", 
-    "is_free":true,
-    "coin_price":0,
+    "release_date": "2025-03-20T00:00:00Z",
+    "is_free":false,
+    "episode_price":21,
     "episode_sponsor":{
         "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
         "brand_name":"BrandY",
@@ -195,8 +197,9 @@ Content-Type: application/json
     "episode":1, 
     "duration":1, 
     "release_date": "2025-03-20T00:00:00Z", 
-    "is_free":true,
-    "coin_price":0,
+    "revise_date": "2025-03-20T00:00:00Z", 
+    "is_free":false,
+    "episode_price":21,
     "episode_sponsor":{
         "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
         "brand_name":"BrandY",
