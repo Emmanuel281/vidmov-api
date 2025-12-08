@@ -246,6 +246,7 @@ async def refresh_token(request: Request, x_client_type: Optional[str] = Header(
     if not payload:
         raise ValueError("Invalid refresh token")
 
+    logger.debug(f"Refresh token payload: {payload}")
     # Check token in Redis
     with RedisConn() as redis_conn:
         stored_token = redis_conn.get(payload["sub"])
