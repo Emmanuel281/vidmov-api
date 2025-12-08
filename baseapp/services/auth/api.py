@@ -246,9 +246,9 @@ async def refresh_token(request: Request, x_client_type: Optional[str] = Header(
     payload = decode_jwt_token(refresh_token)
     if not payload:
         raise ValueError("Invalid refresh token")
-
-    redis_key = f"refresh_token:{payload["id"]}:{payload["session_id"]}"
+    
     # Check token in Redis
+    redis_key = f"refresh_token:{payload["id"]}:{payload["session_id"]}"
     with RedisConn() as redis_conn:
         stored_token = redis_conn.get(redis_key)
         if stored_token != refresh_token:

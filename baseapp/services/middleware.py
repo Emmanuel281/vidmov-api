@@ -3,6 +3,7 @@ from fastapi import Request, FastAPI
 from fastapi.responses import JSONResponse
 
 from baseapp.utils.utility import generate_uuid
+from baseapp.config.logging import request_id_ctx, user_id_ctx, ip_address_ctx
 from baseapp.config import setting
 from baseapp.model.common import ApiResponse
 
@@ -54,30 +55,39 @@ async def handle_exceptions(request: Request, call_next):
         )
     
 async def add_process_time_and_log(request: Request, call_next):
-    if "log_id" in request.headers:
-        log_id = request.headers.get("log_id")
-    else:
-        log_id = generate_uuid()
+    # 1. Ambil/Buat Log ID
+    log_id = request.headers.get("log_id") or generate_uuid()
+    
+    # 2. SET CONTEXT (PENTING: Ini yang membuat log "pintar")
+    req_token = request_id_ctx.set(log_id)
+    ip_token = ip_address_ctx.set(request.client.host)
+    # User ID default guest, nanti di-override di Auth layer jika login sukses
+    user_token = user_id_ctx.set("guest") 
+
     request.state.log_id = log_id
-    log_request = {
-        "log_id": log_id,
-        "method": request.method,
-        "url": request.url.path,
-    }
-    logging.info(f"request: {log_request}")
+    
+    # Log request masuk (sekarang otomatis format JSON)
+    logging.info(f"Incoming Request: {request.method} {request.url.path}")
 
-    start_time = time.time()
-    response = await call_next(request)
-
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-    log_response = {
-        "log_id": log_id,
-        "process_time": str(process_time),
-        "http_status_code": response.status_code
-    }
-    logging.info(f"response: {log_response}")
-    return response
+    try:
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        
+        response.headers["X-Process-Time"] = str(process_time)
+        
+        # Log response selesai
+        logging.info(f"Request Finished", extra={
+            "status": response.status_code, 
+            "duration": process_time
+        })
+        
+        return response
+    finally:
+        # 3. RESET CONTEXT (Agar tidak bocor ke request lain)
+        request_id_ctx.reset(req_token)
+        ip_address_ctx.reset(ip_token)
+        user_id_ctx.reset(user_token)
 
 def setup_middleware(app: FastAPI):
     app.middleware("http")(handle_exceptions)

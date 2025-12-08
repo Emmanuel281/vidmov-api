@@ -4,19 +4,26 @@ import pika.exceptions
 from baseapp.config import setting
 
 config = setting.get_settings()
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class RabbitMqConn:
-    def __init__(self, host=None, port=None):
+    def __init__(self, host=None, port=None, user=None, password=None):
         self.host = host or config.rabbitmq_host
         self.port = port or config.rabbitmq_port
+        self.user = user or config.rabbitmq_user
+        self.password = password or config.rabbitmq_pass
         self.connection = None
         self.channel = None
     
     def __enter__(self):
         try:
+            credentials = pika.PlainCredentials(self.user, self.password)
             self.connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host=self.host, port=self.port)
+                pika.ConnectionParameters(
+                    host=self.host, 
+                    port=self.port,
+                    credentials=credentials,
+                )
             )
             self.channel = self.connection.channel()
             logger.info("RabbitMQ: Connection and channel established.")

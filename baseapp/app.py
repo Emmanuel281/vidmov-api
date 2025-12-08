@@ -1,4 +1,5 @@
 import os
+import logging.config
 from contextlib import asynccontextmanager
 
 from baseapp.config import setting
@@ -7,14 +8,13 @@ config = setting.get_settings()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from baseapp.config.logging import get_logging_config
 from baseapp.services.middleware import setup_middleware
 
-os.makedirs("log", exist_ok=True) # create log folder
-
-import logging.config
-logging.config.fileConfig('logging.conf')
-from logging import getLogger
-logger = getLogger()
+# Setup logging
+os.makedirs("log", exist_ok=True)
+logging.config.dictConfig(get_logging_config())
+logger = logging.getLogger("root")
 
 from baseapp.config.mongodb import MongoConn
 from baseapp.config.postgresql import PostgreSQLConn

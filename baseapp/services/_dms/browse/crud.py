@@ -19,7 +19,6 @@ class CRUD:
         self.collection_folder = "_dmsfolder"
         self.collection_organization = "_organization"
         self.minio_conn = minio.MinioConn()
-        self.logger = logging.getLogger()
 
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """

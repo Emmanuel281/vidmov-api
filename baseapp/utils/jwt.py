@@ -8,6 +8,7 @@ from jose import ExpiredSignatureError, JWTError, jwt
 from baseapp.utils.utility import generate_uuid
 from baseapp.model.common import CurrentUser, CurrentClient
 from baseapp.config.setting import get_settings
+from baseapp.config.logging import user_id_ctx
 from baseapp.config.redis import RedisConn
 
 config = get_settings()
@@ -46,7 +47,9 @@ Actor = Union[CurrentUser, CurrentClient]
 def _get_current_user(ctx: Request, token: str = Depends(OAuth2PasswordBearer(tokenUrl="v1/auth/token"))) -> Actor:
     try:
         credentials = decode_jwt_token(token)
-    
+
+        user_id = credentials.get("sub") or credentials.get("id")
+        user_id_ctx.set(str(user_id))
     except ExpiredSignatureError as err:
         error_message = f"_get_current_user - Log ID: , Error Code: 4, Error Message: {err=}, {type(err)=}"
         logging.error(error_message)

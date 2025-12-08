@@ -1,17 +1,16 @@
 import argparse
 import time
 import logging.config
+from baseapp.config.logging import get_logging_config
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
+
+logging.config.dictConfig(get_logging_config())
+logger = logging.getLogger("rabbit")
 
 # Importing the worker classes
 from baseapp.services._redis_worker.email_worker import EmailWorker
 from baseapp.services._redis_worker.delete_file_worker import DeleteFileWorker
-
-import logging.config
-logging.config.fileConfig('logging.conf')
-from logging import getLogger
-logger = getLogger("rabbit")
 
 WORKER_MAP = {
     "otp_tasks": EmailWorker,
