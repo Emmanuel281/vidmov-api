@@ -22,6 +22,7 @@ router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 async def login(response: Response, req: UserLoginModel, x_client_type: Optional[str] = Header(None)) -> ApiResponse:
     username = req.username
     password = req.password
+    session_id = uuid.uuid4().hex
 
     # Validasi user
     with _crud:
@@ -35,7 +36,8 @@ async def login(response: Response, req: UserLoginModel, x_client_type: Optional
         "authority": user_info.authority,
         "org_id": user_info.org_id,
         "features": user_info.feature,
-        "bitws": user_info.bitws
+        "bitws": user_info.bitws,
+        "session_id": session_id
     }
 
     # Buat akses token dan refresh token
@@ -46,7 +48,6 @@ async def login(response: Response, req: UserLoginModel, x_client_type: Optional
     expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
 
     # Simpan refresh token ke Redis
-    session_id = uuid.uuid4().hex
     redis_key = f"refresh_token:{user_info.id}:{session_id}"
     with RedisConn() as redis_conn:
         redis_conn.set(
@@ -246,10 +247,10 @@ async def refresh_token(request: Request, x_client_type: Optional[str] = Header(
     if not payload:
         raise ValueError("Invalid refresh token")
 
-    logger.debug(f"Refresh token payload: {payload}")
+    redis_key = f"refresh_token:{payload["id"]}:{payload["session_id"]}"
     # Check token in Redis
     with RedisConn() as redis_conn:
-        stored_token = redis_conn.get(payload["sub"])
+        stored_token = redis_conn.get(redis_key)
         if stored_token != refresh_token:
             raise ValueError("Invalid refresh token")
 
