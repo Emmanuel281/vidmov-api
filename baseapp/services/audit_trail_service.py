@@ -1,5 +1,3 @@
-import logging
-
 from pymongo.errors import PyMongoError
 from typing import Optional
 from pydantic import BaseModel, Field
@@ -8,8 +6,10 @@ from datetime import datetime, timezone
 
 from baseapp.utils.utility import generate_uuid
 from baseapp.config.setting import get_settings
+from baseapp.utils.logger import Logger
+
 config = get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services.audit_trail_service")
 
 class AuditTrailModel(BaseModel):
     rec_date: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc), description="This is created at.")

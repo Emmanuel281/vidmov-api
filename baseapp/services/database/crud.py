@@ -1,10 +1,12 @@
-import logging,json
+import json,time
 from pymongo.errors import PyMongoError
+from minio.error import S3Error
 
 from baseapp.config import setting, mongodb, minio
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services.database.crud")
 
 class CRUD:
     def __init__(self):
@@ -34,5 +36,32 @@ class CRUD:
         """
         Create bucket.
         """
-        with minio.MinioConn(bucket=config.minio_bucket) as conn:
-            conn.create_bucket()
+        start_time = time.perf_counter()
+        bucket_name = config.minio_bucket
+        try:
+            with minio.MinioConn() as conn:
+                if not conn.bucket_exists(bucket_name):
+                    conn.create_bucket(bucket_name)
+                    duration_ms = (time.perf_counter() - start_time) * 1000
+                    logger.log_operation(
+                        "bucket_creation",
+                        "success",
+                        bucket=bucket_name,
+                        duration_ms=round(duration_ms, 2)
+                    )
+        except S3Error as s3e:
+            logger.error(
+                "Error while creating bucket",
+                bucket=bucket_name,
+                error_type="S3Error",
+                error=str(s3e.message)
+            )
+            raise ValueError("Error while creating bucket") from s3e
+        except Exception as e:
+            logger.log_error_with_context(e, {
+                "operation": "create_bucket_context_error",
+                "host": config.minio_host,
+                "port": config.minio_port,
+                "bucket": bucket_name
+            })
+            raise

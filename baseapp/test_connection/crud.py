@@ -1,10 +1,10 @@
-import logging
 from baseapp.config import setting, redis, mongodb, minio
+from baseapp.utils.logger import Logger
 from baseapp.services import publisher
 from baseapp.services.redis_queue import RedisQueueManager
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.test_connection.crud")
 
 def test_connection_to_redis():
     logger.info("Redis test connection")

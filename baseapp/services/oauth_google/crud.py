@@ -1,4 +1,3 @@
-import logging
 from urllib import parse
 
 from pymongo.errors import PyMongoError
@@ -8,11 +7,12 @@ from datetime import datetime, timezone
 import requests
 
 from baseapp.config import setting, mongodb
+from baseapp.utils.logger import Logger
 from baseapp.services.oauth_google.model import Google, GoogleToken
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services.oauth_google.crud")
 
 class CRUD:
     def __init__(self, collection_name="_user"):

@@ -1,5 +1,3 @@
-import logging
-
 from pymongo.errors import PyMongoError, DuplicateKeyError
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
@@ -8,6 +6,7 @@ from enum import Enum
 
 from baseapp.utils.utility import generate_uuid
 from baseapp.config import setting, mongodb
+from baseapp.utils.logger import Logger
 from baseapp.services._enum import model
 from baseapp.services.audit_trail_service import AuditTrailService
 from baseapp.model import common
@@ -17,7 +16,7 @@ model_map = {
 }
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services._enum.crud")
 
 class CRUD:
     def __init__(self, collection_name="_enum"):

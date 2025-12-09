@@ -1,7 +1,7 @@
 import pika, json, logging
 from baseapp.config.rabbitmq import RabbitMqConn
 
-logger = logging.getLogger("rabbit")
+logger = logging.getLogger("")
 
 def publish_message(queue_name: str, task_data: dict):
     """

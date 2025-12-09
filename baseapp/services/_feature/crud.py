@@ -1,15 +1,14 @@
-import logging
-
 from pymongo.errors import PyMongoError
 from typing import Optional, Dict, Any
 
 from baseapp.config import setting, mongodb
+from baseapp.utils.logger import Logger
 from baseapp.services._feature.model import Feature
 from baseapp.services.audit_trail_service import AuditTrailService
 from baseapp.utils.utility import get_enum, generate_uuid
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services._feature.crud")
 
 class CRUD:
     def __init__(self):

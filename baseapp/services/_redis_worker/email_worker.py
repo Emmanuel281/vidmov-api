@@ -1,5 +1,5 @@
 import logging
-logger = logging.getLogger("rabbit")
+logger = logging.getLogger("")
 
 from baseapp.services._redis_worker.base_worker import BaseWorker
 from baseapp.config import email_smtp

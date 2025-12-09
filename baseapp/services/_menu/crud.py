@@ -1,5 +1,3 @@
-import logging
-
 from pymongo.errors import PyMongoError
 from pymongo import ASCENDING
 from typing import Optional, List
@@ -8,9 +6,10 @@ from operator import itemgetter
 from baseapp.config import setting, mongodb
 from baseapp.services.audit_trail_service import AuditTrailService
 from baseapp.utils.utility import get_enum
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services._menu.crud")
 
 class CRUD:
     def __init__(self):

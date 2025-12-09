@@ -1,11 +1,11 @@
 from pymongo.errors import PyMongoError
 from typing import List
-import logging
 
 from baseapp.config import setting, mongodb
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services.permission_check_service")
 
 class PermissionChecker:
     def __init__(self, permissions_collection="_featureonrole"):

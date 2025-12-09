@@ -14,7 +14,7 @@ from baseapp.services.middleware import setup_middleware
 # Setup logging
 os.makedirs("log", exist_ok=True)
 logging.config.dictConfig(get_logging_config())
-logger = logging.getLogger("root")
+logger = logging.getLogger("")
 
 from baseapp.config.mongodb import MongoConn
 from baseapp.config.postgresql import PostgreSQLConn

@@ -1,16 +1,17 @@
 # Email Libs
 import os
 import smtplib
-import logging
+import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 
 from baseapp.config import setting
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger()
+logger = Logger("baseapp.config.email_smtp")
 
 class EmailSender:
     def __init__(self, host=None, port=None, username=None, password=None, use_tls=True):
@@ -84,14 +85,21 @@ class EmailSender:
                     # Attach the file to the message
                     msg.attach(part)
             except Exception as e:
-                logger.error(f"Failed to attach file: {e}")
+                logger.error(
+                    f"Failed to attach file: {e}"
+                )
                 raise
 
         return msg,bcc_recipients
 
     def send_email(self, msg, bcc_recipients=None):
+        start_time = time.time()
         try:
-            logger.info(f"Trying to connect to {self.smtp_server}")
+            logger.info(
+                "Trying to connect to SMTP server",
+                host=self.smtp_server,
+                port=self.smtp_port
+            )
 
             # Establish connection
             if self.smtp_port == 465:
@@ -119,18 +127,44 @@ class EmailSender:
                     all_recipients.extend(bcc_recipients.split(', '))
                 
                 server.sendmail(msg['From'], all_recipients, msg.as_string())
-                logger.info("Successfully connected to the SMTP server and sent the email!")
+                
+                duration_ms = (time.time() - start_time) * 1000
+                logger.log_operation(
+                    "Successfully connected to the SMTP server and sent the email",
+                    "success",
+                    duration_ms=round(duration_ms, 2),
+                    to=msg['To'],
+                    cc=msg.get('Cc'),
+                    bcc=bcc_recipients
+                )
                 server.quit()
 
             return True
         except smtplib.SMTPAuthenticationError as e:
-            logger.error(f"Failed to authenticate with the SMTP server. Check your credentials. {e}")
+            logger.error(
+                "Failed to authenticate with the SMTP server.",
+                smtp_user=self.email_user,
+                error=str(e),
+                error_type="SMTPAuthenticationError"
+            )
             raise ValueError("Failed to authenticate with the SMTP server. Check your credentials.")
         except smtplib.SMTPConnectError as e:
-            logger.error(f"Failed to connect to the SMTP server. Check the server address and port. {e}")
+            logger.error(
+                "Failed to connect to the SMTP server.",
+                host=self.smtp_server,
+                port=self.smtp_port,
+                error=str(e),
+                error_type="SMTPConnectError"
+            )
             raise ValueError("Failed to connect to the SMTP server. Check the server address and port.")
         except smtplib.SMTPException as e:
-            logger.error(f"An SMTP error occurred: {e}")
+            logger.error(
+                "SMTP error occurred.",
+                host=self.smtp_server,
+                port=self.smtp_port,
+                error=str(e),
+                error_type="SMTPException"
+            )
             raise ValueError("An SMTP error occurred")
 
 # Email template design
@@ -187,5 +221,3 @@ if __name__ == "__main__":
     
     body_mail, bcc_recipients = email_sender.body_msg(msg_val)
     mail_sending = email_sender.send_email(body_mail, bcc_recipients)
-    
-    logger.debug(mail_sending)

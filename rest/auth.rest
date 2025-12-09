@@ -1,7 +1,7 @@
 @prod = https://arena.gai.co.id/service
 @dev = http://localhost:1899
 @host = {{prod}}
-@upload_host = {{prod}}
+@upload_host = {{dev}}
 
 # --- TOKENS ---
 # Token Owner (Arena)

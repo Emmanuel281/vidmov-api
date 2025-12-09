@@ -1,5 +1,3 @@
-import logging
-
 from pymongo.errors import PyMongoError
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
@@ -10,9 +8,10 @@ from baseapp.model.common import UpdateStatus
 from baseapp.config import setting, mongodb
 from baseapp.services._role.model import Role
 from baseapp.services.audit_trail_service import AuditTrailService
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services._role.crud")
 
 class CRUD:
     def __init__(self, collection_name="_role"):

@@ -1,17 +1,17 @@
-import logging
-logger = logging.getLogger("rabbit")
-
 from baseapp.services._redis_worker.base_worker import BaseWorker
 from pymongo.errors import PyMongoError
+from minio.error import S3Error
 from baseapp.config import setting, minio, mongodb
+from baseapp.utils.logger import Logger
 config = setting.get_settings()
+logger = Logger("baseapp.services._redis_worker.delete_file_worker")
 
 class DeleteFileWorker(BaseWorker):
     def __init__(self, queue_manager):
         super().__init__(queue_manager)
-        self.minio_conn = minio.MinioConn()        
         self.collection_file = "_dmsfile"
         self.collection_organization = "_organization"
+        self.minio_conn = minio.MinioConn()
 
     def process_task(self, data: dict):
         """
@@ -22,10 +22,8 @@ class DeleteFileWorker(BaseWorker):
         with mongodb.MongoConn() as mongo:
             collection = mongo.get_database()[self.collection_file]
             collection_org = mongo.get_database()[self.collection_organization]
-            with self.minio_conn as conn:
+            with self.minio_conn as minio_client:
                 try:
-                    minio_client = conn.get_minio_client()
-
                     # Apply filters
                     query_filter = {
                         "refkey_table": data.get("table"),
@@ -70,6 +68,9 @@ class DeleteFileWorker(BaseWorker):
                 except PyMongoError as pme:
                     logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
                     raise ValueError("Database error while retrieve document") from pme
+                except S3Error  as s3e:
+                    logger.error(f"Error uploading file: {str(s3e)}")
+                    raise ValueError("Error uploading file.") from s3e
                 except Exception as e:
                     logger.exception(f"Unexpected error during deletion: {str(e)}")
                     raise

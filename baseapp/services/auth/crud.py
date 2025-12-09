@@ -1,11 +1,11 @@
-import logging
 from baseapp.config import setting, mongodb
 from baseapp.services.auth.model import UserInfo, ClientInfo
 from baseapp.model.common import Status
 from baseapp.utils.utility import get_enum, check_password
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services.auth.crud")
 
 class CRUD:
     def __init__(self):

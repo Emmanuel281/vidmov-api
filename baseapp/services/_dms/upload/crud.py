@@ -1,4 +1,4 @@
-import logging,io,re
+import io,re
 
 from pymongo.errors import PyMongoError
 from typing import Optional
@@ -10,11 +10,12 @@ from fastapi import UploadFile
 
 from baseapp.utils.utility import generate_uuid
 from baseapp.config import setting, mongodb, minio
+from baseapp.utils.logger import Logger
 from baseapp.services._dms.upload.model import UploadFile, SetMetaData
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services._dms.upload.crud")
 
 class CRUD:
     def __init__(self):
@@ -151,8 +152,7 @@ class CRUD:
         with mongodb.MongoConn() as mongo:
             collection_file = mongo.get_database()[self.collection_file]
             collection_org = mongo.get_database()[self.collection_organization]
-            with self.minio_conn as conn:
-                minio_client = conn.get_minio_client()
+            with self.minio_conn as minio_client:
                 try:
                     # check last storage
                     storage_minio = self.get_storage_org(collection_org)
@@ -201,9 +201,16 @@ class CRUD:
                     collection_org.find_one_and_update({"_id": self.org_id}, {"$set": {"usedstorage":storage_minio+file_size}}, return_document=True)
 
                     return {"filename":object_name,"id":insert_metadata.inserted_id,"folder_path":obj["folder_path"]}
-                except S3Error  as s3e:
-                    logger.error(f"Error uploading file: {str(s3e)}")
-                    raise ValueError("Error uploading file.") from s3e
+                except S3Error as s3e:
+                    logger.error(
+                        "MinIO S3Error",
+                        host=config.minio_host,
+                        port=config.minio_port,
+                        bucket=config.minio_bucket,
+                        error=str(e),
+                        error_type="S3Error"
+                    )
+                    raise ValueError("Minio put object failed") from s3e
                 except PyMongoError as pme:
                     logger.error(f"Database error occurred: {str(pme)}")
                     raise ValueError("Database error occurred while creating document.") from pme

@@ -2,7 +2,7 @@ import json
 from baseapp.config.redis import RedisConn
 
 import logging
-logger = logging.getLogger("rabbit")
+logger = logging.getLogger("")
 
 class RedisQueueManager:
     def __init__(self, redis_conn: RedisConn, queue_name: str):

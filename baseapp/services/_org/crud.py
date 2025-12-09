@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime,timezone
 
 from pymongo.errors import DuplicateKeyError, PyMongoError
@@ -11,9 +10,10 @@ from baseapp.services._org import model
 from baseapp.model.common import UpdateStatus, MINIO_STORAGE_SIZE_LIMIT
 from baseapp.utils.utility import hash_password, get_enum, generate_uuid
 from baseapp.services.audit_trail_service import AuditTrailService
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services._org.crud")
 
 class CRUD:
     def __init__(self):
@@ -553,7 +553,7 @@ class CRUD:
                 logger.exception(f"Unexpected error occurred while init owner: {e}")
                 raise
     
-    def reg_partner_client_org(self, org_data: model.Organization, user_data: model.User):
+    def reg_member(self, org_data: model.Organization, user_data: model.User):
         """
         Insert a new partner/client into the collection.
         """
@@ -570,11 +570,6 @@ class CRUD:
             org_data["rec_date"] = datetime.now(timezone.utc)
             org_data["storage"] = self.storage
             org_data["usedstorage"] = self.usedstorage
-
-            # Add subscription for client
-            if org_data["authority"] & 4:
-                obj_subs = model.OrganizationSubscriptionPlan(plan_id="FREE")
-                org_data.update(obj_subs.model_dump())
 
             try:
                 # check organization is exist or not

@@ -1,17 +1,17 @@
-import logging
-
 from pymongo.errors import PyMongoError
+from minio.error import S3Error
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
 from baseapp.config import setting, mongodb, minio
+from baseapp.utils.logger import Logger
 from baseapp.utils.utility import generate_uuid
 from baseapp.services.content.model import Content
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services.content.crud")
 
 class CRUD:
     def __init__(self, collection_name="content"):
@@ -63,7 +63,7 @@ class CRUD:
         """
         with mongodb.MongoConn() as mongo:
             collection = mongo.get_database()[self.collection_name]
-            with self.minio_conn as conn:
+            with self.minio_conn as minio_client:
                 try:
                     # Apply filters
                     query_filter = {"_id": content_id}
@@ -182,7 +182,6 @@ class CRUD:
                     # presigned url
                     if "poster" in content_data:
                         content_data['poster']['url'] = None
-                        minio_client = conn.get_minio_client()
                         url = minio_client.presigned_get_object(config.minio_bucket, content_data['poster']['filename'])
                         if url:
                             content_data['poster']['url'] = url.replace(minio_client.get_minio_endpoint(),minio_client.get_domain_endpoint())
@@ -201,6 +200,16 @@ class CRUD:
                         error_message=str(pme)
                     )
                     raise ValueError("Database error occurred while find document.") from pme
+                except S3Error as s3e:
+                    logger.error(
+                        "MinIO S3Error",
+                        host=config.minio_host,
+                        port=config.minio_port,
+                        bucket=config.minio_bucket,
+                        error=str(e),
+                        error_type="S3Error"
+                    )
+                    raise ValueError("Minio presigned object failed") from s3e
                 except Exception as e:
                     logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                     raise
@@ -261,7 +270,7 @@ class CRUD:
         """
         with mongodb.MongoConn() as mongo:
             collection = mongo.get_database()[self.collection_name]
-            with self.minio_conn as conn:
+            with self.minio_conn as minio_client:
                 try:
                     # Apply filters
                     query_filter = filters or {}
@@ -390,10 +399,9 @@ class CRUD:
                         # presigned url
                         if "poster" in data:
                             data['poster']['url'] = None
-                            minio_client = conn.get_minio_client()
                             url = minio_client.presigned_get_object(config.minio_bucket, data['poster']['filename'])
                             if url:
-                                data['poster']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
+                                data['poster']['url'] = url
 
                     return {
                         "data": results,
@@ -417,6 +425,16 @@ class CRUD:
                             status="failure"
                         )
                     raise ValueError("Database error while retrieve document") from pme
+                except S3Error as s3e:
+                    logger.error(
+                        "MinIO S3Error",
+                        host=config.minio_host,
+                        port=config.minio_port,
+                        bucket=config.minio_bucket,
+                        error=str(e),
+                        error_type="S3Error"
+                    )
+                    raise ValueError("Minio presigned object error") from s3e
                 except Exception as e:
                     logger.exception(f"Unexpected error during deletion: {str(e)}")
                     raise

@@ -1,10 +1,11 @@
-import pika,logging
+import pika,time
 
 import pika.exceptions
 from baseapp.config import setting
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.config.rabbitmq")
 
 class RabbitMqConn:
     def __init__(self, host=None, port=None, user=None, password=None):
@@ -14,8 +15,10 @@ class RabbitMqConn:
         self.password = password or config.rabbitmq_pass
         self.connection = None
         self.channel = None
+        self._context_start_time = None
     
     def __enter__(self):
+        self._context_start_time = time.perf_counter()
         try:
             credentials = pika.PlainCredentials(self.user, self.password)
             self.connection = pika.BlockingConnection(
@@ -26,46 +29,41 @@ class RabbitMqConn:
                 )
             )
             self.channel = self.connection.channel()
-            logger.info("RabbitMQ: Connection and channel established.")
+            duration_ms = (time.perf_counter() - self._context_start_time) * 1000
+            logger.log_operation(
+                "RabbitMQ Connection",
+                "success",
+                duration_ms=round(duration_ms, 2),
+                host=self.host,
+                port=self.port,
+                channel=self.channel
+            )
             return self.channel  # Return channel for usage in 'with' block
         except pika.exceptions.AMQPConnectionError as e:
-            logger.error(f"RabbitMQ: Failed to connect : {e}")
+            logger.error(
+                "RabbitMQ: Failed to connect",
+                host=self.host,
+                port=self.port,
+                error=str(e),
+                error_type="AMQPConnectionError"
+            )
             raise ConnectionError("Failed to connect to RabbitMQ") # Mengangkat kesalahan khusus koneksi RabbitMQ
         except pika.exceptions.ChannelError as e:
-            logger.error(f"RabbitMQ: Channel error: {e}")
+            logger.error(
+                "RabbitMQ: Channel error",
+                channel=self.channel,
+                error=str(e),
+                error_type="ChannelError"
+            )
             raise ConnectionError("RabbitMQ: Channel error") # Mengangkat kesalahan pada channel
         except Exception as e:
-            logger.error(f"RabbitMQ: Unexpected error: {e}")
+            logger.log_error_with_context(e, {
+                "operation": "rabbitmq_context_enter",
+                "host": self.host,
+                "port": self.port,
+                "channel": self.channel
+            })
             raise # Mengangkat kesalahan lainnya
-    
-    def get_connection(self):
-        if not self.connection or self.connection.is_closed:
-            try:
-                self.connection = pika.BlockingConnection(
-                    pika.ConnectionParameters(host=self.host, port=self.port)
-                )
-                logger.info("RabbitMQ connection established.")
-            except pika.exceptions.AMQPConnectionError as e:
-                logger.error(f"Failed to connect to RabbitMQ: {e}")
-                raise ConnectionError("Failed to connect to RabbitMQ") # Mengangkat kesalahan koneksi RabbitMQ
-            except Exception as e:
-                logger.error(f"RabbitMQ: Unexpected error while establishing connection: {e}")
-                raise  # Mengangkat kesalahan lainnya
-        return self.connection
-
-    def get_channel(self):
-        if not self.channel or self.channel.is_closed:
-            try:
-                conn = self.get_connection()
-                self.channel = conn.channel()
-                logger.info("RabbitMQ channel created.")
-            except pika.exceptions.ChannelError as e:
-                logger.error(f"RabbitMQ: Channel error: {e}")
-                raise ConnectionError("RabbitMQ: Channel error")# Mengangkat kesalahan pada channel
-            except Exception as e:
-                logger.error(f"RabbitMQ: Unexpected error while creating channel: {e}")
-                raise  # Mengangkat kesalahan lainnya
-        return self.channel
 
     def close(self):
         if self.channel and self.channel.is_open:
@@ -77,6 +75,27 @@ class RabbitMqConn:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+        duration_ms = None
+        if self._context_start_time:
+            duration_ms = (time.perf_counter() - self._context_start_time) * 1000
         if exc_type:
-            logger.exception(f"Error occurred during RabbitMQ operation: {exc_type}, {exc_value}")
+            logger.error(
+                "RabbitMQ context error",
+                host=self.host,
+                port=self.port,
+                channel=self.channel,
+                duration_ms=round(duration_ms, 2) if duration_ms else None,
+                error_type=exc_type.__name__,
+                error=str(exc_value)
+            )
             return False  # Memungkinkan pengecualian untuk terus diproses di luar blok 'with'
+        else:
+            # Success - hanya log jika duration signifikan (> 100ms)
+            if duration_ms and duration_ms > 100:
+                logger.debug(
+                    "RabbitMQ context closed",
+                    host=self.host,
+                    port=self.port,
+                    channel=self.channel,
+                    duration_ms=round(duration_ms, 2)
+                )

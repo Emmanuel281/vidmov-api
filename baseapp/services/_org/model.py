@@ -35,6 +35,3 @@ class OrganizationUpdate(BaseModel):
 class InitRequest(BaseModel):
     org: Organization
     user: User
-
-class OrganizationSubscriptionPlan(BaseModel):
-    plan_id: str = Field(..., description="Foreign Key to SubscriptionPlan")

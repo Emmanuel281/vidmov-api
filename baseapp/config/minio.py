@@ -1,24 +1,26 @@
-import logging
+import time
 from minio import Minio
 from minio.error import S3Error, InvalidResponseError
 from baseapp.config import setting
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger()
+logger = Logger("baseapp.config.minio")
 
 class MinioConn:
-    def __init__(self, host=None, port=None, access_key=None, secret_key=None, secure=False, bucket="baseapp", verify=False):
+    def __init__(self, host=None, port=None, access_key=None, secret_key=None, secure=False, verify=False):
         self.host = host or config.minio_host
         self.port = port or config.minio_port
         self.access_key = access_key or config.minio_access_key
         self.secret_key = secret_key or config.minio_secret_key
         self.secure = secure or config.minio_secure
-        self.bucket = bucket or config.minio_bucket
         self.verify = verify or config.minio_verify
         self._conn = None
+        self._context_start_time = None
 
     def __enter__(self):
         try:
+            self._context_start_time = time.perf_counter()
             # Inisialisasi koneksi Minio
             self._conn = Minio(
                 endpoint=f"{self.host}:{self.port}",
@@ -27,55 +29,40 @@ class MinioConn:
                 secure=self.secure,
                 http_client=None if self.verify else False,
             )
-            logger.info(f"Connected to MinIO at {self.host}:{self.port}")
-            return self
+
+            duration_ms = (time.perf_counter() - self._context_start_time) * 1000
+            logger.log_operation(
+                "Minio Connection Established",
+                "success",
+                duration_ms=round(duration_ms, 2),
+                host=self.host,
+                port=self.port
+            )
+            return self._conn
         except S3Error as e:
-            logger.error(f"MinIO S3Error: {e.message}")
+            logger.error(
+                "MinIO S3Error",
+                host=self.host,
+                port=self.port,
+                error=str(e.message),
+                error_type="S3Error"
+            )
             raise ConnectionError(f"Failed to connect to MinIO: {e.message}")
         except InvalidResponseError as e:
-            logger.error(f"Invalid response from MinIO: {e}")
+            logger.error(
+                "MinIO Invalid Response",
+                host=self.host,
+                port=self.port,
+                error=str(e),
+                error_type="InvalidResponseError"
+            )
             raise ConnectionError("MinIO returned an invalid response.")
         except Exception as e:
-            logger.exception(f"Unexpected error while connecting to MinIO: {e}")
-            raise
-    
-    def get_minio_client(self):
-        """
-        Returns the MinIO client instance.
-        """
-        if not self._conn:
-            logger.error("MinIO is not connected.")
-            raise ConnectionError("MinIO is not connected.")
-        return self._conn
-
-    def bucket_exists(self):
-        """
-        Check if the default bucket exists.
-        """
-        if self._conn.bucket_exists(self.bucket):
-            logger.info(f"Bucket '{self.bucket}' exists.")
-            return True
-        else:
-            logger.warning(f"Bucket '{self.bucket}' does not exist.")
-            return False
-
-    def create_bucket(self):
-        """
-        Create the default bucket if it doesn't exist.
-        """
-        try:
-            if not self._conn.bucket_exists(self.bucket):
-                self._conn.make_bucket(self.bucket)
-                logger.info(f"Bucket '{self.bucket}' created.")
-                return True
-            else:
-                logger.info(f"Bucket '{self.bucket}' already exists.")
-                return False
-        except S3Error as e:
-            logger.error(f"Error while creating bucket '{self.bucket}': {e.message}")
-            raise ValueError("Error while creating bucket")
-        except Exception as e:
-            logger.exception(f"Unexpected error while creating bucket '{self.bucket}': {e}")
+            logger.log_error_with_context(e, {
+                "operation": "minio_initialize",
+                "host": self.host,
+                "port": self.port
+            })
             raise
 
     def close(self):
@@ -84,20 +71,18 @@ class MinioConn:
         """
         # MinIO client in the current library doesn't require explicit connection close,
         # but this method can be used for cleanup in future versions if required.
-        logger.info("MinIO connection closed.")
-
+        logger.info(
+            "MinIO connection closed.",
+            host=self.host,
+            port=self.port
+        )
+    
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.close()
         if exc_type:
-            logger.exception(f"mod: Minio.__exit__, exc_type: {exc_type}, exc_value: {exc_value}, exc_traceback: {exc_traceback}")
+            logger.exception(
+                f"exc_type: {exc_type}, exc_value: {exc_value}, exc_traceback: {exc_traceback}",
+                host=self.host,
+                port=self.port
+            )
             return False
-
-    def get_minio_endpoint(self) -> str:
-        """
-        Get MinIO endpoint from settings
-        """
-        return f"http://{self.host}:{self.port}"
-
-    def get_domain_endpoint(self) -> str:
-        # return "https://vidmov.gai.co.id"
-        return f"http://{self.host}:{self.port}"

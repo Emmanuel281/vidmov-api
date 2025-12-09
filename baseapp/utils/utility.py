@@ -1,10 +1,11 @@
-import bcrypt,string,secrets,logging,uuid,hashlib
+import bcrypt,string,secrets,uuid,hashlib
 from pymongo.errors import PyMongoError
 
 from baseapp.config.setting import get_settings
+from baseapp.utils.logger import Logger
 
 config = get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.utils.utility")
 
 def generate_uuid() -> str:
     return str(uuid.uuid4().hex)

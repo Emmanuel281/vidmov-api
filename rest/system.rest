@@ -1,5 +1,5 @@
 @prod = https://arena.gai.co.id/service
-@dev = http://localhost:1899
+@dev = http://localhost:17178
 @host = {{dev}}
 @upload_host = {{dev}}
 

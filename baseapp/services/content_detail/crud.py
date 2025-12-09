@@ -1,17 +1,17 @@
-import logging
-
 from pymongo.errors import PyMongoError
+from minio.error import S3Error
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
 from baseapp.config import setting, mongodb, minio
+from baseapp.utils.logger import Logger
 from baseapp.utils.utility import generate_uuid
 from baseapp.services.content_detail.model import ContentDetail
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services.content_detail.crud")
 
 class CRUD:
     def __init__(self, collection_name="content_video"):
@@ -63,7 +63,7 @@ class CRUD:
         """
         with mongodb.MongoConn() as mongo:
             collection = mongo.get_database()[self.collection_name]
-            with self.minio_conn as conn:
+            with self.minio_conn as minio_client:
                 try:
                     # Apply filters
                     query_filter = {"_id": content_id}
@@ -154,10 +154,9 @@ class CRUD:
                     # presigned url
                     if "video" in content_data:
                         content_data['video']['url'] = None
-                        minio_client = conn.get_minio_client()
                         url = minio_client.presigned_get_object(config.minio_bucket, content_data['video']['filename'])
                         if url:
-                            content_data['video']['url'] = url.replace(conn.get_minio_endpoint(),conn.get_domain_endpoint())
+                            content_data['video']['url'] = url
 
                     return content_data
                 except PyMongoError as pme:
@@ -173,6 +172,16 @@ class CRUD:
                         error_message=str(pme)
                     )
                     raise ValueError("Database error occurred while find document.") from pme
+                except S3Error as s3e:
+                    logger.error(
+                        "MinIO S3Error",
+                        host=config.minio_host,
+                        port=config.minio_port,
+                        bucket=config.minio_bucket,
+                        error=str(e),
+                        error_type="S3Error"
+                    )
+                    raise ValueError("Minio presigned object failed") from s3e
                 except Exception as e:
                     logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                     raise

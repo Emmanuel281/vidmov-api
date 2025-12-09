@@ -1,17 +1,17 @@
-import logging
-
 from pymongo.errors import PyMongoError
+from minio.error import S3Error
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
 from baseapp.config import setting, mongodb, minio
+from baseapp.utils.logger import Logger
 from baseapp.services.audit_trail_service import AuditTrailService
 
 from baseapp.services._dms.upload.model import MoveToTrash
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services._dms.browse.crud")
 
 class CRUD:
     def __init__(self):
@@ -43,7 +43,7 @@ class CRUD:
         """
         with mongodb.MongoConn() as mongo:
             collection = mongo.get_database()[self.collection_file]
-            with self.minio_conn as conn:
+            with self.minio_conn as minio_client:
                 try:
                     # Apply filters
                     query_filter = {}
@@ -93,7 +93,6 @@ class CRUD:
 
                     for i, data in enumerate(results):
                         # presigned url
-                        minio_client = conn.get_minio_client()
                         url = minio_client.presigned_get_object(config.minio_bucket, data['filename'])
                         data['url'] = url
 
@@ -112,6 +111,16 @@ class CRUD:
                         status="failure"
                     )
                     raise ValueError("Database error while retrieve document") from pme
+                except S3Error as s3e:
+                    logger.error(
+                        "MinIO S3Error",
+                        host=config.minio_host,
+                        port=config.minio_port,
+                        bucket=config.minio_bucket,
+                        error=str(s3e.message),
+                        error_type="S3Error"
+                    )
+                    raise ValueError("Minio presigned object failed") from s3e
                 except Exception as e:
                     logger.exception(f"Unexpected error during deletion: {str(e)}")
                     raise
@@ -204,7 +213,7 @@ class CRUD:
         """
         with mongodb.MongoConn() as mongo:
             collection = mongo.get_database()[self.collection_file]
-            with self.minio_conn as conn:
+            with self.minio_conn as minio_client:
                 try:
                     # Apply filters
                     query_filter = {}
@@ -276,7 +285,6 @@ class CRUD:
 
                     for i, data in enumerate(results):
                         # presigned url
-                        minio_client = conn.get_minio_client()
                         url = minio_client.presigned_get_object(config.minio_bucket, data['filename'])
                         data['url'] = url
 
@@ -301,6 +309,16 @@ class CRUD:
                         status="failure"
                     )
                     raise ValueError("Database error while retrieve document") from pme
+                except S3Error as s3e:
+                    logger.error(
+                        "MinIO S3Error",
+                        host=config.minio_host,
+                        port=config.minio_port,
+                        bucket=config.minio_bucket,
+                        error=str(s3e.message),
+                        error_type="S3Error"
+                    )
+                    raise ValueError("Minio presigned object failed") from s3e
                 except Exception as e:
                     logger.exception(f"Unexpected error during deletion: {str(e)}")
                     raise
@@ -416,9 +434,8 @@ class CRUD:
         with mongodb.MongoConn() as mongo:
             collection = mongo.get_database()[self.collection_file]
             collection_org = mongo.get_database()[self.collection_organization]
-            with self.minio_conn as conn:
+            with self.minio_conn as minio_client:
                 try:
-                    minio_client = conn.get_minio_client()
                     obj = collection.find_one({"_id": file_id})
                     if not obj:
                         # write audit trail for fail
@@ -465,6 +482,16 @@ class CRUD:
                         status="failure"
                     )
                     raise ValueError("Database error while delete document") from pme
+                except S3Error as s3e:
+                    logger.error(
+                        "MinIO S3Error",
+                        host=config.minio_host,
+                        port=config.minio_port,
+                        bucket=config.minio_bucket,
+                        error=str(s3e.message),
+                        error_type="S3Error"
+                    )
+                    raise ValueError("Minio remove object failed") from s3e
                 except Exception as e:
                     logger.exception(f"Unexpected error during deletion: {str(e)}")
                     raise
@@ -515,10 +542,8 @@ class CRUD:
             collection_file = mongo.get_database()[self.collection_file]
             collection_folder = mongo.get_database()[self.collection_folder]
             collection_org = mongo.get_database()[self.collection_organization]
-            with self.minio_conn as conn:
+            with self.minio_conn as minio_client:
                 try:
-                    minio_client = conn.get_minio_client()
-                    
                     # Recursive folder and files
                     recursive_folder = _recursive(collection_file,collection_folder,folder_id)
 
@@ -572,6 +597,16 @@ class CRUD:
                         status="failure"
                     )
                     raise ValueError("Database error while delete folder") from pme
+                except S3Error as s3e:
+                    logger.error(
+                        "MinIO S3Error",
+                        host=config.minio_host,
+                        port=config.minio_port,
+                        bucket=config.minio_bucket,
+                        error=str(s3e.message),
+                        error_type="S3Error"
+                    )
+                    raise ValueError("Minio remove object failed") from s3e
                 except Exception as e:
                     logger.exception(f"Unexpected error during deletion: {str(e)}")
                     raise

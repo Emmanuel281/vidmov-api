@@ -3,7 +3,7 @@ import time
 from threading import Thread
 
 import logging
-logger = logging.getLogger("rabbit")
+logger = logging.getLogger("")
 
 from baseapp.services.redis_queue import RedisQueueManager
 

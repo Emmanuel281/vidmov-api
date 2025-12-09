@@ -1,4 +1,3 @@
-import logging
 from pymongo.errors import PyMongoError, DuplicateKeyError
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
@@ -11,9 +10,10 @@ from baseapp.services._user.model import User, UpdateUsername, UpdateEmail, Upda
 from baseapp.services.audit_trail_service import AuditTrailService
 
 from baseapp.utils.utility import hash_password, is_none, generate_password, generate_uuid, check_password
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services._user.crud")
 
 class CRUD:
     def __init__(self, collection_name="_user"):

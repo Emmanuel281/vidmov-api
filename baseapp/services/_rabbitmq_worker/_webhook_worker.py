@@ -1,5 +1,5 @@
 import logging
-logger = logging.getLogger("rabbit")
+logger = logging.getLogger("")
 
 class WebhookWorker:
     def process(self, task_data: dict):

@@ -1,4 +1,4 @@
-import logging, random
+import random
 from datetime import datetime, timezone
 
 from baseapp.model.common import Status
@@ -8,9 +8,10 @@ from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.services._forgot_password.model import OTPRequest, VerifyOTPRequest, ResetPasswordRequest
 from baseapp.utils.utility import hash_password, generate_uuid
 from baseapp.utils.jwt import revoke_all_refresh_tokens
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger(__name__)
+logger = Logger("baseapp.services._forgot_password.crud")
 
 class CRUD:
     def __init__(self):
