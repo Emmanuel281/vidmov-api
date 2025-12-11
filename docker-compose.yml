@@ -1,11 +1,25 @@
 version: '3.8'
 
 services:
-  # Run the migration service to apply database migrations
-  migration:
+  # Run the migration service to apply postgresql database migrations
+  postgresql_migration:
     build: .
-    command: migrate
-    networks: # <-- Tambahkan ini
+    command: postgresql_migrate
+    networks: 
+      - my-shared-network
+  
+  # Run the migration service to apply mongodb database migrations
+  mongodb_migration:
+    build: .
+    command: mongodb_migrate
+    networks: 
+      - my-shared-network
+
+  # Run the storage setup service to initialize storage (e.g., create buckets)
+  storage_setup:
+    build: .
+    command: init_storage
+    networks:
       - my-shared-network
 
   # Run the API service
@@ -14,10 +28,14 @@ services:
     command: api
     ports:
       - "1899:1899"
-    networks: # <-- Tambahkan ini
+    networks:
       - my-shared-network
     depends_on:
-      migration:
+      postgresql_migration:
+        condition: service_completed_successfully
+      mongodb_migration:
+        condition: service_completed_successfully
+      storage_setup:
         condition: service_completed_successfully
 
   # Run the worker service for processing other tasks using RabbitMQ
@@ -27,10 +45,14 @@ services:
     restart: always
     # deploy:
     #   replicas: 2
-    networks: # <-- Tambahkan ini
+    networks:
       - my-shared-network
     depends_on:
-      migration:
+      postgresql_migration:
+        condition: service_completed_successfully
+      mongodb_migration:
+        condition: service_completed_successfully
+      storage_setup:
         condition: service_completed_successfully
 
   # Run the worker service for processing OTP tasks using Redis
@@ -38,10 +60,14 @@ services:
     build: .
     command: redis_worker --queue otp_tasks
     restart: always
-    networks: # <-- Tambahkan ini
+    networks:
       - my-shared-network
     depends_on:
-      migration:
+      postgresql_migration:
+        condition: service_completed_successfully
+      mongodb_migration:
+        condition: service_completed_successfully
+      storage_setup:
         condition: service_completed_successfully
 
 # Definisikan network di level atas

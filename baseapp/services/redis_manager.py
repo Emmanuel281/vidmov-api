@@ -6,7 +6,7 @@ from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
 
 logging.config.dictConfig(get_logging_config())
-logger = logging.getLogger("")
+logger = logging.getLogger("baseapp.services.redis_manager")
 
 # Importing the worker classes
 from baseapp.services._redis_worker.email_worker import EmailWorker

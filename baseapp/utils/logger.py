@@ -3,8 +3,6 @@ import time
 import functools
 from typing import Dict, Any, Callable
 
-from datetime import datetime
-
 class Logger:
     """
     Helper class untuk logging yang terstruktur dan mudah di-trace.
@@ -27,7 +25,7 @@ class Logger:
         else:
             full_message = message
         
-        # stacklevel=2 means: skip this method and get caller info
+        # stacklevel=3 means: skip this method and get caller info
         # This will show the actual caller (create(), update(), etc) instead of _log()
         self.logger.log(level, full_message, stacklevel=3)
     

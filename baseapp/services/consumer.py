@@ -4,7 +4,7 @@ from baseapp.config.logging import get_logging_config
 from baseapp.config.rabbitmq import RabbitMqConn
 
 logging.config.dictConfig(get_logging_config())
-logger = logging.getLogger("")
+logger = logging.getLogger("baseapp.services.consumer")
 
 # Importing the worker class
 from baseapp.services._rabbitmq_worker._webhook_worker import WebhookWorker

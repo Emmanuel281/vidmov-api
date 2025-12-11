@@ -24,8 +24,8 @@ case "$1" in
         # Jalankan consumer sebagai modul dengan sisa argumennya
         exec python -m baseapp.services.redis_manager "$@"
         ;;
-    migrate)
-        echo "Running Database Migrations..."
+    postgresql_migrate)
+        echo "Running PostgreSQL Migrations..."
         # 1. Jalankan Alembic untuk membuat tabel (Upgrade schema)
         alembic upgrade head
         
@@ -34,6 +34,22 @@ case "$1" in
         # python seed.py
         
         echo "Migration completed."
+        ;;
+    mongodb_migrate)
+        echo "Running MongoDB Migrations..."
+        # 1. Jalankan Alembic untuk membuat tabel (Upgrade schema)
+        python manage.py upgrade head
+        
+        # 2. (Opsional) Jalankan script seeding data awal jika Anda membuatnya
+        # echo "Seeding initial data..."
+        # python seed.py
+        
+        echo "Migration completed."
+        ;;
+    init_storage)
+        echo "Initializing Object Storage..."
+        # Jalankan script python khusus Minio
+        exec python -m baseapp.services.database.create_bucket
         ;;
     *)
         # Jalankan perintah apa pun yang diberikan

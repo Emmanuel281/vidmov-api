@@ -59,11 +59,6 @@ class RedisConn:
                 "max_connections": self.max_connections
             })
             raise  # Mengangkat kesalahan lainnya
-    
-    def get_connection(self):
-        if not self._conn:
-            self.__enter__()
-        return self._conn
 
     def close(self):
         if self.pool:

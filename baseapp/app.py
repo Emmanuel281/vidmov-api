@@ -8,24 +8,23 @@ config = setting.get_settings()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from baseapp.config.logging import get_logging_config
+from baseapp.config.logging import get_logging_config, request_id_ctx, user_id_ctx, ip_address_ctx
+from baseapp.utils.logger import Logger
 from baseapp.services.middleware import setup_middleware
 
 # Setup logging
 os.makedirs("log", exist_ok=True)
 logging.config.dictConfig(get_logging_config())
-logger = logging.getLogger("")
+logger = Logger("baseapp.app")
 
 from baseapp.config.mongodb import MongoConn
 from baseapp.config.postgresql import PostgreSQLConn
 
 from baseapp.test_connection.api import router as testconn_router # test connection
-from baseapp.services.database.api import router as db_router # init database
 from baseapp.services._enum.api import router as enum_router # enum
 from baseapp.services._org.api import router as org_router # organization
 from baseapp.services.auth.api import router as auth_router # auth
 from baseapp.services.profile.api import router as profile_router # profile
-from baseapp.services._menu.api import router as menu_router # menu
 from baseapp.services._role.api import router as role_router # role
 from baseapp.services._user.api import router as user_router # user
 from baseapp.services._dms.index_list.api import router as index_router # index dms
@@ -43,6 +42,9 @@ from baseapp.services.content_detail.api import router as content_detail_router 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. BAGIAN STARTUP (Dijalankan sebelum aplikasi menerima request)
+    req_token = request_id_ctx.set("system-startup")
+    user_token = user_id_ctx.set("system")
+    ip_token = ip_address_ctx.set("localhost")
     logger.info("Startup: Initializing resources...")
     
     try:
@@ -61,6 +63,7 @@ async def lifespan(app: FastAPI):
     yield # <--- Titik tunggu (Aplikasi berjalan di sini)
 
     # 2. BAGIAN SHUTDOWN (Dijalankan saat aplikasi mau mati)
+    request_id_ctx.set("system-shutdown")
     logger.info("Shutdown: Cleaning up resources...")
     
     try:
@@ -70,6 +73,9 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Shutdown error: {e}")
     
+    request_id_ctx.reset(req_token)
+    user_id_ctx.reset(user_token)
+    ip_address_ctx.reset(ip_token)
     logger.info("Resources cleaned up.")
 
 app = FastAPI(
@@ -98,12 +104,10 @@ os.makedirs(config.file_location, exist_ok=True) # create folder data/files
 setup_middleware(app)
 
 app.include_router(testconn_router)
-app.include_router(db_router)
 app.include_router(enum_router)
 app.include_router(org_router)
 app.include_router(auth_router)
 app.include_router(profile_router)
-app.include_router(menu_router)
 app.include_router(role_router)
 app.include_router(user_router)
 app.include_router(index_router)
