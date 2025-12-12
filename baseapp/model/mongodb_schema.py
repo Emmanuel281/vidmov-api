@@ -119,8 +119,8 @@ class User(Collection):
     __collection_name__ = "_user"
     __indexes__ = [
         Index("rec_date"),
-        Index("username"),
-        Index("email"),
+        Index("username", unique=True),
+        Index("email", unique=True),
         Index("org_id"),
         Index("r_id"),
         Index([("id", 1), ("org_id", 1)], name="id_orgid"),

@@ -101,16 +101,11 @@ Content-Type: application/json
     "status":"ACTIVE" 
 }
 
+### Delete User
 DELETE {{host}}/v1/_user/delete/5849d05d-43c5-4f8f-96cb-cdd6968fe01b
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
-{ 
-    "username":"finance@countify.com", 
-    "email":"finance@countify.com", 
-    "roles":["c1b1d2fb-e21b-45a4-81e2-dba355868749"], 
-    "status":"ACTIVE" 
-}
-
+### Get All Users
 GET {{host}}/v1/_user?page=1&sort_field=status&per_page=10
 Authorization: Bearer {{token}}

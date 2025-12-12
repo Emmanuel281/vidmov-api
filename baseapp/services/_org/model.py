@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from datetime import datetime
+from typing import Optional, List, Any
 from baseapp.model.common import Status
 
 class Organization(BaseModel):
@@ -35,3 +36,62 @@ class OrganizationUpdate(BaseModel):
 class InitRequest(BaseModel):
     org: Organization
     user: User
+
+class OrganizationResponse(Organization):
+    # Mewarisi semua field Organization (name, email, dll)
+    id: str = Field(serialization_alias="id")
+    storage: Optional[int] = None
+    usedstorage: Optional[int] = None
+    rec_date: Optional[datetime] = None
+    rec_by: Optional[str] = None
+    mod_date: Optional[datetime] = None
+    mod_by: Optional[str] = None
+    
+    model_config = {
+        "populate_by_name": True,
+        "from_attributes": True
+    }
+
+class OrganizationListItem(BaseModel):
+    """Response model untuk item dalam list (lebih ringkas)"""
+    id: str
+    org_name: str
+    org_initial: Optional[str] = None
+    org_phone: str
+    org_address: Optional[str] = None
+    org_desc: Optional[str] = None
+    org_email: str
+    status: Status
+    
+    model_config = {
+        "populate_by_name": True,
+        "from_attributes": True
+    }
+    
+class UserResponse(BaseModel):
+    # Kita redefine field agar password tidak ikut terkirim
+    id: str = Field(serialization_alias="id") # Mapping _id dari mongo ke id
+    username: str
+    email: str
+    status: Optional[Status] = None
+    roles: Optional[List[str]] = []
+    balance_coin: Optional[int] = None
+    
+    # Konfigurasi agar bisa membaca data dari dict/object mongo
+    model_config = {
+        "populate_by_name": True,
+        "from_attributes": True
+    }
+
+class InitResponse(BaseModel):
+    # Model khusus untuk return function init (gabungan org & user)
+    org: OrganizationResponse
+    user: UserResponse
+
+class OrganizationListResponse(BaseModel):
+    """Response untuk get_all dengan data list"""
+    data: List[OrganizationListItem]
+    
+    model_config = {
+        "from_attributes": True
+    }

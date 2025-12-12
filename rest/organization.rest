@@ -5,7 +5,7 @@
 
 # --- TOKENS ---
 # Token Owner (Arena)
-@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiZWY2OTQyZTZkNWNkNGIzMDllMjk4MjI4MjUxN2IzMzYiLCJyb2xlcyI6WyJkZTcwOThjNjc1OTE0NDg2YmNlMjNhYTRkOGM4Zjc0NCJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6IjdmYTQ5Yzk0YjJiOTRlMjZhY2Y3MjYwM2I0YjMyZGE5IiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7ImFkZCI6MiwiYXBwcm92YWwiOjY0LCJkZWxldGUiOjgsImVkaXQiOjQsImV4cG9ydCI6MTYsImltcG9ydCI6MzIsInNldHRpbmciOjEyOCwidmlldyI6MX0sImV4cCI6MTc2NDgzNTcxNiwianRpIjoiYjQzNDJjZWFlZGU0NDdjNWE4NzgxZDRjOWYzZGMyOWQifQ.o1XQC-erU5GLT5BRZx7ZABYItSEg0_N-iNBJDXZEGtc
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiODY5Y2RjZDcwZjFmNDM4ZGFhMDEyOTFmZjZlZDRjZGIiLCJyb2xlcyI6WyIwNTRhODBlYTA3Mzk0YTg0YTc0MWRjYWQ4OWM1ZjBiZiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImJhYzUxODk3NWMzZDQ1MGU4NDYxOGYxNjk0ZmVkNzcyIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7InZpZXciOjEsImFkZCI6MiwiZWRpdCI6NCwiZGVsZXRlIjo4LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJhcHByb3ZhbCI6NjQsInNldHRpbmciOjEyOH0sInNlc3Npb25faWQiOiI3NmJjYTE4ZTIzNDY0OWIwOGE0NGFhNjQ0NTgxYTdjNiIsImV4cCI6MTc2NTUyODE1NCwianRpIjoiZWE3YzE0ZGNlYThkNDRlOTk3ZmI5NWVhYzdjMDg1MmQifQ.XKmHvbBFS71pmIlWEBh83v35sAaCFaHabcsMxZWLs0k
 # Token Partner
 @partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
 # Token Client
@@ -61,40 +61,20 @@ Content-Type: application/json
     }
 }
 
-### Register Client (Public)
-POST {{host}}/v1/_organization/reg_client
-Content-Type: application/json
-
-{
-    "org":{ 
-        "org_name":"Aldian Eka Putra", 
-        "org_email":"aldian.mm.02@gmail.com", 
-        "org_phone":"081218191917", 
-        "authority":4, 
-        "org_address":"Pejaten", 
-        "status":"ACTIVE" 
-    },
-    "user":{ 
-        "username":"aldian.mm.02@gmail.com", 
-        "email":"aldian.mm.02@gmail.com", 
-        "password":"SecurePassword123", 
-        "status":"ACTIVE" 
-    }
-}
 
 ### Check Owner
 POST {{host}}/v1/_organization/is_owner_exist
 
 ### Find by ID
-GET {{host}}/v1/_organization/find/4752d4a1-3856-4db7-9463-5323328b3003
+GET {{host}}/v1/_organization/find/e190910982024c87a514512467edf47f
 Authorization: Bearer {{token}}
 
-### List Active
-GET {{host}}/v1/_organization?status=ACTIVE
+### List Organizations
+GET {{host}}/v1/_organization
 Authorization: Bearer {{token}}
 
 ### Update
-PUT {{host}}/v1/_organization/update/9b6fbb0c-89e5-4411-8b23-421dd0ded21e
+PUT {{host}}/v1/_organization/update/e190910982024c87a514512467edf47f
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -108,20 +88,13 @@ Content-Type: application/json
 }
 
 ### Update Status
-PUT {{host}}/v1/_organization/update_status/661d396f-00ee-4e87-825a-c38a73049b90
+PUT {{host}}/v1/_organization/update_status/e190910982024c87a514512467edf47f
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "status": "ACTIVE" }
 
 ### Delete
-DELETE {{host}}/v1/_organization/delete/5849d05d-43c5-4f8f-96cb-cdd6968fe01b
+DELETE {{host}}/v1/_organization/delete/e190910982024c87a514512467edf47f
 Authorization: Bearer {{token}}
 Content-Type: application/json
-
-{ 
-    "username":"finance@countify.com", 
-    "email":"finance@countify.com", 
-    "roles":["c1b1d2fb-e21b-45a4-81e2-dba355868749"], 
-    "status":"ACTIVE" 
-}

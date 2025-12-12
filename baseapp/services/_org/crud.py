@@ -40,7 +40,7 @@ class CRUD:
             user_agent=self.user_agent
         )
 
-    def init_owner_org(self, org_data: model.Organization, user_data: model.User):
+    def init_owner_org(self, org_data: model.Organization, user_data: model.User) -> model.InitResponse:
         """
         Insert a new owner into the collection.
         """
@@ -79,7 +79,13 @@ class CRUD:
                 # insert user data to the table
                 user_data["roles"] = [init_role["_id"]]
                 init_user = self.init_user(org_data, user_data)
-                return {"org":org_data,"user":init_user}
+
+                org_data["id"] = org_data.pop("_id")
+                init_user["id"] = init_user.pop("_id")
+                org_response = model.OrganizationResponse(**org_data)
+                user_response = model.UserResponse(**init_user)
+
+                return model.InitResponse(org=org_response, user=user_response)
             except DuplicateKeyError:
                 logger.error("Duplicate ID detected.")
                 raise ValueError("the same ID already exists.")
@@ -90,7 +96,7 @@ class CRUD:
                 logger.exception(f"Unexpected error occurred while init owner: {e}")
                 raise
     
-    def init_partner_client_org(self, org_data: model.Organization, user_data: model.User):
+    def init_partner_client_org(self, org_data: model.Organization, user_data: model.User) -> model.InitResponse:
         """
         Insert a new partner into the collection.
         """
@@ -136,7 +142,13 @@ class CRUD:
                 # insert user data to the table
                 user_data["roles"] = [init_role["_id"]]
                 init_user = self.init_user(org_data, user_data)
-                return {"org":org_data,"user":init_user}
+
+                org_data["id"] = org_data.pop("_id")
+                init_user["id"] = init_user.pop("_id")
+                org_response = model.OrganizationResponse(**org_data)
+                user_response = model.UserResponse(**init_user)
+
+                return model.InitResponse(org=org_response, user=user_response)
             except DuplicateKeyError:
                 logger.error("Duplicate ID detected.")
                 # write audit trail for fail
@@ -272,12 +284,7 @@ class CRUD:
         try:
             result = collection.insert_one(user_data)
             logger.info(f"User created with id: {result.inserted_id}")
-            return {
-                "username":user_data["username"],
-                "email":user_data["email"],
-                "status":user_data["status"],
-                "roles":user_data["roles"]
-            }
+            return user_data
         except PyMongoError as pme:
             logger.error(f"Database error occurred while init user.: {str(pme)}")
             # write audit trail for fail
@@ -295,7 +302,7 @@ class CRUD:
             logger.exception(f"Unexpected error occurred while init user: {e}")
             raise
 
-    def get_by_id(self, org_id: str):
+    def get_by_id(self, org_id: str) -> model.OrganizationResponse:
         """
         Retrieve a organization by ID.
         """
@@ -324,7 +331,8 @@ class CRUD:
                     details={"_id": org_id, "retrieved": data},
                     status="success"
                 )
-                return data
+                data["id"] = data.pop("_id")
+                return model.OrganizationResponse(**data)
             except PyMongoError as pme:
                 logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
@@ -342,7 +350,7 @@ class CRUD:
                 logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
                 raise
 
-    def update_by_id(self, org_id: str, data: model.OrganizationUpdate):
+    def update_by_id(self, org_id: str, data: model.OrganizationUpdate) -> model.OrganizationResponse:
         """
         Update a organization's data by ID.
         """
@@ -374,7 +382,7 @@ class CRUD:
                     details={"$set": obj},
                     status="success"
                 )
-                return update_data
+                return model.OrganizationResponse(**update_data)
             except PyMongoError as pme:
                 logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
@@ -392,7 +400,7 @@ class CRUD:
                 logger.exception(f"Error updating role: {str(e)}")
                 raise
     
-    def update_status(self, org_id: str, data: UpdateStatus):
+    def update_status(self, org_id: str, data: UpdateStatus) -> model.OrganizationResponse:
         """
         Update a organization's data [status] by ID.
         """
@@ -429,7 +437,8 @@ class CRUD:
                     details={"$set": obj},
                     status="success"
                 )
-                return update_org
+                update_org["id"] = update_org.pop("_id")
+                return model.OrganizationResponse(**update_org)
             except PyMongoError as pme:
                 logger.error(f"Database error occurred: {str(pme)}")
                 # write audit trail for fail
@@ -489,6 +498,7 @@ class CRUD:
                 # Execute aggregation pipeline
                 cursor = collection.aggregate(pipeline)
                 results = list(cursor)
+                parsed_results = [model.OrganizationListItem(**item) for item in results]
 
                 # Total count
                 total_count = collection.count_documents(query_filter)
@@ -504,7 +514,7 @@ class CRUD:
                 )
 
                 return {
-                    "data": results,
+                    "data": parsed_results,
                     "pagination": {
                         "current_page": page,
                         "items_per_page": per_page,
@@ -526,31 +536,6 @@ class CRUD:
                 raise ValueError("Database error while retrieve document") from pme
             except Exception as e:
                 logger.exception(f"Unexpected error during deletion: {str(e)}")
-                raise
-
-    def is_owner_exist(self):
-        """
-        Check if an owner exists in the organization collection.
-        
-        Returns:
-            bool: True if an owner exists, False otherwise
-            
-        Raises:
-            ValueError: If there's a database error
-            Exception: For other unexpected errors
-        """
-        with mongodb.MongoConn() as mongo:
-            self.mongo = mongo
-            collection = mongo.get_database()[self.collection_org]
-            try:
-                # Check if owner exists (authority=1)
-                owner_is_exist = collection.find_one({"authority":1})
-                return owner_is_exist is not None
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
-                raise ValueError("Database error occurred while init owner.") from pme
-            except Exception as e:
-                logger.exception(f"Unexpected error occurred while init owner: {e}")
                 raise
     
     def reg_member(self, org_data: model.Organization, user_data: model.User):
@@ -575,7 +560,7 @@ class CRUD:
                 # check organization is exist or not
                 owner_user_is_exist = collection.find_one({"org_email":org_data["org_email"]})
                 if owner_user_is_exist:
-                    raise ValueError("User already exists, please fill other username or email.")
+                    raise ValueError("User already exists, please fill email.")
                 
                 # check owner user is exist or not
                 owner_user_is_exist = collection_user.find_one({"username":user_data["username"]})
@@ -583,14 +568,14 @@ class CRUD:
                     # write audit trail for fail
                     self.audit_trail.log_audittrail(
                         mongo,
-                        action="reg_partner_client",
+                        action="reg_member",
                         target=self.collection_user,
                         target_id=None,
                         details={"username":user_data["username"]},
                         status="failure",
                         error_message="Role not found"
                     )
-                    raise ValueError("The user already exists, please fill other username or email.")
+                    raise ValueError("User already exists, please fill email.")
                 
                 # insert owner data to the table
                 result = collection.insert_one(org_data)
@@ -604,9 +589,13 @@ class CRUD:
                 user_data["roles"] = [init_role["_id"]]
                 user_data["balance_coin"] = 0
                 init_user = self.init_user(org_data, user_data)
-                # set balance coin to 0 for new user
-                init_user["balance_coin"] = 0
-                return {"org":org_data,"user":init_user}
+                
+                org_data["id"] = org_data.pop("_id")
+                init_user["id"] = init_user.pop("_id")
+                org_response = model.OrganizationResponse(**org_data)
+                user_response = model.UserResponse(**init_user)
+
+                return model.InitResponse(org=org_response, user=user_response)
             except DuplicateKeyError:
                 logger.error("Duplicate ID detected.")
                 raise ValueError("the same ID already exists.")

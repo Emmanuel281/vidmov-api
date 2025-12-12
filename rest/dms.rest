@@ -5,7 +5,7 @@
 
 # --- TOKENS ---
 # Token Owner (Arena)
-@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiZWY2OTQyZTZkNWNkNGIzMDllMjk4MjI4MjUxN2IzMzYiLCJyb2xlcyI6WyJkZTcwOThjNjc1OTE0NDg2YmNlMjNhYTRkOGM4Zjc0NCJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6IjdmYTQ5Yzk0YjJiOTRlMjZhY2Y3MjYwM2I0YjMyZGE5IiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7ImFkZCI6MiwiYXBwcm92YWwiOjY0LCJkZWxldGUiOjgsImVkaXQiOjQsImV4cG9ydCI6MTYsImltcG9ydCI6MzIsInNldHRpbmciOjEyOCwidmlldyI6MX0sImV4cCI6MTc2NDkyNjA3OSwianRpIjoiZDk4NWFjZWQwMWJjNDAwOGJhMTY4ZTcwODFlOTk5OWQifQ.olBCFQl0QGp0mgkOpNF8jyEwfHDG0xAaEZfRuBCGD3E
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiODYxNzFkNDU0YzBmNDExMWIwOWRkMmQ0NWIzNGIwNmIiLCJyb2xlcyI6WyI4YWJjYmRlNGM2NzI0OTliYmM1NjY2MjAxNjI3NTcwNiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImM0YWYyMzY5ZWNmYzRlNjJiNjAxMmE2ODA4YjFlYzNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7InZpZXciOjEsImFkZCI6MiwiZWRpdCI6NCwiZGVsZXRlIjo4LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJhcHByb3ZhbCI6NjQsInNldHRpbmciOjEyOH0sInNlc3Npb25faWQiOiI0YjRjMGRjM2QzMjk0ZGRlOWI3YTBiMTkwZGViNzU3MSIsImV4cCI6MTc2NTQ0Nzc3NiwianRpIjoiMTQ3ZDYwMGQ0Y2ZiNDU5MGFlN2Y1ODg3NDkxMWUyZWUifQ.jGTwt7CwC9tnIMalux-ZxIp_LHgjHvEsuV0qyzEbMug
 # Token Partner
 @partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
 # Token Client
@@ -30,8 +30,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { 
-    "name":"Eps", 
-    "description":"Episode", 
+    "name":"Content ID", 
+    "description":"ID of the content", 
     "type":"String", 
     "status":"ACTIVE" 
 }
@@ -71,22 +71,22 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { 
-    "name":"Poster", 
-    "metadata":["Content ID"], 
-    "folder":"Media >> {Content ID} >> Poster", 
-    "mapping":{"Content ID":"_id"}, 
+    "name":"Video Highlight", 
+    "metadata":["Content ID","Title","Language"], 
+    "folder":"Media >> {Content ID} >> Highlight", 
+    "mapping":{"Content ID":"_id","Title":"title","Language":"language"}, 
     "status":"ACTIVE" 
 }
 
 ### UPDATE
-PUT {{host}}/v1/_dms/doctype/update/95a871c8cc0c4225a064676031b4249f
+PUT {{host}}/v1/_dms/doctype/update/64c1c7ba4a5246648bf224bfd19fe118
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { 
-    "metadata":["Content ID"], 
+    "metadata":["Content ID","Title","Language"], 
     "folder":"Media >> {Content ID} >> Poster", 
-    "mapping":{"Content ID":"_id"}, 
+    "mapping":{"Content ID":"_id","Title":"title","Language":"language"}, 
     "status":"ACTIVE" 
 }
 

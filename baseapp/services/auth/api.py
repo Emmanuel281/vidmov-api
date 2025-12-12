@@ -1,7 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Request, Response, Form, Depends, Header
 from datetime import datetime, timezone, timedelta
-import logging
 import random
 import uuid
 
@@ -9,23 +8,24 @@ from baseapp.model.common import ApiResponse, TokenResponse, CurrentUser
 from baseapp.config.setting import get_settings
 from baseapp.config.redis import RedisConn
 from baseapp.services.redis_queue import RedisQueueManager
+from baseapp.utils.utility import generate_uuid
 from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_jwt_token, get_current_user, revoke_all_refresh_tokens
+from baseapp.utils.logger import Logger
 from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest, ClientAuthCredential
 from baseapp.services.auth.crud import CRUD
 
 config = get_settings()
-_crud = CRUD()
-logger = logging.getLogger()
+logger = Logger("baseapp.services.auth.api")
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
 @router.post("/login", response_model=ApiResponse)
 async def login(response: Response, req: UserLoginModel, x_client_type: Optional[str] = Header(None)) -> ApiResponse:
     username = req.username
     password = req.password
-    session_id = uuid.uuid4().hex
+    session_id = generate_uuid()
 
     # Validasi user
-    with _crud:
+    with CRUD() as _crud:
         user_info = _crud.validate_user(username, password)
 
     # Data token
@@ -87,7 +87,7 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
     password = req.password
 
     # Validasi user
-    with _crud:
+    with CRUD() as _crud:
         _crud.validate_user(username, password)
 
     otp = str(random.randint(100000, 999999))  # Generate random 6-digit OTP
@@ -96,8 +96,8 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
     with RedisConn() as redis_conn:
         redis_conn.setex(f"otp:{username}", 300, otp)
     
-    queue_manager = RedisQueueManager(queue_name="otp_tasks")  # Pass actual RedisConn here
-    queue_manager.enqueue_task({"email": username, "otp": otp, "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: {otp}"})
+        queue_manager = RedisQueueManager(redis_conn, queue_name="otp_tasks")  # Pass actual RedisConn here
+        queue_manager.enqueue_task({"email": username, "otp": otp, "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: {otp}"})
 
     # Return response berhasil
     return ApiResponse(status=0, data={"status": "queued", "message": "OTP has been sent"})
@@ -106,129 +106,72 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
 async def verify_otp(response: Response, req: VerifyOTPRequest, x_client_type: Optional[str] = Header(None)) -> ApiResponse:
     username = req.username
     otp = req.otp
+    session_id = generate_uuid()
 
     # Validasi user
-    with _crud:
+    with CRUD() as _crud:
         user_info = _crud.validate_user(username)
-
+    
     # Simpan refresh token ke Redis
     with RedisConn() as redis_conn:
         stored_otp = redis_conn.get(f"otp:{username}")
-        if stored_otp and stored_otp == otp:
-            # Data token
-            token_data = {
-                "sub": username,
-                "id": user_info.id,
-                "roles": user_info.roles,
-                "authority": user_info.authority,
-                "org_id": user_info.org_id,
-                "features": user_info.feature,
-                "bitws": user_info.bitws
-            }
-
-            # Buat akses token dan refresh token
-            access_token, expire_access_in = create_access_token(token_data)
-            refresh_token, expire_refresh_in = create_refresh_token(token_data)
-
-            # Simpan refresh token ke Redis
-            session_id = uuid.uuid4().hex
-            redis_key = f"refresh_token:{user_info.id}:{session_id}"
-            redis_conn.set(
-                redis_key,
-                refresh_token,
-                ex=timedelta(days=expire_refresh_in),
-            )
-
-            # hapus otp dari redis
-            redis_conn.delete(f"otp:{username}")
-
-            # Hitung waktu kedaluwarsa akses token
-            expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
-            data = {
-                "access_token": access_token,
-                "token_type": "bearer",
-                "expired_at": expired_at.isoformat(),
-            }
-
-            if x_client_type == 'mobile':
-                data["refresh_token"] = refresh_token
-
-            # Atur cookie refresh token for web clients
-            if x_client_type == 'web':
-                response.set_cookie(
-                    key="refresh_token",
-                    path="/",
-                    value=refresh_token,
-                    httponly=True,
-                    max_age=timedelta(days=expire_refresh_in),
-                    secure=config.app_env == "production",  # Gunakan secure hanya di production
-                    samesite="lax",  # Prevent CSRF
-                    domain=config.domain
-                )
     
-            # Return response berhasil
-            return ApiResponse(status=0, data=data)
-        else:
-            raise ValueError("Invalid or expired OTP")
+    if stored_otp and stored_otp == otp:
+        # Data token
+        token_data = {
+            "sub": username,
+            "id": user_info.id,
+            "roles": user_info.roles,
+            "authority": user_info.authority,
+            "org_id": user_info.org_id,
+            "features": user_info.feature,
+            "bitws": user_info.bitws,
+            "session_id": session_id
+        }
 
-@router.post("/token", response_model=TokenResponse)
-async def token(
-    response: Response,
-    ctx: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-) -> TokenResponse:
-    # Validasi user
-    with _crud:
-        user_info = _crud.validate_user(username, password)
-    logger.debug(f"User info: {user_info}")
+        # Buat akses token dan refresh token
+        access_token, expire_access_in = create_access_token(token_data)
+        refresh_token, expire_refresh_in = create_refresh_token(token_data)
 
-    # Data token
-    token_data = {
-        "sub": username,
-        "id": user_info.id,
-        "roles": user_info.roles,
-        "authority": user_info.authority,
-        "org_id": user_info.org_id,
-        "features": user_info.feature,
-        "bitws": user_info.bitws
-    }
-
-    # Buat akses token dan refresh token
-    access_token, expire_access_in = create_access_token(token_data)
-    refresh_token, expire_refresh_in = create_refresh_token(token_data)
-
-    # Simpan refresh token ke Redis
-    session_id = uuid.uuid4().hex
-    redis_key = f"refresh_token:{user_info.id}:{session_id}"
-    with RedisConn() as redis_conn:
+        # Simpan refresh token ke Redis
+        redis_key = f"refresh_token:{user_info.id}:{session_id}"
         redis_conn.set(
             redis_key,
             refresh_token,
             ex=timedelta(days=expire_refresh_in),
         )
 
-    # Hitung waktu kedaluwarsa akses token
-    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+        # hapus otp dari redis
+        redis_conn.delete(f"otp:{username}")
 
-    # Atur cookie refresh token
-    response.set_cookie(
-        key="refresh_token",
-        path="/",
-        value=refresh_token,
-        httponly=True,
-        max_age=timedelta(days=expire_refresh_in),
-        secure=config.app_env == "production",  # Gunakan secure hanya di production
-        samesite="None",  # Prevent CSRF
-        domain=config.domain
-    )
+        # Hitung waktu kedaluwarsa akses token
+        expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+        data = {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expired_at": expired_at.isoformat(),
+        }
 
-    # Return response berhasil
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        expired_at=expired_at.isoformat()
-    )
+        if x_client_type == 'mobile':
+            data["refresh_token"] = refresh_token
+
+        # Atur cookie refresh token for web clients
+        if x_client_type == 'web':
+            response.set_cookie(
+                key="refresh_token",
+                path="/",
+                value=refresh_token,
+                httponly=True,
+                max_age=timedelta(days=expire_refresh_in),
+                secure=config.app_env == "production",  # Gunakan secure hanya di production
+                samesite="Lax",  # Prevent CSRF
+                domain=config.domain
+            )
+
+        # Return response berhasil
+        return ApiResponse(status=0, data=data)
+    else:
+        raise ValueError("Invalid or expired OTP")
 
 @router.post("/refresh-token", response_model=ApiResponse)
 async def refresh_token(request: Request, x_client_type: Optional[str] = Header(None)) -> ApiResponse:
@@ -251,8 +194,9 @@ async def refresh_token(request: Request, x_client_type: Optional[str] = Header(
     redis_key = f"refresh_token:{payload["id"]}:{payload["session_id"]}"
     with RedisConn() as redis_conn:
         stored_token = redis_conn.get(redis_key)
-        if stored_token != refresh_token:
-            raise ValueError("Invalid refresh token")
+    
+    if stored_token != refresh_token:
+        raise ValueError("Invalid refresh token")
 
     # Create new access token
     access_token, expire_access_in = create_access_token(payload)
@@ -294,12 +238,12 @@ async def auth_status(request: Request, cu: CurrentUser = Depends(get_current_us
     return ApiResponse(status=0, data=cu_data)
 
 @router.post("/client-token", response_model=ApiResponse)
-async def login(req: ClientAuthCredential) -> ApiResponse:
+async def client_credential_auth(req: ClientAuthCredential) -> ApiResponse:
     client_id = req.client_id
     client_secret = req.client_secret
 
     # Validasi client
-    with _crud:
+    with CRUD() as _crud:
         client_info = _crud.validate_client(client_id, client_secret)
 
     # Data token

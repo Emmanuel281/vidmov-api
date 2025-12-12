@@ -9,8 +9,8 @@ from fastapi.responses import RedirectResponse
 
 from baseapp.config.redis import RedisConn
 from baseapp.model.common import ApiResponse, CurrentUser
-from typing import Optional
 from baseapp.utils.jwt import create_access_token, create_refresh_token, get_current_user
+from baseapp.utils.logger import Logger
 
 from baseapp.services.oauth_google.model import GoogleToken
 from baseapp.services.oauth_google.crud import CRUD
@@ -22,8 +22,7 @@ _user_crud = user_crud()
 from baseapp.config import setting
 config = setting.get_settings()
 
-import logging
-logger = logging.getLogger()
+logger = Logger("baseapp.services.oauth_google.api")
 
 router = APIRouter(prefix="/v1/oauth", tags=["Oauth"])
 

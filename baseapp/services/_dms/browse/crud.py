@@ -18,8 +18,22 @@ class CRUD:
         self.collection_file = "_dmsfile"
         self.collection_folder = "_dmsfolder"
         self.collection_organization = "_organization"
-        self.minio_conn = minio.MinioConn()
 
+    def __enter__(self):
+        self._mongo_context = mongodb.MongoConn()
+        self.mongo = self._mongo_context.__enter__()
+
+        self._minio_context = minio.MinioConn()
+        self.minio_conn = self._minio_context.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if hasattr(self, '_mongo_context'):
+            return self._mongo_context.__exit__(exc_type, exc_value, traceback)
+        if hasattr(self, '_minio_context'):
+            return self._minio_context.__exit__(exc_type, exc_value, traceback)
+        return False
+    
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
         Memperbarui konteks pengguna dan menginisialisasi AuditTrailService.
@@ -41,385 +55,378 @@ class CRUD:
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_file]
-            with self.minio_conn as minio_client:
-                try:
-                    # Apply filters
-                    query_filter = {}
-                    if filters:
-                        for key, value in filters.items():
-                            if isinstance(value, str) and value.startswith("regex:"):
-                                # Extract regex pattern from value
-                                regex_pattern = value.split("regex:", 1)[1]
-                                query_filter[key] = {"$regex": regex_pattern, "$options": "i"}  # Case-insensitive regex
-                            else:
-                                query_filter[key] = value
+        collection = self.mongo.get_database()[self.collection_file]
+        try:
+            # Apply filters
+            query_filter = {}
+            if filters:
+                for key, value in filters.items():
+                    if isinstance(value, str) and value.startswith("regex:"):
+                        # Extract regex pattern from value
+                        regex_pattern = value.split("regex:", 1)[1]
+                        query_filter[key] = {"$regex": regex_pattern, "$options": "i"}  # Case-insensitive regex
+                    else:
+                        query_filter[key] = value
 
-                    # Selected fields
-                    selected_fields = {
-                        "id": "$_id",
-                        "filename": 1,
-                        "filestat": 1,
-                        "folder_id": 1,
-                        "folder_path": 1,
-                        "metadata": 1,
-                        "doctype": 1,
-                        "refkey_table": 1,
-                        "refkey_name": 1,
-                        "refkey_id": 1,
-                        "_id": 0
-                    }
+            # Selected fields
+            selected_fields = {
+                "id": "$_id",
+                "filename": 1,
+                "filestat": 1,
+                "folder_id": 1,
+                "folder_path": 1,
+                "metadata": 1,
+                "doctype": 1,
+                "refkey_table": 1,
+                "refkey_name": 1,
+                "refkey_id": 1,
+                "_id": 0
+            }
 
-                    # Aggregation pipeline
-                    pipeline = [
-                        {"$match": query_filter},  # Filter stage
-                        {"$project": selected_fields}  # Project only selected fields
-                    ]
+            # Aggregation pipeline
+            pipeline = [
+                {"$match": query_filter},  # Filter stage
+                {"$project": selected_fields}  # Project only selected fields
+            ]
 
-                    # Execute aggregation pipeline
-                    cursor = collection.aggregate(pipeline)
-                    results = list(cursor)
+            # Execute aggregation pipeline
+            cursor = collection.aggregate(pipeline)
+            results = list(cursor)
 
-                    # write audit trail for success
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="retrieve",
-                        target=self.collection_file,
-                        target_id="agregate",
-                        details={"aggregate": pipeline},
-                        status="success"
-                    )
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_file,
+                target_id="agregate",
+                details={"aggregate": pipeline},
+                status="success"
+            )
 
-                    for i, data in enumerate(results):
-                        # presigned url
-                        url = minio_client.presigned_get_object(config.minio_bucket, data['filename'])
-                        data['url'] = url
+            for i, data in enumerate(results):
+                # presigned url
+                url = self.minio_conn.presigned_get_object(config.minio_bucket, data['filename'])
+                data['url'] = url
 
-                    return {
-                        "data": results
-                    }
-                except PyMongoError as pme:
-                    logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
-                    # write audit trail for success
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="retrieve",
-                        target=self.collection_file,
-                        target_id="agregate",
-                        details={"aggregate": pipeline},
-                        status="failure"
-                    )
-                    raise ValueError("Database error while retrieve document") from pme
-                except S3Error as s3e:
-                    logger.error(
-                        "MinIO S3Error",
-                        host=config.minio_host,
-                        port=config.minio_port,
-                        bucket=config.minio_bucket,
-                        error=str(s3e.message),
-                        error_type="S3Error"
-                    )
-                    raise ValueError("Minio presigned object failed") from s3e
-                except Exception as e:
-                    logger.exception(f"Unexpected error during deletion: {str(e)}")
-                    raise
+            return {
+                "data": results
+            }
+        except PyMongoError as pme:
+            logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_file,
+                target_id="agregate",
+                details={"aggregate": pipeline},
+                status="failure"
+            )
+            raise ValueError("Database error while retrieve document") from pme
+        except S3Error as s3e:
+            logger.error(
+                "MinIO S3Error",
+                host=config.minio_host,
+                port=config.minio_port,
+                bucket=config.minio_bucket,
+                error=str(s3e.message),
+                error_type="S3Error"
+            )
+            raise ValueError("Minio presigned object failed") from s3e
+        except Exception as e:
+            logger.exception(f"Unexpected error during deletion: {str(e)}")
+            raise
 
     def list_folder(self, filters: Optional[Dict[str, Any]] = None):
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_folder]
-            try:
-                # Apply filters
-                query_filter = {}
-                if filters:
-                    for key, value in filters.items():
-                        if isinstance(value, str) and value.startswith("regex:"):
-                            # Extract regex pattern from value
-                            regex_pattern = value.split("regex:", 1)[1]
-                            query_filter[key] = {"$regex": regex_pattern, "$options": "i"}  # Case-insensitive regex
-                        else:
-                            query_filter[key] = value
+        collection = self.mongo.get_database()[self.collection_folder]
+        try:
+            # Apply filters
+            query_filter = {}
+            if filters:
+                for key, value in filters.items():
+                    if isinstance(value, str) and value.startswith("regex:"):
+                        # Extract regex pattern from value
+                        regex_pattern = value.split("regex:", 1)[1]
+                        query_filter[key] = {"$regex": regex_pattern, "$options": "i"}  # Case-insensitive regex
+                    else:
+                        query_filter[key] = value
 
-                # Selected fields
-                selected_fields = {
-                    "id": "$_id",
-                    "folder_name": 1,
-                    "level": 1,
-                    "pid": 1,
-                    "_id": 0
+            # Selected fields
+            selected_fields = {
+                "id": "$_id",
+                "folder_name": 1,
+                "level": 1,
+                "pid": 1,
+                "_id": 0
+            }
+
+            # Aggregation pipeline
+            pipeline = [
+                {"$match": query_filter},  # Filter stage
+                {"$project": selected_fields}  # Project only selected fields
+            ]
+
+            logger.debug(f"Pipeline data: {pipeline}")
+
+            # Execute aggregation pipeline
+            cursor = collection.aggregate(pipeline)
+            results = list(cursor)
+
+            retData = []
+            for x in results:
+                objFolder = {
+                    'id':x['id'],
+                    'value':x['folder_name']
                 }
+                retData.append(objFolder)
 
-                # Aggregation pipeline
-                pipeline = [
-                    {"$match": query_filter},  # Filter stage
-                    {"$project": selected_fields}  # Project only selected fields
-                ]
+            if "pid" not in filters:
+                retData.append({
+                    'id':'delete',
+                    'value':'Trash'
+                })
 
-                logger.debug(f"Pipeline data: {pipeline}")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_folder,
+                target_id="agregate",
+                details={"aggregate": pipeline},
+                status="success"
+            )
 
-                # Execute aggregation pipeline
-                cursor = collection.aggregate(pipeline)
-                results = list(cursor)
-
-                retData = []
-                for x in results:
-                    objFolder = {
-                        'id':x['id'],
-                        'value':x['folder_name']
-                    }
-                    retData.append(objFolder)
-
-                if "pid" not in filters:
-                    retData.append({
-                        'id':'delete',
-                        'value':'Trash'
-                    })
-
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="retrieve",
-                    target=self.collection_folder,
-                    target_id="agregate",
-                    details={"aggregate": pipeline},
-                    status="success"
-                )
-
-                return {
-                    "data": retData
-                }
-            except PyMongoError as pme:
-                logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="retrieve",
-                    target=self.collection_folder,
-                    target_id="agregate",
-                    details={"aggregate": pipeline},
-                    status="failure"
-                )
-                raise ValueError("Database error while retrieve document") from pme
-            except Exception as e:
-                logger.exception(f"Unexpected error during deletion: {str(e)}")
-                raise
+            return {
+                "data": retData
+            }
+        except PyMongoError as pme:
+            logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_folder,
+                target_id="agregate",
+                details={"aggregate": pipeline},
+                status="failure"
+            )
+            raise ValueError("Database error while retrieve document") from pme
+        except Exception as e:
+            logger.exception(f"Unexpected error during deletion: {str(e)}")
+            raise
 
     def list_file(self, filters: Optional[Dict[str, Any]] = None, page: int = 1, per_page: int = 10, sort_field: str = "_id", sort_order: str = "asc"):
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_file]
-            with self.minio_conn as minio_client:
-                try:
-                    # Apply filters
-                    query_filter = {}
-                    if filters:
-                        for key, value in filters.items():
-                            if key == "$or":
-                                # Handle special $or operator
-                                query_filter[key] = value
-                            elif isinstance(value, str) and value.startswith("regex:"):
-                                regex_pattern = value.split("regex:", 1)[1]
-                                query_filter[key] = {"$regex": regex_pattern, "$options": "i"}
-                            else:
-                                query_filter[key] = value
+        collection = self.mongo.get_database()[self.collection_file]
+        try:
+            # Apply filters
+            query_filter = {}
+            if filters:
+                for key, value in filters.items():
+                    if key == "$or":
+                        # Handle special $or operator
+                        query_filter[key] = value
+                    elif isinstance(value, str) and value.startswith("regex:"):
+                        regex_pattern = value.split("regex:", 1)[1]
+                        query_filter[key] = {"$regex": regex_pattern, "$options": "i"}
+                    else:
+                        query_filter[key] = value
 
-                    # Tambahkan default filter untuk is_deleted jika tidak ada dalam filters
-                    if "is_deleted" not in query_filter and "$or" not in query_filter:
-                        query_filter["$or"] = [
-                            {"is_deleted": 0},
-                            {"is_deleted": {"$exists": False}}
-                        ]
+            # Tambahkan default filter untuk is_deleted jika tidak ada dalam filters
+            if "is_deleted" not in query_filter and "$or" not in query_filter:
+                query_filter["$or"] = [
+                    {"is_deleted": 0},
+                    {"is_deleted": {"$exists": False}}
+                ]
 
-                    # Pagination
-                    skip = (page - 1) * per_page
-                    limit = per_page
+            # Pagination
+            skip = (page - 1) * per_page
+            limit = per_page
 
-                    # Sorting
-                    order = ASCENDING if sort_order == "asc" else DESCENDING
+            # Sorting
+            order = ASCENDING if sort_order == "asc" else DESCENDING
 
-                    # Selected fields
-                    selected_fields = {
-                        "id": "$_id",
-                        "filename": 1,
-                        "filestat": 1,
-                        "folder_id": 1,
-                        "folder_path": 1,
-                        "metadata": 1,
-                        "doctype": 1,
-                        "refkey_table": 1,
-                        "refkey_name": 1,
-                        "refkey_id": 1,
-                        "_id": 0
-                    }
+            # Selected fields
+            selected_fields = {
+                "id": "$_id",
+                "filename": 1,
+                "filestat": 1,
+                "folder_id": 1,
+                "folder_path": 1,
+                "metadata": 1,
+                "doctype": 1,
+                "refkey_table": 1,
+                "refkey_name": 1,
+                "refkey_id": 1,
+                "_id": 0
+            }
 
-                    # Aggregation pipeline
-                    pipeline = [
-                        {"$match": query_filter},  # Filter stage
-                        {"$sort": {sort_field: order}},  # Sorting stage
-                        {"$skip": skip},  # Pagination skip stage
-                        {"$limit": limit},  # Pagination limit stage
-                        {"$project": selected_fields}  # Project only selected fields
-                    ]
+            # Aggregation pipeline
+            pipeline = [
+                {"$match": query_filter},  # Filter stage
+                {"$sort": {sort_field: order}},  # Sorting stage
+                {"$skip": skip},  # Pagination skip stage
+                {"$limit": limit},  # Pagination limit stage
+                {"$project": selected_fields}  # Project only selected fields
+            ]
 
-                    # Execute aggregation pipeline
-                    cursor = collection.aggregate(pipeline)
-                    results = list(cursor)
+            # Execute aggregation pipeline
+            cursor = collection.aggregate(pipeline)
+            results = list(cursor)
 
-                    # Total count
-                    total_count = collection.count_documents(query_filter)
+            # Total count
+            total_count = collection.count_documents(query_filter)
 
-                    # write audit trail for success
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="retrieve",
-                        target=self.collection_file,
-                        target_id="agregate",
-                        details={"aggregate": pipeline},
-                        status="success"
-                    )
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_file,
+                target_id="agregate",
+                details={"aggregate": pipeline},
+                status="success"
+            )
 
-                    for i, data in enumerate(results):
-                        # presigned url
-                        url = minio_client.presigned_get_object(config.minio_bucket, data['filename'])
-                        data['url'] = url
+            for i, data in enumerate(results):
+                # presigned url
+                url = self.minio_conn.presigned_get_object(config.minio_bucket, data['filename'])
+                data['url'] = url
 
-                    return {
-                        "data": results,
-                        "pagination": {
-                            "current_page": page,
-                            "items_per_page": per_page,
-                            "total_items": total_count,
-                            "total_pages": (total_count + per_page - 1) // per_page,  # Ceiling division
-                        },
-                    }
-                except PyMongoError as pme:
-                    logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
-                    # write audit trail for success
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="retrieve",
-                        target=self.collection_file,
-                        target_id="agregate",
-                        details={"aggregate": pipeline},
-                        status="failure"
-                    )
-                    raise ValueError("Database error while retrieve document") from pme
-                except S3Error as s3e:
-                    logger.error(
-                        "MinIO S3Error",
-                        host=config.minio_host,
-                        port=config.minio_port,
-                        bucket=config.minio_bucket,
-                        error=str(s3e.message),
-                        error_type="S3Error"
-                    )
-                    raise ValueError("Minio presigned object failed") from s3e
-                except Exception as e:
-                    logger.exception(f"Unexpected error during deletion: {str(e)}")
-                    raise
+            return {
+                "data": results,
+                "pagination": {
+                    "current_page": page,
+                    "items_per_page": per_page,
+                    "total_items": total_count,
+                    "total_pages": (total_count + per_page - 1) // per_page,  # Ceiling division
+                },
+            }
+        except PyMongoError as pme:
+            logger.error(f"Error retrieving index with filters and pagination: {str(e)}")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_file,
+                target_id="agregate",
+                details={"aggregate": pipeline},
+                status="failure"
+            )
+            raise ValueError("Database error while retrieve document") from pme
+        except S3Error as s3e:
+            logger.error(
+                "MinIO S3Error",
+                host=config.minio_host,
+                port=config.minio_port,
+                bucket=config.minio_bucket,
+                error=str(s3e.message),
+                error_type="S3Error"
+            )
+            raise ValueError("Minio presigned object failed") from s3e
+        except Exception as e:
+            logger.exception(f"Unexpected error during deletion: {str(e)}")
+            raise
 
     def check_storage(self):
         """
         Retrieve a free space by org id (session).
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_organization]
-            try:
-                obj = collection.find_one({"_id": self.org_id})
-                if not obj:
-                    # write audit trail for fail
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="retrieve",
-                        target=self.collection_organization,
-                        target_id=self.org_id,
-                        details={"_id": self.org_id},
-                        status="failure",
-                        error_message="Organization not found"
-                    )
-                    raise ValueError("Organization not found")
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="retrieve",
-                    target=self.collection_organization,
-                    target_id=self.org_id,
-                    details={"_id": self.org_id, "retrieved": obj},
-                    status="success"
-                )
-                return {"storage":obj["storage"],"usedstorage":obj["usedstorage"]}
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
+        collection = self.mongo.get_database()[self.collection_organization]
+        try:
+            obj = collection.find_one({"_id": self.org_id})
+            if not obj:
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
-                    mongo,
+                    self.mongo,
                     action="retrieve",
                     target=self.collection_organization,
                     target_id=self.org_id,
                     details={"_id": self.org_id},
                     status="failure",
-                    error_message=str(pme)
+                    error_message="Organization not found"
                 )
-                raise ValueError("Database error occurred while find document.") from pme
-            except Exception as e:
-                logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
-                raise
+                raise ValueError("Organization not found")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_organization,
+                target_id=self.org_id,
+                details={"_id": self.org_id, "retrieved": obj},
+                status="success"
+            )
+            return {"storage":obj["storage"],"usedstorage":obj["usedstorage"]}
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            # write audit trail for fail
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_organization,
+                target_id=self.org_id,
+                details={"_id": self.org_id},
+                status="failure",
+                error_message=str(pme)
+            )
+            raise ValueError("Database error occurred while find document.") from pme
+        except Exception as e:
+            logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
+            raise
     
     def move_to_trash_restore(self, file_id: str, data: MoveToTrash):
         """
         File move to trash by ID.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_file]
-            obj = data.model_dump()
-            obj["mod_by"] = self.user_id
-            obj["mod_date"] = datetime.now(timezone.utc)
-            try:
-                update_role = collection.find_one_and_update({"_id": file_id}, {"$set": obj}, return_document=True)
-                if not update_role:
-                    # write audit trail for fail
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="update",
-                        target=self.collection_file,
-                        target_id=file_id,
-                        details={"$set": obj},
-                        status="failure",
-                        error_message="File not found"
-                    )
-                    raise ValueError("File not found")
-                logger.info(f"File {file_id} status updated.")
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="update",
-                    target=self.collection_file,
-                    target_id=file_id,
-                    details={"$set": obj},
-                    status="success"
-                )
-                return update_role
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
+        collection = self.mongo.get_database()[self.collection_file]
+        obj = data.model_dump()
+        obj["mod_by"] = self.user_id
+        obj["mod_date"] = datetime.now(timezone.utc)
+        try:
+            update_role = collection.find_one_and_update({"_id": file_id}, {"$set": obj}, return_document=True)
+            if not update_role:
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
-                    mongo,
+                    self.mongo,
                     action="update",
                     target=self.collection_file,
                     target_id=file_id,
                     details={"$set": obj},
                     status="failure",
-                    error_message=str(pme)
+                    error_message="File not found"
                 )
-                raise ValueError("Database error occurred while update document.") from pme
-            except Exception as e:
-                logger.exception(f"Error updating status: {str(e)}")
-                raise
+                raise ValueError("File not found")
+            logger.info(f"File {file_id} status updated.")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_file,
+                target_id=file_id,
+                details={"$set": obj},
+                status="success"
+            )
+            return update_role
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            # write audit trail for fail
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_file,
+                target_id=file_id,
+                details={"$set": obj},
+                status="failure",
+                error_message=str(pme)
+            )
+            raise ValueError("Database error occurred while update document.") from pme
+        except Exception as e:
+            logger.exception(f"Error updating status: {str(e)}")
+            raise
 
     def delete_file_by_id(self, file_id: str):
         """
@@ -431,70 +438,68 @@ class CRUD:
         Returns:
             Dict berisi status dan pesan
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_file]
-            collection_org = mongo.get_database()[self.collection_organization]
-            with self.minio_conn as minio_client:
-                try:
-                    obj = collection.find_one({"_id": file_id})
-                    if not obj:
-                        # write audit trail for fail
-                        self.audit_trail.log_audittrail(
-                            mongo,
-                            action="retrieve",
-                            target=self.collection_file,
-                            target_id=file_id,
-                            details={"_id": file_id},
-                            status="failure",
-                            error_message="File not found"
-                        )
-                        raise ValueError("File not found")
-                    
-                    # remove file in minio
-                    minio_client.remove_object(config.minio_bucket, obj['filename'])
+        collection = self.mongo.get_database()[self.collection_file]
+        collection_org = self.mongo.get_database()[self.collection_organization]
+        try:
+            obj = collection.find_one({"_id": file_id})
+            if not obj:
+                # write audit trail for fail
+                self.audit_trail.log_audittrail(
+                    self.mongo,
+                    action="retrieve",
+                    target=self.collection_file,
+                    target_id=file_id,
+                    details={"_id": file_id},
+                    status="failure",
+                    error_message="File not found"
+                )
+                raise ValueError("File not found")
+            
+            # remove file in minio
+            self.minio_conn.remove_object(config.minio_bucket, obj['filename'])
 
-                    # update space storage after deleted file
-                    deleted_size = obj['filestat']['size']
-                    collection_org.update_one({"_id": self.org_id}, {"$inc": {"usedstorage": -deleted_size}}, upsert=True)
-                    
-                    # delete file in mongodb
-                    result = collection.delete_one({"_id": file_id})
+            # update space storage after deleted file
+            deleted_size = obj['filestat']['size']
+            collection_org.update_one({"_id": self.org_id}, {"$inc": {"usedstorage": -deleted_size}}, upsert=True)
+            
+            # delete file in mongodb
+            result = collection.delete_one({"_id": file_id})
 
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="delete",
-                        target=self.collection_file,
-                        target_id=file_id,
-                        details=obj,
-                        status="success"
-                    )
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="delete",
+                target=self.collection_file,
+                target_id=file_id,
+                details=obj,
+                status="success"
+            )
 
-                    return result.deleted_count
-                except PyMongoError as pme:
-                    logger.error(f"Database error while deleting document with ID {file_id}: {str(pme)}")
-                    # write audit trail for success
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="delete",
-                        target=self.collection_file,
-                        target_id=file_id,
-                        details={"_id": file_id},
-                        status="failure"
-                    )
-                    raise ValueError("Database error while delete document") from pme
-                except S3Error as s3e:
-                    logger.error(
-                        "MinIO S3Error",
-                        host=config.minio_host,
-                        port=config.minio_port,
-                        bucket=config.minio_bucket,
-                        error=str(s3e.message),
-                        error_type="S3Error"
-                    )
-                    raise ValueError("Minio remove object failed") from s3e
-                except Exception as e:
-                    logger.exception(f"Unexpected error during deletion: {str(e)}")
-                    raise
+            return result.deleted_count
+        except PyMongoError as pme:
+            logger.error(f"Database error while deleting document with ID {file_id}: {str(pme)}")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="delete",
+                target=self.collection_file,
+                target_id=file_id,
+                details={"_id": file_id},
+                status="failure"
+            )
+            raise ValueError("Database error while delete document") from pme
+        except S3Error as s3e:
+            logger.error(
+                "MinIO S3Error",
+                host=config.minio_host,
+                port=config.minio_port,
+                bucket=config.minio_bucket,
+                error=str(s3e.message),
+                error_type="S3Error"
+            )
+            raise ValueError("Minio remove object failed") from s3e
+        except Exception as e:
+            logger.exception(f"Unexpected error during deletion: {str(e)}")
+            raise
 
     def delete_folder_by_id(self, folder_id: str) -> Dict[str, Any]:
         """
@@ -538,75 +543,74 @@ class CRUD:
                 logger.error(f"Database error while recursive folders with ID {start}: {str(e)}")
                 return None
             
-        with mongodb.MongoConn() as mongo:
-            collection_file = mongo.get_database()[self.collection_file]
-            collection_folder = mongo.get_database()[self.collection_folder]
-            collection_org = mongo.get_database()[self.collection_organization]
-            with self.minio_conn as minio_client:
-                try:
-                    # Recursive folder and files
-                    recursive_folder = _recursive(collection_file,collection_folder,folder_id)
+        collection_file = self.mongo.get_database()[self.collection_file]
+        collection_folder = self.mongo.get_database()[self.collection_folder]
+        collection_org = self.mongo.get_database()[self.collection_organization]
+        with self.minio_conn as minio_client:
+            try:
+                # Recursive folder and files
+                recursive_folder = _recursive(collection_file,collection_folder,folder_id)
 
-                    if not recursive_folder:
-                        # write audit trail for fail
-                        self.audit_trail.log_audittrail(
-                            mongo,
-                            action="retrieve",
-                            target=self.collection_folder,
-                            target_id=folder_id,
-                            details={"_id": folder_id},
-                            status="failure",
-                            error_message="Folder not found"
-                        )
-                        raise ValueError("Folder not found")
-
-                    # Delete folder
-                    del_folder = collection_folder.delete_many({"_id": {"$in": recursive_folder["folders"]}})
-
-                    # DELETE FILE
-                    fileID = []
-                    deleted_size = 0
-                    for i in recursive_folder['files']:
-                        minio_client.remove_object(config.minio_bucket, i['filename'])
-                        deleted_size += i["size"]
-                        fileID.append(i['id'])
-                    del_file = collection_file.delete_many({"_id": {"$in": fileID}})
-
-                    # update space storage after deleted file
-                    collection_org.update_one({"_id": self.org_id}, {"$inc": {"usedstorage": -deleted_size}}, upsert=True)
-
+                if not recursive_folder:
+                    # write audit trail for fail
                     self.audit_trail.log_audittrail(
-                        mongo,
-                        action="delete",
-                        target=self.collection_folder,
-                        target_id=folder_id,
-                        details=recursive_folder,
-                        status="success"
-                    )
-
-                    return recursive_folder
-                except PyMongoError as pme:
-                    logger.error(f"Database error while deleting folder with ID {folder_id}: {str(pme)}")
-                    # write audit trail for success
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="delete",
+                        self.mongo,
+                        action="retrieve",
                         target=self.collection_folder,
                         target_id=folder_id,
                         details={"_id": folder_id},
-                        status="failure"
+                        status="failure",
+                        error_message="Folder not found"
                     )
-                    raise ValueError("Database error while delete folder") from pme
-                except S3Error as s3e:
-                    logger.error(
-                        "MinIO S3Error",
-                        host=config.minio_host,
-                        port=config.minio_port,
-                        bucket=config.minio_bucket,
-                        error=str(s3e.message),
-                        error_type="S3Error"
-                    )
-                    raise ValueError("Minio remove object failed") from s3e
-                except Exception as e:
-                    logger.exception(f"Unexpected error during deletion: {str(e)}")
-                    raise
+                    raise ValueError("Folder not found")
+
+                # Delete folder
+                del_folder = collection_folder.delete_many({"_id": {"$in": recursive_folder["folders"]}})
+
+                # DELETE FILE
+                fileID = []
+                deleted_size = 0
+                for i in recursive_folder['files']:
+                    minio_client.remove_object(config.minio_bucket, i['filename'])
+                    deleted_size += i["size"]
+                    fileID.append(i['id'])
+                del_file = collection_file.delete_many({"_id": {"$in": fileID}})
+
+                # update space storage after deleted file
+                collection_org.update_one({"_id": self.org_id}, {"$inc": {"usedstorage": -deleted_size}}, upsert=True)
+
+                self.audit_trail.log_audittrail(
+                    self.mongo,
+                    action="delete",
+                    target=self.collection_folder,
+                    target_id=folder_id,
+                    details=recursive_folder,
+                    status="success"
+                )
+
+                return recursive_folder
+            except PyMongoError as pme:
+                logger.error(f"Database error while deleting folder with ID {folder_id}: {str(pme)}")
+                # write audit trail for success
+                self.audit_trail.log_audittrail(
+                    self.mongo,
+                    action="delete",
+                    target=self.collection_folder,
+                    target_id=folder_id,
+                    details={"_id": folder_id},
+                    status="failure"
+                )
+                raise ValueError("Database error while delete folder") from pme
+            except S3Error as s3e:
+                logger.error(
+                    "MinIO S3Error",
+                    host=config.minio_host,
+                    port=config.minio_port,
+                    bucket=config.minio_bucket,
+                    error=str(s3e.message),
+                    error_type="S3Error"
+                )
+                raise ValueError("Minio remove object failed") from s3e
+            except Exception as e:
+                logger.exception(f"Unexpected error during deletion: {str(e)}")
+                raise

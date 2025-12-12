@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Query
+from fastapi import APIRouter, Depends, Query
 from typing import Optional
 
 from baseapp.config import setting
@@ -8,6 +8,7 @@ from baseapp.config import setting
 config = setting.get_settings()
 
 from baseapp.utils.jwt import get_current_user
+from baseapp.utils.logger import Logger
 from baseapp.services._org import model
 
 from baseapp.services._org.crud import CRUD
@@ -16,8 +17,7 @@ _crud = CRUD()
 from baseapp.services.permission_check_service import PermissionChecker
 permission_checker = PermissionChecker()
 
-import logging
-logger = logging.getLogger()
+logger = Logger("baseapp.services._org.api")
 
 router = APIRouter(prefix="/v1/_organization", tags=["Organization"])
 
@@ -148,23 +148,7 @@ async def update_status(org_id: str, cu: CurrentUser = Depends(get_current_user)
     
     # Buat instance model langsung
     manual_data = UpdateStatus(
-        status=Status.DELETE  # nilai yang Anda tentukan
+        status=Status.DELETED  # nilai yang Anda tentukan
     )
     response = _crud.update_status(org_id,manual_data)
     return ApiResponse(status=0, message="Data deleted", data=response)
-
-@router.post("/is_owner_exist", response_model=ApiResponse)
-async def check_owner_exist() -> ApiResponse:
-    owner_exists = _crud.is_owner_exist()
-    message = ""
-    if owner_exists:
-        message="Owner exists in the system"
-    else:
-        message="No owner found in the system"
-    return ApiResponse(status=0, message=message, data=owner_exists)
-
-@router.post("/reg_member", response_model=ApiResponse)
-async def create(req: model.InitRequest) -> ApiResponse:   
-    req.org.authority = 4
-    response = _crud.reg_partner_client_org(req.org, req.user)
-    return ApiResponse(status=0, message="Register Succeed", data=response)

@@ -23,16 +23,14 @@ async def create(
 ) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_api_credentials", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
-
-    _crud.set_context(
-        user_id=cu.id,
-        org_id=cu.org_id,
-        ip_address=cu.ip_address,  # Jika ada
-        user_agent=cu.user_agent   # Jika ada
-    )
-
-    response = _crud.create(req)
-
+    with CRUD() as _crud:
+        _crud.set_context(
+            user_id=cu.id,
+            org_id=cu.org_id,
+            ip_address=cu.ip_address,  # Jika ada
+            user_agent=cu.user_agent   # Jika ada
+        )
+        response = _crud.create(req)
     return ApiResponse(status=0, message="Data created", data=response)
 
 @router.post("/create-by-owner", response_model=ApiResponse)
@@ -46,14 +44,14 @@ async def create_by_owner(
     if not permission_checker.has_permission(cu.roles, "_api_credentials", 2):  # 2 untuk izin simpan baru
         raise PermissionError("Access denied")
 
-    _crud.set_context(
-        user_id=cu.id,
-        org_id=cu.org_id,
-        ip_address=cu.ip_address,  # Jika ada
-        user_agent=cu.user_agent   # Jika ada
-    )
-
-    response = _crud.create_by_owner(req)
+    with CRUD() as _crud:
+        _crud.set_context(
+            user_id=cu.id,
+            org_id=cu.org_id,
+            ip_address=cu.ip_address,  # Jika ada
+            user_agent=cu.user_agent   # Jika ada
+        )
+        response = _crud.create_by_owner(req)
 
     return ApiResponse(status=0, message="Data created", data=response)
 
@@ -61,19 +59,18 @@ async def create_by_owner(
 async def delete_data(api_credential_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     if not permission_checker.has_permission(cu.roles, "_api_credentials", 4):  # 4 untuk izin simpan perubahan
         raise PermissionError("Access denied")
-    
-    _crud.set_context(
-        user_id=cu.id,
-        org_id=cu.org_id,
-        ip_address=cu.ip_address,  # Jika ada
-        user_agent=cu.user_agent   # Jika ada
-    )
-    
-    # Buat instance model langsung
-    manual_data = UpdateStatus(
-        status=Status.DELETE  # nilai yang Anda tentukan
-    )
-    response = _crud.update_by_id(api_credential_id,manual_data)
+    with CRUD() as _crud:
+        _crud.set_context(
+            user_id=cu.id,
+            org_id=cu.org_id,
+            ip_address=cu.ip_address,  # Jika ada
+            user_agent=cu.user_agent   # Jika ada
+        )
+        # Buat instance model langsung
+        manual_data = UpdateStatus(
+            status=Status.DELETE  # nilai yang Anda tentukan
+        )
+        response = _crud.update_by_id(api_credential_id,manual_data)
     return ApiResponse(status=0, message="Data deleted", data=response)
 
 @router.get("", response_model=ApiResponse)
@@ -90,32 +87,33 @@ async def get_all_data(
     if not permission_checker.has_permission(cu.roles, "_api_credentials", 1):  # 1 untuk izin baca
         raise PermissionError("Access denied")
 
-    _crud.set_context(
-        user_id=cu.id,
-        org_id=cu.org_id,
-        ip_address=cu.ip_address,  # Jika ada
-        user_agent=cu.user_agent   # Jika ada
-    )
+    with CRUD() as _crud:
+        _crud.set_context(
+            user_id=cu.id,
+            org_id=cu.org_id,
+            ip_address=cu.ip_address,  # Jika ada
+            user_agent=cu.user_agent   # Jika ada
+        )
     
-    # Build filters dynamically
-    filters = {}
-    
-    # default filter by organization id
-    if org_id:
-        if cu.authority == 1:
-            filters["org_id"] = org_id
-    else:
-        filters["org_id"] = cu.org_id
+        # Build filters dynamically
+        filters = {}
+        
+        # default filter by organization id
+        if org_id:
+            if cu.authority == 1:
+                filters["org_id"] = org_id
+        else:
+            filters["org_id"] = cu.org_id
 
-    if status:
-        filters["status"] = status
+        if status:
+            filters["status"] = status
 
-    # Call CRUD function
-    response = _crud.get_all(
-        filters=filters,
-        page=page,
-        per_page=per_page,
-        sort_field=sort_field,
-        sort_order=sort_order,
-    )
+        # Call CRUD function
+        response = _crud.get_all(
+            filters=filters,
+            page=page,
+            per_page=per_page,
+            sort_field=sort_field,
+            sort_order=sort_order,
+        )
     return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])

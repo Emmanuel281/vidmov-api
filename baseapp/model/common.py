@@ -69,7 +69,6 @@ class TokenResponse(BaseModel):
 
 class UpdateStatus(BaseModel):
     """Representation of update status model."""
-    id: str = Field(description="Id of the data.")
     status: Status = Field(description="Status of the data.")
 
 class DMSOperationType(str, Enum):
@@ -91,3 +90,8 @@ class WalletType(str, Enum):
     TRF_OUT = "TRF_OUT"
     REWARD = "REWARD"
     USE = "USE"
+
+class Language(str, Enum):
+    """Type of a language"""
+    id = "Indonesia"
+    en = "English"

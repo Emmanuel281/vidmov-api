@@ -39,6 +39,8 @@ from baseapp.services._api_credentials.api import router as api_credential_route
 from baseapp.services.content.api import router as content_router # Video Content Management
 from baseapp.services.content_detail.api import router as content_detail_router # Video Content Detail
 
+from baseapp.services.register.api import router as register_router # Register (Traditional)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. BAGIAN STARTUP (Dijalankan sebelum aplikasi menerima request)
@@ -121,6 +123,8 @@ app.include_router(api_credential_router)
 # Video Content Management
 app.include_router(content_router)
 app.include_router(content_detail_router)
+# Register
+app.include_router(register_router)
 
 @app.get("/v1/test")
 def read_root():

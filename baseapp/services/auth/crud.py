@@ -1,3 +1,4 @@
+from typing import Optional
 from baseapp.config import setting, mongodb
 from baseapp.services.auth.model import UserInfo, ClientInfo
 from baseapp.model.common import Status
@@ -14,18 +15,17 @@ class CRUD:
         self.permissions_collection = "_featureonrole"
         self.api_credentials = "_api_credentials"
 
-        self.mongo = mongodb.MongoConn()  # Inisialisasi MongoDB di sini
-
     def __enter__(self):
-        # Membuka koneksi saat memasuki konteks
-        self.mongo.__enter__()
+        self._mongo_context = mongodb.MongoConn()
+        self.mongo = self._mongo_context.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # Menutup koneksi saat keluar dari konteks
-        self.mongo.__exit__(exc_type, exc_value, traceback)
+        if hasattr(self, '_mongo_context'):
+            return self._mongo_context.__exit__(exc_type, exc_value, traceback)
+        return False
 
-    def check_org(self, org_id) -> int:
+    def check_org(self, org_id) -> Optional[int]:
         collection = self.mongo.get_database()[self.org_collection]
         query = {"_id": org_id}
         find_org = collection.find_one(query)

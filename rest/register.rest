@@ -1,0 +1,42 @@
+@prod = https://arena.gai.co.id/service
+@dev = http://localhost:17178
+@host = {{dev}}
+@upload_host = {{dev}}
+
+@session_id = 39784c86ff3e45ab81ee28e3962d938e
+
+###
+# GROUP: Register (Traditional)
+###
+POST {{host}}/v1/register
+Content-Type: application/json
+X-Client-Type: mobile
+
+{ 
+    "email": "aldian.gnusa@gmail.com", 
+    "phone_number": "085778789851" ,
+    "password": "SecurePassword123" 
+}
+
+###
+# GROUP: Resend OTP
+###
+POST {{host}}/v1/register/resend_otp
+Content-Type: application/json
+X-Client-Type: mobile
+
+{ 
+    "session": "5ae492ab7ef8440e960431aa2907939a"
+}
+
+###
+# GROUP: Verify
+###
+POST {{host}}/v1/register/verify
+Content-Type: application/json
+X-Client-Type: mobile
+
+{ 
+    "session": "4bbaf0e6449e4182812cbbaefc37878c",
+    "otp": "953288"
+}

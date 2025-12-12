@@ -5,9 +5,10 @@ from baseapp.test_connection import crud as test
 from baseapp.model.common import ApiResponse
 
 from baseapp.config import setting
+from baseapp.utils.logger import Logger
 
 config = setting.get_settings()
-logger = logging.getLogger()
+logger = Logger("baseapp.test_connection.api")
 
 router = APIRouter(prefix="/v1/test", tags=["Test Connection"])
 
