@@ -17,6 +17,16 @@ class CRUD:
     def __init__(self, collection_name="_dmsdoctype"):
         self.collection_name = collection_name
 
+    def __enter__(self):
+        self._mongo_context = mongodb.MongoConn()
+        self.mongo = self._mongo_context.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if hasattr(self, '_mongo_context'):
+            return self._mongo_context.__exit__(exc_type, exc_value, traceback)
+        return False
+
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
         Memperbarui konteks pengguna dan menginisialisasi AuditTrailService.
@@ -38,258 +48,251 @@ class CRUD:
         """
         Insert a new doctype name into the collection.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-
-            obj = data.model_dump()
-            obj["_id"] = generate_uuid()
-            obj["rec_by"] = self.user_id
-            obj["rec_date"] = datetime.now(timezone.utc)
-            obj["org_id"] = self.org_id
-            try:
-                is_exist = collection.find_one({"name": obj["name"], "org_id":self.org_id})
-                if is_exist:
-                    raise ValueError("The name already exists, please use a different name.")
-                
-                result = collection.insert_one(obj)
-                return obj
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
-                raise ValueError("Database error occurred while creating document.") from pme
-            except Exception as e:
-                logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
-                raise
+        collection = self.mongo.get_database()[self.collection_name]
+        obj = data.model_dump()
+        obj["_id"] = generate_uuid()
+        obj["rec_by"] = self.user_id
+        obj["rec_date"] = datetime.now(timezone.utc)
+        obj["org_id"] = self.org_id
+        try:
+            is_exist = collection.find_one({"name": obj["name"], "org_id":self.org_id})
+            if is_exist:
+                raise ValueError("The name already exists, please use a different name.")
+            result = collection.insert_one(obj)
+            return obj
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            raise ValueError("Database error occurred while creating document.") from pme
+        except Exception as e:
+            logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
+            raise
 
     def get_by_id(self, doctype_id: str):
         """
         Retrieve a doctype by ID.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-            try:
-                obj = collection.find_one({"_id": doctype_id})
-                if not obj:
-                    # write audit trail for fail
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="retrieve",
-                        target=self.collection_name,
-                        target_id=doctype_id,
-                        details={"_id": doctype_id},
-                        status="failure",
-                        error_message="Doctype not found"
-                    )
-                    raise ValueError("Doctype not found")
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="retrieve",
-                    target=self.collection_name,
-                    target_id=doctype_id,
-                    details={"_id": doctype_id, "retrieved_doctype": obj},
-                    status="success"
-                )
-                return obj
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
+        collection = self.mongo.get_database()[self.collection_name]
+        try:
+            obj = collection.find_one({"_id": doctype_id})
+            if not obj:
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
-                    mongo,
+                    self.mongo,
                     action="retrieve",
                     target=self.collection_name,
                     target_id=doctype_id,
                     details={"_id": doctype_id},
                     status="failure",
-                    error_message=str(pme)
+                    error_message="Doctype not found"
                 )
-                raise ValueError("Database error occurred while find document.") from pme
-            except Exception as e:
-                logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
-                raise
+                raise ValueError("Doctype not found")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_name,
+                target_id=doctype_id,
+                details={"_id": doctype_id, "retrieved_doctype": obj},
+                status="success"
+            )
+            return obj
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            # write audit trail for fail
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_name,
+                target_id=doctype_id,
+                details={"_id": doctype_id},
+                status="failure",
+                error_message=str(pme)
+            )
+            raise ValueError("Database error occurred while find document.") from pme
+        except Exception as e:
+            logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
+            raise
 
     def update_by_id(self, doctype_id: str, data: DocTypeUpdate):
         """
         Update a doctype's data by ID.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-            obj = data.model_dump()
-            obj["mod_by"] = self.user_id
-            obj["mod_date"] = datetime.now(timezone.utc)
-            try:
-                update_role = collection.find_one_and_update({"_id": doctype_id}, {"$set": obj}, return_document=True)
-                if not update_role:
-                    # write audit trail for fail
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="update",
-                        target=self.collection_name,
-                        target_id=doctype_id,
-                        details={"$set": obj},
-                        status="failure",
-                        error_message="Doctype not found"
-                    )
-                    raise ValueError("Doctype not found")
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="update",
-                    target=self.collection_name,
-                    target_id=doctype_id,
-                    details={"$set": obj},
-                    status="success"
-                )
-                return update_role
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
+        collection = self.mongo.get_database()[self.collection_name]
+        obj = data.model_dump()
+        obj["mod_by"] = self.user_id
+        obj["mod_date"] = datetime.now(timezone.utc)
+        try:
+            update_role = collection.find_one_and_update({"_id": doctype_id}, {"$set": obj}, return_document=True)
+            if not update_role:
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
-                    mongo,
+                    self.mongo,
                     action="update",
                     target=self.collection_name,
                     target_id=doctype_id,
                     details={"$set": obj},
                     status="failure",
-                    error_message=str(pme)
+                    error_message="Doctype not found"
                 )
-                raise ValueError("Database error occurred while update document.") from pme
-            except Exception as e:
-                logger.exception(f"Error updating role: {str(e)}")
-                raise
+                raise ValueError("Doctype not found")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_name,
+                target_id=doctype_id,
+                details={"$set": obj},
+                status="success"
+            )
+            return update_role
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            # write audit trail for fail
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_name,
+                target_id=doctype_id,
+                details={"$set": obj},
+                status="failure",
+                error_message=str(pme)
+            )
+            raise ValueError("Database error occurred while update document.") from pme
+        except Exception as e:
+            logger.exception(f"Error updating role: {str(e)}")
+            raise
             
     def get_all(self, filters: Optional[Dict[str, Any]] = None, page: int = 1, per_page: int = 10, sort_field: str = "_id", sort_order: str = "asc"):
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-            try:
-                # Apply filters
-                query_filter = {}
-                if filters:
-                    for key, value in filters.items():
-                        if isinstance(value, str) and value.startswith("regex:"):
-                            # Extract regex pattern from value
-                            regex_pattern = value.split("regex:", 1)[1]
-                            query_filter[key] = {"$regex": regex_pattern, "$options": "i"}  # Case-insensitive regex
-                        else:
-                            query_filter[key] = value
+        collection = self.mongo.get_database()[self.collection_name]
+        try:
+            # Apply filters
+            query_filter = {}
+            if filters:
+                for key, value in filters.items():
+                    if isinstance(value, str) and value.startswith("regex:"):
+                        # Extract regex pattern from value
+                        regex_pattern = value.split("regex:", 1)[1]
+                        query_filter[key] = {"$regex": regex_pattern, "$options": "i"}  # Case-insensitive regex
+                    else:
+                        query_filter[key] = value
 
-                # Pagination
-                skip = (page - 1) * per_page
-                limit = per_page
+            # Pagination
+            skip = (page - 1) * per_page
+            limit = per_page
 
-                # Sorting
-                order = ASCENDING if sort_order == "asc" else DESCENDING
+            # Sorting
+            order = ASCENDING if sort_order == "asc" else DESCENDING
 
-                # Selected fields
-                selected_fields = {
-                    "id": "$_id",
-                    "name": 1,
-                    "metadata": 1,
-                    "folder": 1,
-                    "status": 1,
-                    "_id": 0
-                }
+            # Selected fields
+            selected_fields = {
+                "id": "$_id",
+                "name": 1,
+                "metadata": 1,
+                "folder": 1,
+                "status": 1,
+                "_id": 0
+            }
 
-                # Aggregation pipeline
-                pipeline = [
-                    {"$match": query_filter},  # Filter stage
-                    {"$sort": {sort_field: order}},  # Sorting stage
-                    {"$skip": skip},  # Pagination skip stage
-                    {"$limit": limit},  # Pagination limit stage
-                    {"$project": selected_fields}  # Project only selected fields
-                ]
+            # Aggregation pipeline
+            pipeline = [
+                {"$match": query_filter},  # Filter stage
+                {"$sort": {sort_field: order}},  # Sorting stage
+                {"$skip": skip},  # Pagination skip stage
+                {"$limit": limit},  # Pagination limit stage
+                {"$project": selected_fields}  # Project only selected fields
+            ]
 
-                # Execute aggregation pipeline
-                cursor = collection.aggregate(pipeline)
-                results = list(cursor)
+            # Execute aggregation pipeline
+            cursor = collection.aggregate(pipeline)
+            results = list(cursor)
 
-                # Total count
-                total_count = collection.count_documents(query_filter)
+            # Total count
+            total_count = collection.count_documents(query_filter)
 
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="retrieve",
-                    target=self.collection_name,
-                    target_id="agregate",
-                    details={"aggregate": pipeline},
-                    status="success"
-                )
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_name,
+                target_id="agregate",
+                details={"aggregate": pipeline},
+                status="success"
+            )
 
-                return {
-                    "data": results,
-                    "pagination": {
-                        "current_page": page,
-                        "items_per_page": per_page,
-                        "total_items": total_count,
-                        "total_pages": (total_count + per_page - 1) // per_page,  # Ceiling division
-                    },
-                }
-            except PyMongoError as pme:
-                logger.error(f"Error retrieving doctype with filters and pagination: {str(e)}")
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="retrieve",
-                    target=self.collection_name,
-                    target_id="agregate",
-                    details={"aggregate": pipeline},
-                    status="failure"
-                )
-                raise ValueError("Database error while retrieve document") from pme
-            except Exception as e:
-                logger.exception(f"Unexpected error during deletion: {str(e)}")
-                raise
+            return {
+                "data": results,
+                "pagination": {
+                    "current_page": page,
+                    "items_per_page": per_page,
+                    "total_items": total_count,
+                    "total_pages": (total_count + per_page - 1) // per_page,  # Ceiling division
+                },
+            }
+        except PyMongoError as pme:
+            logger.error(f"Error retrieving doctype with filters and pagination: {str(e)}")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_name,
+                target_id="agregate",
+                details={"aggregate": pipeline},
+                status="failure"
+            )
+            raise ValueError("Database error while retrieve document") from pme
+        except Exception as e:
+            logger.exception(f"Unexpected error during deletion: {str(e)}")
+            raise
 
     def update_status(self, doctype_id: str, data: UpdateStatus):
         """
         Update a doctype's data [status] by ID.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-            obj = data.model_dump()
-            obj["mod_by"] = self.user_id
-            obj["mod_date"] = datetime.now(timezone.utc)
-            try:
-                update_role = collection.find_one_and_update({"_id": doctype_id}, {"$set": obj}, return_document=True)
-                if not update_role:
-                    # write audit trail for fail
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="update",
-                        target=self.collection_name,
-                        target_id=doctype_id,
-                        details={"$set": obj},
-                        status="failure",
-                        error_message="Doctype not found"
-                    )
-                    raise ValueError("Doctype not found")
-                logger.info(f"Doctype {doctype_id} status updated.")
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="update",
-                    target=self.collection_name,
-                    target_id=doctype_id,
-                    details={"$set": obj},
-                    status="success"
-                )
-                return update_role
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
+        collection = self.mongo.get_database()[self.collection_name]
+        obj = data.model_dump()
+        obj["mod_by"] = self.user_id
+        obj["mod_date"] = datetime.now(timezone.utc)
+        try:
+            update_role = collection.find_one_and_update({"_id": doctype_id}, {"$set": obj}, return_document=True)
+            if not update_role:
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
-                    mongo,
+                    self.mongo,
                     action="update",
                     target=self.collection_name,
                     target_id=doctype_id,
                     details={"$set": obj},
                     status="failure",
-                    error_message=str(pme)
+                    error_message="Doctype not found"
                 )
-                raise ValueError("Database error occurred while update document.") from pme
-            except Exception as e:
-                logger.exception(f"Error updating status: {str(e)}")
-                raise
+                raise ValueError("Doctype not found")
+            logger.info(f"Doctype {doctype_id} status updated.")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_name,
+                target_id=doctype_id,
+                details={"$set": obj},
+                status="success"
+            )
+            return update_role
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            # write audit trail for fail
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_name,
+                target_id=doctype_id,
+                details={"$set": obj},
+                status="failure",
+                error_message=str(pme)
+            )
+            raise ValueError("Database error occurred while update document.") from pme
+        except Exception as e:
+            logger.exception(f"Error updating status: {str(e)}")
+            raise

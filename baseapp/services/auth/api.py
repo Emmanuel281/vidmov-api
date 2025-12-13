@@ -1,20 +1,19 @@
 from typing import Optional
-from fastapi import APIRouter, Request, Response, Form, Depends, Header
+from fastapi import APIRouter, Request, Response, Depends, Header
 from datetime import datetime, timezone, timedelta
 import random
-import uuid
 
-from baseapp.model.common import ApiResponse, TokenResponse, CurrentUser
-from baseapp.config.setting import get_settings
-from baseapp.config.redis import RedisConn
-from baseapp.services.redis_queue import RedisQueueManager
+from baseapp.config import setting, redis
+from baseapp.model.common import ApiResponse, CurrentUser
 from baseapp.utils.utility import generate_uuid
 from baseapp.utils.jwt import create_access_token, create_refresh_token, decode_jwt_token, get_current_user, revoke_all_refresh_tokens
 from baseapp.utils.logger import Logger
+
+from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.services.auth.model import UserLoginModel, VerifyOTPRequest, ClientAuthCredential
 from baseapp.services.auth.crud import CRUD
 
-config = get_settings()
+config = setting.get_settings()
 logger = Logger("baseapp.services.auth.api")
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 
@@ -49,7 +48,7 @@ async def login(response: Response, req: UserLoginModel, x_client_type: Optional
 
     # Simpan refresh token ke Redis
     redis_key = f"refresh_token:{user_info.id}:{session_id}"
-    with RedisConn() as redis_conn:
+    with redis.RedisConn() as redis_conn:
         redis_conn.set(
             redis_key,
             refresh_token,
@@ -93,7 +92,7 @@ async def request_otp(req: UserLoginModel) -> ApiResponse:
     otp = str(random.randint(100000, 999999))  # Generate random 6-digit OTP
 
     # Simpan refresh token ke Redis
-    with RedisConn() as redis_conn:
+    with redis.RedisConn() as redis_conn:
         redis_conn.setex(f"otp:{username}", 300, otp)
     
         queue_manager = RedisQueueManager(redis_conn, queue_name="otp_tasks")  # Pass actual RedisConn here
@@ -113,7 +112,7 @@ async def verify_otp(response: Response, req: VerifyOTPRequest, x_client_type: O
         user_info = _crud.validate_user(username)
     
     # Simpan refresh token ke Redis
-    with RedisConn() as redis_conn:
+    with redis.RedisConn() as redis_conn:
         stored_otp = redis_conn.get(f"otp:{username}")
     
     if stored_otp and stored_otp == otp:
@@ -192,7 +191,7 @@ async def refresh_token(request: Request, x_client_type: Optional[str] = Header(
     
     # Check token in Redis
     redis_key = f"refresh_token:{payload["id"]}:{payload["session_id"]}"
-    with RedisConn() as redis_conn:
+    with redis.RedisConn() as redis_conn:
         stored_token = redis_conn.get(redis_key)
     
     if stored_token != refresh_token:
@@ -217,7 +216,7 @@ async def logout(response: Response, cu: CurrentUser = Depends(get_current_user)
     exp = payload_access_token.get("exp")
 
     # Check token in Redis
-    with RedisConn() as redis_conn:
+    with redis.RedisConn() as redis_conn:
         revoke_all_refresh_tokens(cu.id, redis_conn)
         if jti and exp:
             sisa_waktu_detik = exp - datetime.now(timezone.utc).timestamp()

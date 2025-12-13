@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Any, Literal, List
+from typing import Optional, Any, List
 from enum import Enum, IntEnum
 
 MINIO_STORAGE_SIZE_LIMIT : int = 10737418240  # 10 GB in bytes
@@ -74,6 +74,22 @@ class UpdateStatus(BaseModel):
 class DMSOperationType(str, Enum):
     TO_TRASH = "to_trash"
     RESTORE = "restore"
+
+class Authority(IntEnum):
+    OWNER = 1
+    PARTNER = 2
+    MEMBER = 4
+    AFFILIATOR = 8
+
+class RoleAction(IntEnum):
+    VIEW = 1
+    ADD = 2
+    EDIT = 4
+    DELETE = 8
+    EXPORT = 16
+    IMPORT = 32
+    APPROVAL = 64
+    SETTING = 128
 
 class ContentStatus(str, Enum):
     """Status of a content"""

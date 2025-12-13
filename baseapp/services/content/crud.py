@@ -19,6 +19,21 @@ class CRUD:
         self.audit_trail = None
         self.minio_conn = minio.MinioConn()
 
+    def __enter__(self):
+        self._mongo_context = mongodb.MongoConn()
+        self.mongo = self._mongo_context.__enter__()
+
+        self._minio_context = minio.MinioConn()
+        self.minio = self._minio_context.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if hasattr(self, '_mongo_context'):
+            return self._mongo_context.__exit__(exc_type, exc_value, traceback)
+        if hasattr(self, '_minio_context'):
+            return self._minio_context.__exit__(exc_type, exc_value, traceback)
+        return False
+    
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
         Memperbarui konteks pengguna dan menginisialisasi AuditTrailService.
@@ -39,402 +54,396 @@ class CRUD:
         """
         Insert a new role into the collection.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
+        collection = self.mongo.get_database()[self.collection_name]
 
-            obj = data.model_dump()
-            obj["_id"] = generate_uuid()
-            obj["rec_by"] = self.user_id
-            obj["rec_date"] = datetime.now(timezone.utc)
-            obj["org_id"] = self.org_id
-            try:
-                result = collection.insert_one(obj)
-                return obj
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
-                raise ValueError("Database error occurred while creating document.") from pme
-            except Exception as e:
-                logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
-                raise
+        obj = data.model_dump()
+        obj["_id"] = generate_uuid()
+        obj["rec_by"] = self.user_id
+        obj["rec_date"] = datetime.now(timezone.utc)
+        obj["org_id"] = self.org_id
+        try:
+            result = collection.insert_one(obj)
+            return obj
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            raise ValueError("Database error occurred while creating document.") from pme
+        except Exception as e:
+            logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
+            raise
 
     def get_by_id(self, content_id: str):
         """
         Retrieve a content by ID.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-            with self.minio_conn as minio_client:
-                try:
-                    # Apply filters
-                    query_filter = {"_id": content_id}
+        collection = self.mongo.get_database()[self.collection_name]
+        try:
+            # Apply filters
+            query_filter = {"_id": content_id}
 
-                    # Selected field
-                    selected_fields = {
-                        "id": "$_id",
-                        "name": 1,
-                        "description": 1,
-                        "cast": 1,
-                        "genre": 1,
-                        "genre_details":1,
-                        "duration": 1,
-                        "type": 1,
-                        "episodes": 1,
-                        "origin": 1,
-                        "rating": 1,
-                        "status": 1,
-                        "poster": 1,
-                        "release_date": 1,
-                        "licence_date": 1,
-                        "is_full_paid": 1,
-                        "full_price_coins": 1,
-                        "main_sponsor": 1,
-                        "_id": 0
+            # Selected field
+            selected_fields = {
+                "id": "$_id",
+                "name": 1,
+                "description": 1,
+                "cast": 1,
+                "genre": 1,
+                "genre_details":1,
+                "duration": 1,
+                "type": 1,
+                "episodes": 1,
+                "origin": 1,
+                "rating": 1,
+                "status": 1,
+                "poster": 1,
+                "release_date": 1,
+                "licence_date": 1,
+                "is_full_paid": 1,
+                "full_price_coins": 1,
+                "main_sponsor": 1,
+                "_id": 0
+            }
+
+            # Aggregation pipeline
+            pipeline = [
+                {"$match": query_filter},  # Filter stage
+                {
+                    "$lookup": {
+                        "from": "_enum",  # The collection to join with
+                        "localField": "genre",  # Array field in content collection
+                        "foreignField": "_id",  # Field in genre_groups collection
+                        "as": "genre_details"  # Output array field
                     }
-
-                    # Aggregation pipeline
-                    pipeline = [
-                        {"$match": query_filter},  # Filter stage
-                        {
-                            "$lookup": {
-                                "from": "_enum",  # The collection to join with
-                                "localField": "genre",  # Array field in content collection
-                                "foreignField": "_id",  # Field in genre_groups collection
-                                "as": "genre_details"  # Output array field
-                            }
-                        },
-                        {
-                            "$addFields": {
-                                "genre_details": {
-                                    "$map": {
-                                        "input": "$genre_details",
-                                        "as": "genre",
-                                        "in": {
-                                            "id": "$$genre._id",
-                                            "value": "$$genre.value",
-                                            "sort": "$$genre.sort",
-                                        }
-                                    }
+                },
+                {
+                    "$addFields": {
+                        "genre_details": {
+                            "$map": {
+                                "input": "$genre_details",
+                                "as": "genre",
+                                "in": {
+                                    "id": "$$genre._id",
+                                    "value": "$$genre.value",
+                                    "sort": "$$genre.sort",
                                 }
                             }
-                        },
-                        # Lookup for poster data
-                        {
-                            "$lookup": {
-                                "from": "_dmsfile",
-                                "let": { "content_id": { "$toString": "$_id" } },
-                                "pipeline": [
-                                    {
-                                        "$match": {
-                                            "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
-                                            "doctype": "8e79c84ee66542db9aa5a1252c47530d"
-                                        }
-                                    },
-                                    {
-                                        "$project": {
-                                            "id": "$_id",
-                                            "_id": 0,
-                                            "filename": "$filename",
-                                            "path": "$folder_path",
-                                            "info_file": "$filestat"
-                                        }
-                                    }
-                                ],
-                                "as": "poster_data"
+                        }
+                    }
+                },
+                # Lookup for poster data
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "content_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
+                                    "doctype": "8e79c84ee66542db9aa5a1252c47530d"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
                             }
-                        },
-                        {
-                            "$addFields": {
-                                "poster": { "$arrayElemAt": ["$poster_data", 0] }
-                            }
-                        },
-                        {"$project": selected_fields}  # Project only selected fields
-                    ]
+                        ],
+                        "as": "poster_data"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "poster": { "$arrayElemAt": ["$poster_data", 0] }
+                    }
+                },
+                {"$project": selected_fields}  # Project only selected fields
+            ]
 
-                    # Execute aggregation pipeline
-                    cursor = collection.aggregate(pipeline)
-                    results = list(cursor)
+            # Execute aggregation pipeline
+            cursor = collection.aggregate(pipeline)
+            results = list(cursor)
 
-                    if len(results) > 0:
-                        content_data = results[0]  # Get the first (and only) document
-                    else:
-                        # write audit trail for fail
-                        self.audit_trail.log_audittrail(
-                            mongo,
-                            action="retrieve",
-                            target=self.collection_name,
-                            target_id=content_id,
-                            details={"_id": content_id},
-                            status="failure",
-                            error_message="Content not found"
-                        )
-                        raise ValueError("Content not found")
+            if len(results) > 0:
+                content_data = results[0]  # Get the first (and only) document
+            else:
+                # write audit trail for fail
+                self.audit_trail.log_audittrail(
+                    self.mongo,
+                    action="retrieve",
+                    target=self.collection_name,
+                    target_id=content_id,
+                    details={"_id": content_id},
+                    status="failure",
+                    error_message="Content not found"
+                )
+                raise ValueError("Content not found")
 
-                    # write audit trail for success
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="retrieve",
-                        target=self.collection_name,
-                        target_id=content_id,
-                        details={"_id": content_id, "retrieved_user": content_data},
-                        status="success"
-                    )
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_name,
+                target_id=content_id,
+                details={"_id": content_id, "retrieved_user": content_data},
+                status="success"
+            )
 
-                    # presigned url
-                    if "poster" in content_data:
-                        content_data['poster']['url'] = None
-                        url = minio_client.presigned_get_object(config.minio_bucket, content_data['poster']['filename'])
-                        if url:
-                            content_data['poster']['url'] = url.replace(minio_client.get_minio_endpoint(),minio_client.get_domain_endpoint())
+            # presigned url
+            if "poster" in content_data:
+                content_data['poster']['url'] = None
+                url = self.minio.presigned_get_object(config.minio_bucket, content_data['poster']['filename'])
+                if url:
+                    content_data['poster']['url'] = url
 
-                    return content_data
-                except PyMongoError as pme:
-                    logger.error(f"Database error occurred: {str(pme)}")
-                    # write audit trail for fail
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="retrieve",
-                        target=self.collection_name,
-                        target_id=content_id,
-                        details={"_id": content_id},
-                        status="failure",
-                        error_message=str(pme)
-                    )
-                    raise ValueError("Database error occurred while find document.") from pme
-                except S3Error as s3e:
-                    logger.error(
-                        "MinIO S3Error",
-                        host=config.minio_host,
-                        port=config.minio_port,
-                        bucket=config.minio_bucket,
-                        error=str(e),
-                        error_type="S3Error"
-                    )
-                    raise ValueError("Minio presigned object failed") from s3e
-                except Exception as e:
-                    logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
-                    raise
+            return content_data
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            # write audit trail for fail
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="retrieve",
+                target=self.collection_name,
+                target_id=content_id,
+                details={"_id": content_id},
+                status="failure",
+                error_message=str(pme)
+            )
+            raise ValueError("Database error occurred while find document.") from pme
+        except S3Error as s3e:
+            logger.error(
+                "MinIO S3Error",
+                host=config.minio_host,
+                port=config.minio_port,
+                bucket=config.minio_bucket,
+                error=str(e),
+                error_type="S3Error"
+            )
+            raise ValueError("Minio presigned object failed") from s3e
+        except Exception as e:
+            logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
+            raise
 
     def update_by_id(self, content_id: str, data):
         """
         Update a role's data by ID.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-            obj = data.model_dump()
-            obj["mod_by"] = self.user_id
-            obj["mod_date"] = datetime.now(timezone.utc)
-            try:
-                update_content = collection.find_one_and_update({"_id": content_id}, {"$set": obj}, return_document=True)
-                if not update_content:
-                    # write audit trail for fail
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="update",
-                        target=self.collection_name,
-                        target_id=content_id,
-                        details={"$set": obj},
-                        status="failure",
-                        error_message="Content not found"
-                    )
-                    raise ValueError("Content not found")
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="update",
-                    target=self.collection_name,
-                    target_id=content_id,
-                    details={"$set": obj},
-                    status="success"
-                )
-                return update_content
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
+        collection = self.mongo.get_database()[self.collection_name]
+        obj = data.model_dump()
+        obj["mod_by"] = self.user_id
+        obj["mod_date"] = datetime.now(timezone.utc)
+        try:
+            update_content = collection.find_one_and_update({"_id": content_id}, {"$set": obj}, return_document=True)
+            if not update_content:
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
-                    mongo,
+                    self.mongo,
                     action="update",
                     target=self.collection_name,
                     target_id=content_id,
                     details={"$set": obj},
                     status="failure",
-                    error_message=str(pme)
+                    error_message="Content not found"
                 )
-                raise ValueError("Database error occurred while update document.") from pme
-            except Exception as e:
-                logger.exception(f"Error updating role: {str(e)}")
-                raise
+                raise ValueError("Content not found")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_name,
+                target_id=content_id,
+                details={"$set": obj},
+                status="success"
+            )
+            return update_content
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            # write audit trail for fail
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_name,
+                target_id=content_id,
+                details={"$set": obj},
+                status="failure",
+                error_message=str(pme)
+            )
+            raise ValueError("Database error occurred while update document.") from pme
+        except Exception as e:
+            logger.exception(f"Error updating role: {str(e)}")
+            raise
 
     def get_all(self, filters: Optional[Dict[str, Any]] = None, page: int = 1, per_page: int = 10, sort_field: str = "_id", sort_order: str = "asc"):
         """
         Retrieve all documents from the collection with optional filters, pagination, and sorting.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-            with self.minio_conn as minio_client:
-                try:
-                    # Apply filters
-                    query_filter = filters or {}
+        collection = self.mongo.get_database()[self.collection_name]
+        try:
+            # Apply filters
+            query_filter = filters or {}
 
-                    # Handle role filter specifically
-                    if 'genre' in query_filter:
-                        # Jika roles adalah string, konversi ke format $in
-                        if isinstance(query_filter['genre'], str):
-                            query_filter['genre'] = {"$in": [query_filter['genre']]}
-                        # Jika roles adalah list, gunakan $in
-                        elif isinstance(query_filter['genre'], list):
-                            query_filter['genre'] = {"$in": query_filter['genre']}
+            # Handle role filter specifically
+            if 'genre' in query_filter:
+                # Jika roles adalah string, konversi ke format $in
+                if isinstance(query_filter['genre'], str):
+                    query_filter['genre'] = {"$in": [query_filter['genre']]}
+                # Jika roles adalah list, gunakan $in
+                elif isinstance(query_filter['genre'], list):
+                    query_filter['genre'] = {"$in": query_filter['genre']}
 
-                    # Pagination
-                    skip = (page - 1) * per_page
-                    limit = per_page
+            # Pagination
+            skip = (page - 1) * per_page
+            limit = per_page
 
-                    # Sorting
-                    order = ASCENDING if sort_order == "asc" else DESCENDING
+            # Sorting
+            order = ASCENDING if sort_order == "asc" else DESCENDING
 
-                    # Selected fields
-                    selected_fields = {
-                        "id": "$_id",
-                        "name": 1,
-                        "description": 1,
-                        "cast": 1,
-                        "genre": 1,
-                        "genre_details":1,
-                        "duration": 1,
-                        "type": 1,
-                        "episodes": 1,
-                        "origin": 1,
-                        "rating": 1,
-                        "status": 1,
-                        "poster": 1,
-                        "release_date": 1,
-                        "licence_date": 1,
-                        "is_full_paid": 1,
-                        "full_price_coins": 1,
-                        "main_sponsor": 1,
-                        "_id": 0
+            # Selected fields
+            selected_fields = {
+                "id": "$_id",
+                "name": 1,
+                "description": 1,
+                "cast": 1,
+                "genre": 1,
+                "genre_details":1,
+                "duration": 1,
+                "type": 1,
+                "episodes": 1,
+                "origin": 1,
+                "rating": 1,
+                "status": 1,
+                "poster": 1,
+                "release_date": 1,
+                "licence_date": 1,
+                "is_full_paid": 1,
+                "full_price_coins": 1,
+                "main_sponsor": 1,
+                "_id": 0
+            }
+
+            # Aggregation pipeline
+            pipeline = [
+                {"$match": query_filter},  # Filter stage
+                {"$sort": {sort_field: order}},  # Sorting stage
+                # Lookup stage to join with role groups
+                {
+                    "$lookup": {
+                        "from": "_enum",  # The collection to join with
+                        "localField": "genre",  # Array field in content collection
+                        "foreignField": "_id",  # Field in genre_groups collection
+                        "as": "genre_details"  # Output array field
                     }
-
-                    # Aggregation pipeline
-                    pipeline = [
-                        {"$match": query_filter},  # Filter stage
-                        {"$sort": {sort_field: order}},  # Sorting stage
-                        # Lookup stage to join with role groups
-                        {
-                            "$lookup": {
-                                "from": "_enum",  # The collection to join with
-                                "localField": "genre",  # Array field in content collection
-                                "foreignField": "_id",  # Field in genre_groups collection
-                                "as": "genre_details"  # Output array field
-                            }
-                        },
-                        {
-                            "$addFields": {
-                                "genre_details": {
-                                    "$map": {
-                                        "input": "$genre_details",
-                                        "as": "genre",
-                                        "in": {
-                                            "id": "$$genre._id",
-                                            "value": "$$genre.value",
-                                            "sort": "$$genre.sort",
-                                        }
-                                    }
+                },
+                {
+                    "$addFields": {
+                        "genre_details": {
+                            "$map": {
+                                "input": "$genre_details",
+                                "as": "genre",
+                                "in": {
+                                    "id": "$$genre._id",
+                                    "value": "$$genre.value",
+                                    "sort": "$$genre.sort",
                                 }
                             }
-                        },
-                        # Lookup for poster data
-                        {
-                            "$lookup": {
-                                "from": "_dmsfile",
-                                "let": { "content_id": { "$toString": "$_id" } },
-                                "pipeline": [
-                                    {
-                                        "$match": {
-                                            "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
-                                            "doctype": "8e79c84ee66542db9aa5a1252c47530d"
-                                        }
-                                    },
-                                    {
-                                        "$project": {
-                                            "id": "$_id",
-                                            "_id": 0,
-                                            "filename": "$filename",
-                                            "path": "$folder_path",
-                                            "info_file": "$filestat"
-                                        }
-                                    }
-                                ],
-                                "as": "poster_data"
-                            }
-                        },
-                        {
-                            "$addFields": {
-                                "poster": { "$arrayElemAt": ["$poster_data", 0] }
-                            }
-                        },
-                        {"$skip": skip},  # Pagination skip stage
-                        {"$limit": limit},  # Pagination limit stage
-                        {"$project": selected_fields}  # Project only selected fields
-                    ]
-
-                    # Execute aggregation pipeline
-                    cursor = collection.aggregate(pipeline)
-                    results = list(cursor)
-
-                    # Total count
-                    total_count = collection.count_documents(query_filter)
-
-                    # write audit trail for success
-                    if self.audit_trail:
-                        self.audit_trail.log_audittrail(
-                            mongo,
-                            action="retrieve",
-                            target=self.collection_name,
-                            target_id="agregate",
-                            details={"aggregate": pipeline},
-                            status="success"
-                        )
-
-                    for i, data in enumerate(results):
-                        # presigned url
-                        if "poster" in data:
-                            data['poster']['url'] = None
-                            url = minio_client.presigned_get_object(config.minio_bucket, data['poster']['filename'])
-                            if url:
-                                data['poster']['url'] = url
-
-                    return {
-                        "data": results,
-                        "pagination": {
-                            "current_page": page,
-                            "items_per_page": per_page,
-                            "total_items": total_count,
-                            "total_pages": (total_count + per_page - 1) // per_page,  # Ceiling division
-                        },
+                        }
                     }
-                except PyMongoError as pme:
-                    logger.error(f"Error retrieving role with filters and pagination: {str(e)}")
-                    # write audit trail for success
-                    if self.audit_trail:
-                        self.audit_trail.log_audittrail(
-                            mongo,
-                            action="retrieve",
-                            target=self.collection_name,
-                            target_id="agregate",
-                            details={"aggregate": pipeline},
-                            status="failure"
-                        )
-                    raise ValueError("Database error while retrieve document") from pme
-                except S3Error as s3e:
-                    logger.error(
-                        "MinIO S3Error",
-                        host=config.minio_host,
-                        port=config.minio_port,
-                        bucket=config.minio_bucket,
-                        error=str(e),
-                        error_type="S3Error"
-                    )
-                    raise ValueError("Minio presigned object error") from s3e
-                except Exception as e:
-                    logger.exception(f"Unexpected error during deletion: {str(e)}")
-                    raise
+                },
+                # Lookup for poster data
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "content_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
+                                    "doctype": "8e79c84ee66542db9aa5a1252c47530d"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "poster_data"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "poster": { "$arrayElemAt": ["$poster_data", 0] }
+                    }
+                },
+                {"$skip": skip},  # Pagination skip stage
+                {"$limit": limit},  # Pagination limit stage
+                {"$project": selected_fields}  # Project only selected fields
+            ]
+
+            # Execute aggregation pipeline
+            cursor = collection.aggregate(pipeline)
+            results = list(cursor)
+
+            # Total count
+            total_count = collection.count_documents(query_filter)
+
+            # write audit trail for success
+            if self.audit_trail:
+                self.audit_trail.log_audittrail(
+                    self.mongo,
+                    action="retrieve",
+                    target=self.collection_name,
+                    target_id="agregate",
+                    details={"aggregate": pipeline},
+                    status="success"
+                )
+
+            for i, data in enumerate(results):
+                # presigned url
+                if "poster" in data:
+                    data['poster']['url'] = None
+                    url = self.minio.presigned_get_object(config.minio_bucket, data['poster']['filename'])
+                    if url:
+                        data['poster']['url'] = url
+
+            return {
+                "data": results,
+                "pagination": {
+                    "current_page": page,
+                    "items_per_page": per_page,
+                    "total_items": total_count,
+                    "total_pages": (total_count + per_page - 1) // per_page,  # Ceiling division
+                },
+            }
+        except PyMongoError as pme:
+            logger.error(f"Error retrieving role with filters and pagination: {str(e)}")
+            # write audit trail for success
+            if self.audit_trail:
+                self.audit_trail.log_audittrail(
+                    self.mongo,
+                    action="retrieve",
+                    target=self.collection_name,
+                    target_id="agregate",
+                    details={"aggregate": pipeline},
+                    status="failure"
+                )
+            raise ValueError("Database error while retrieve document") from pme
+        except S3Error as s3e:
+            logger.error(
+                "MinIO S3Error",
+                host=config.minio_host,
+                port=config.minio_port,
+                bucket=config.minio_bucket,
+                error=str(e),
+                error_type="S3Error"
+            )
+            raise ValueError("Minio presigned object error") from s3e
+        except Exception as e:
+            logger.exception(f"Unexpected error during deletion: {str(e)}")
+            raise

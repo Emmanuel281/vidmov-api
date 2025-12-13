@@ -3,27 +3,21 @@ from datetime import datetime, timedelta, timezone
 import json
 from urllib import parse
 import requests
-import uuid
 from fastapi import APIRouter, Response, Query, Depends
 from fastapi.responses import RedirectResponse
 
-from baseapp.config.redis import RedisConn
+from baseapp.config import setting, redis
 from baseapp.model.common import ApiResponse, CurrentUser
+from baseapp.utils.utility import generate_uuid
 from baseapp.utils.jwt import create_access_token, create_refresh_token, get_current_user
 from baseapp.utils.logger import Logger
 
 from baseapp.services.oauth_google.model import GoogleToken
 from baseapp.services.oauth_google.crud import CRUD
-from baseapp.services.auth.crud import CRUD as user_crud
+from baseapp.services.auth.crud import CRUD as UserCrud
 
-_crud = CRUD()
-_user_crud = user_crud()
-
-from baseapp.config import setting
 config = setting.get_settings()
-
 logger = Logger("baseapp.services.oauth_google.api")
-
 router = APIRouter(prefix="/v1/oauth", tags=["Oauth"])
 
 # FUNCTION REFRESH TOKEN GOOGLE 
@@ -73,7 +67,9 @@ async def auth_google_callback(
         logger.debug(f"Redirect Flutter {flutter_redirect}")
         
         # 1. Dapatkan token dari Google
-        resGoogle = _crud.login_google(code)
+        with CRUD() as _crud:
+            resGoogle = _crud.login_google(code)
+
         if not "access_token" in resGoogle:
             params = parse.urlencode({'error': 'Failed to get access token'})
             return RedirectResponse(url=f"{flutter_redirect}?{params}")
@@ -92,31 +88,35 @@ async def auth_google_callback(
 
 @router.put("/link-google-account", response_model=ApiResponse)
 async def link_google_account(req: GoogleToken, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    _crud.set_context(
-        user_id=cu.id,
-        org_id=cu.org_id,
-        ip_address=cu.ip_address,  # Jika ada
-        user_agent=cu.user_agent   # Jika ada
-    )
-    response = _crud.link_to_google(req)
+    with CRUD() as _crud:
+        _crud.set_context(
+            user_id=cu.id,
+            org_id=cu.org_id,
+            ip_address=cu.ip_address,  # Jika ada
+            user_agent=cu.user_agent   # Jika ada
+        )
+        response = _crud.link_to_google(req)
     return ApiResponse(status=0, message="Your account has been linked to a Google account.", data=response)
 
 @router.delete("/unlink-google-account", response_model=ApiResponse)
 async def unlink_google_account(cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    _crud.set_context(
-        user_id=cu.id,
-        org_id=cu.org_id,
-        ip_address=cu.ip_address,  # Jika ada
-        user_agent=cu.user_agent   # Jika ada
-    )
-    response = _crud.unlink_to_google()
+    with CRUD() as _crud:
+        _crud.set_context(
+            user_id=cu.id,
+            org_id=cu.org_id,
+            ip_address=cu.ip_address,  # Jika ada
+            user_agent=cu.user_agent   # Jika ada
+        )
+        response = _crud.unlink_to_google()
     return ApiResponse(status=0, message="Google account was removed from your account.", data=response)
 
 @router.post("/login-google-account", response_model=ApiResponse)
 async def login_google_account(response: Response, req: GoogleToken) -> ApiResponse:
     # Validasi user
-    user = _crud.get_by_google_id(req)
-    with _user_crud:
+    with CRUD() as _crud:
+        user = _crud.get_by_google_id(req)
+    
+    with UserCrud() as _user_crud:
         user_info = _user_crud.validate_user(user["username"])
     
     # Simpan refresh token ke Redis
@@ -136,9 +136,9 @@ async def login_google_account(response: Response, req: GoogleToken) -> ApiRespo
     refresh_token, expire_refresh_in = create_refresh_token(token_data)
 
     # Simpan refresh token ke Redis
-    session_id = uuid.uuid4().hex
+    session_id = generate_uuid()
     redis_key = f"refresh_token:{user_info.id}:{session_id}"
-    with RedisConn() as redis_conn:
+    with redis.RedisConn() as redis_conn:
         redis_conn.set(
             redis_key,
             refresh_token,

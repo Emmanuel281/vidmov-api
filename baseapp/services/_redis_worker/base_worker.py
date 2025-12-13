@@ -2,10 +2,10 @@ from abc import abstractmethod
 import time
 from threading import Thread
 
-import logging
-logger = logging.getLogger("")
-
+from baseapp.utils.logger import Logger
 from baseapp.services.redis_queue import RedisQueueManager
+
+logger = Logger("baseapp.services._redis_worker.base_worker")
 
 class BaseWorker:
     def __init__(self,redis_queue_manager: RedisQueueManager):

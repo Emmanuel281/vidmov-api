@@ -1,8 +1,8 @@
-import logging
-logger = logging.getLogger("")
-
-from baseapp.services._redis_worker.base_worker import BaseWorker
 from baseapp.config import email_smtp
+from baseapp.utils.logger import Logger
+from baseapp.services._redis_worker.base_worker import BaseWorker
+
+logger = Logger("baseapp.services._redis_worker.email_worker")
 
 class EmailWorker(BaseWorker):
     def __init__(self, queue_manager):

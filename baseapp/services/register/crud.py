@@ -5,7 +5,7 @@ import json
 
 from baseapp.utils.utility import generate_uuid, hash_password
 from baseapp.config import setting, mongodb, redis
-from baseapp.model.common import Status
+from baseapp.model.common import Status, Authority
 from baseapp.services.redis_queue import RedisQueueManager
 from baseapp.services.register.model import Register, RegisterResponse, ResendOtpRequest, VerifyOtp
 from baseapp.services._org.model import Organization, User, InitResponse
@@ -132,7 +132,7 @@ class CRUD:
                     "org_name": register_data["email"], # Default nama org = email
                     "org_email": register_data["email"],
                     "org_phone": register_data["phone_number"],
-                    "authority": 4, # Default Authority Owner
+                    "authority": Authority.MEMBER.value, # Default Authority Member
                     "status": Status.ACTIVE # Atau Status.ACTIVE jika pakai enum
                 },
                 "user": {

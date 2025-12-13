@@ -52,8 +52,9 @@ def test_connection_to_rabbit():
 def test_redis_worker():
     logger.info("Redis worker test connection")
     try:
-        queue_manager = RedisQueueManager(queue_name="otp_tasks")
-        queue_manager.enqueue_task({"email": "aldian.mm.02@gmail.com", "otp": "123456", "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: 123456"})
+        with redis.RedisConn() as redis_conn:
+            queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name="otp_tasks")
+            queue_manager.enqueue_task({"email": "aldian.mm.02@gmail.com", "otp": "123456", "subject":"Login with OTP", "body":f"Berikut kode OTP Anda: 123456"})
         return "Redis worker: Task enqueued successfully."
     except Exception as e:
         logger.error(f"Failed to publish message to Redis: {e}")

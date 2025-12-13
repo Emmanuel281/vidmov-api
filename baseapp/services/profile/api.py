@@ -1,15 +1,13 @@
+import httpx
 from fastapi import APIRouter, Depends
 
+from baseapp.config import setting
 from baseapp.model.common import ApiResponse, CurrentUser
 from baseapp.utils.jwt import get_current_user
 from baseapp.utils.logger import Logger
 
-from baseapp.config import setting
 config = setting.get_settings()
-
-import httpx
 logger = Logger("baseapp.services.profile.api")
-
 router = APIRouter(prefix="/v1/profile", tags=["Profile"])
     
 @router.get("/organization", response_model=ApiResponse)

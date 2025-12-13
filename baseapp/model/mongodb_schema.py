@@ -150,36 +150,6 @@ class Enum(Collection):
     ]
     __initial_data__ = [
         {
-            "_id": "AUTHORITY",
-            "app": "baseapp",
-            "mod": "AUTHORITY",
-            "code": "AUTHORITY",
-            "type": "hardcoded",
-            "value": {
-                "owner": 1,
-                "partner": 2,
-                "client": 4,
-                "affiliator": 8
-            }
-        },
-        {
-            "_id": "ROLEACTION",
-            "app": "baseapp",
-            "mod": "ROLEACTION",
-            "code": "ROLEACTION",
-            "type": "hardcoded",
-            "value": {
-                "view": 1,
-                "add": 2,
-                "edit": 4,
-                "delete": 8,
-                "export": 16,
-                "import": 32,
-                "approval": 64,
-                "setting": 128
-            }
-        },
-        {
             "_id": "dmsDataType",
             "app": "baseapp",
             "mod": "dmsDataType",

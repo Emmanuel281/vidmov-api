@@ -1,19 +1,15 @@
 from fastapi import APIRouter, Query, Depends
 
-from baseapp.model.common import ApiResponse, CurrentUser, DMSOperationType
+from baseapp.config import setting
+from baseapp.model.common import ApiResponse, CurrentUser, DMSOperationType, RoleAction
 from baseapp.utils.jwt import get_current_user
 
-from baseapp.config import setting
-config = setting.get_settings()
-
-from baseapp.services._dms.upload.model import MoveToTrash
-
-from baseapp.services._dms.browse.crud import CRUD
-_crud = CRUD()
-
 from baseapp.services.permission_check_service import PermissionChecker
-permission_checker = PermissionChecker()
+from baseapp.services._dms.upload.model import MoveToTrash
+from baseapp.services._dms.browse.crud import CRUD
 
+config = setting.get_settings()
+permission_checker = PermissionChecker()
 router = APIRouter(prefix="/v1/_dms/browse", tags=["DMS - Browse"])
 
 @router.get("/key/{refkey_table}/{refkey_id}", response_model=ApiResponse)
@@ -22,10 +18,9 @@ async def browse_by_key(
         cu: CurrentUser = Depends(get_current_user)
     ) -> ApiResponse:
 
-    if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 1):  # 1 untuk izin baca
-        raise PermissionError("Access denied")
-
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_dmsbrowse", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -58,10 +53,9 @@ async def list_folder(
         cu: CurrentUser = Depends(get_current_user)
     ) -> ApiResponse:
 
-    if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 1):  # 1 untuk izin baca
-        raise PermissionError("Access denied")
-
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_dmsbrowse", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -97,10 +91,9 @@ async def list_file_by_folder_id(
         cu: CurrentUser = Depends(get_current_user)
     ) -> ApiResponse:
 
-    if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 1):  # 1 untuk izin baca
-        raise PermissionError("Access denied")
-
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_dmsbrowse", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -141,10 +134,9 @@ async def storage(
         cu: CurrentUser = Depends(get_current_user)
     ) -> ApiResponse:
 
-    if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 1):  # 1 untuk izin baca
-        raise PermissionError("Access denied")
-
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_dmsbrowse", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -159,10 +151,10 @@ async def storage(
 @router.put("/sent_file/{operation_type}/{file_id}", response_model=ApiResponse)
 async def set_status_file(operation_type: DMSOperationType, file_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     """Update file status (move to trash or restore)"""
-    if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 4):  # 4 untuk izin simpan perubahan
-        raise PermissionError("Access denied")
     
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_dmsbrowse", RoleAction.EDIT.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -179,10 +171,10 @@ async def set_status_file(operation_type: DMSOperationType, file_id: str, cu: Cu
 
 @router.delete("/delete_file/{file_id}", response_model=ApiResponse)
 async def delete_by_id(file_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 8):  # 8 untuk izin hapus
-        raise PermissionError("Access denied")
-    
+
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_dmsbrowse", RoleAction.DELETE.value, mongo_conn=_crud.mongo):  # 8 untuk izin hapus
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -195,10 +187,10 @@ async def delete_by_id(file_id: str, cu: CurrentUser = Depends(get_current_user)
 
 @router.delete("/delete_folder/{folder_id}", response_model=ApiResponse)
 async def delete_by_id(folder_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    if not permission_checker.has_permission(cu.roles, "_dmsbrowse", 8):  # 8 untuk izin hapus
-        raise PermissionError("Access denied")
     
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_dmsbrowse", RoleAction.DELETE.value, mongo_conn=_crud.mongo):  # 8 untuk izin hapus
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,

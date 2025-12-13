@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, Depends
 
-from baseapp.model.common import ApiResponse, CurrentUser, Status, UpdateStatus
+from baseapp.model.common import ApiResponse, CurrentUser, Status, UpdateStatus, RoleAction, Authority
 from baseapp.utils.jwt import get_current_user
 
 from baseapp.config import setting
@@ -9,8 +9,6 @@ config = setting.get_settings()
 from baseapp.services._api_credentials.model import ApiCredential, ApiCredentialCreate
 
 from baseapp.services._api_credentials.crud import CRUD
-_crud = CRUD()
-
 from baseapp.services.permission_check_service import PermissionChecker
 permission_checker = PermissionChecker()
 
@@ -21,9 +19,9 @@ async def create(
     req: ApiCredential,
     cu: CurrentUser = Depends(get_current_user)
 ) -> ApiResponse:
-    if not permission_checker.has_permission(cu.roles, "_api_credentials", 2):  # 2 untuk izin simpan baru
-        raise PermissionError("Access denied")
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_api_credentials", RoleAction.ADD.value, mongo_conn=_crud.mongo):  # 2 untuk izin simpan baru
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -38,13 +36,12 @@ async def create_by_owner(
     req: ApiCredentialCreate,
     cu: CurrentUser = Depends(get_current_user)
 ) -> ApiResponse:
-    if cu.authority != 1:
+    if cu.authority != Authority.OWNER.value:
         raise PermissionError("Access denied")
     
-    if not permission_checker.has_permission(cu.roles, "_api_credentials", 2):  # 2 untuk izin simpan baru
-        raise PermissionError("Access denied")
-
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_api_credentials", RoleAction.ADD.value, mongo_conn=_crud.mongo):  # 2 untuk izin simpan baru
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -57,9 +54,9 @@ async def create_by_owner(
 
 @router.delete("/delete/{api_credential_id}", response_model=ApiResponse)
 async def delete_data(api_credential_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    if not permission_checker.has_permission(cu.roles, "_api_credentials", 4):  # 4 untuk izin simpan perubahan
-        raise PermissionError("Access denied")
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_api_credentials", RoleAction.DELETE.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -68,7 +65,7 @@ async def delete_data(api_credential_id: str, cu: CurrentUser = Depends(get_curr
         )
         # Buat instance model langsung
         manual_data = UpdateStatus(
-            status=Status.DELETE  # nilai yang Anda tentukan
+            status=Status.DELETED  # nilai yang Anda tentukan
         )
         response = _crud.update_by_id(api_credential_id,manual_data)
     return ApiResponse(status=0, message="Data deleted", data=response)
@@ -84,10 +81,9 @@ async def get_all_data(
         status: str = Query(None, description="Status data")
     ) -> ApiResponse:
 
-    if not permission_checker.has_permission(cu.roles, "_api_credentials", 1):  # 1 untuk izin baca
-        raise PermissionError("Access denied")
-
     with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "_api_credentials", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
+            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -100,7 +96,7 @@ async def get_all_data(
         
         # default filter by organization id
         if org_id:
-            if cu.authority == 1:
+            if cu.authority == Authority.OWNER.value:
                 filters["org_id"] = org_id
         else:
             filters["org_id"] = cu.org_id

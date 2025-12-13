@@ -8,15 +8,12 @@ from baseapp.utils.jwt import create_access_token, create_refresh_token
 from baseapp.model.common import ApiResponse
 from baseapp.utils.logger import Logger
 
-config = setting.get_settings()
-
-logger = Logger("baseapp.services.register.api")
-
 from baseapp.services.register.model import Register, ResendOtpRequest, VerifyOtp
-
 from baseapp.services.register.crud import CRUD
 from baseapp.services.auth.crud import CRUD as AuthCRUD
 
+config = setting.get_settings()
+logger = Logger("baseapp.services.register.api")
 router = APIRouter(prefix="/v1/register", tags=["Member Registration"])
     
 @router.post("", response_model=ApiResponse)

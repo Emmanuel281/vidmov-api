@@ -99,8 +99,10 @@ Content-Type: application/json
 }
 
 ###
-# GROUP: OAUTH
+# GROUP: OAUTH GOOGLE
 ###
+
+### Link Google
 PUT {{host}}/v1/oauth/link-google-account
 Authorization: Bearer {{token}}
 Content-Type: application/json

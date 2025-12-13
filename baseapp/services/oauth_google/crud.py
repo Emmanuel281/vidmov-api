@@ -20,6 +20,16 @@ class CRUD:
         self.httpsOptionsForGoogle = "https://www.googleapis.com:443"
         self.redirect_uri = config.google_redirect_uri
 
+    def __enter__(self):
+        self._mongo_context = mongodb.MongoConn()
+        self.mongo = self._mongo_context.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if hasattr(self, '_mongo_context'):
+            return self._mongo_context.__exit__(exc_type, exc_value, traceback)
+        return False
+    
     def set_context(self, user_id: str, org_id: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None):
         """
         Memperbarui konteks pengguna dan menginisialisasi AuditTrailService.
@@ -41,59 +51,58 @@ class CRUD:
         """
         Link current account to google.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-            try:
-                profile = self._getProfile(data.access_token)
-                google_data = Google(email=profile["email"],id=profile["id"],name=profile["name"],picture=profile["picture"])
-                obj = {"google":google_data.model_dump()}
-                obj["mod_by"] = self.user_id
-                obj["mod_date"] = datetime.now(timezone.utc)
+        collection = self.mongo.get_database()[self.collection_name]
+        try:
+            profile = self._getProfile(data.access_token)
+            google_data = Google(email=profile["email"],id=profile["id"],name=profile["name"],picture=profile["picture"])
+            obj = {"google":google_data.model_dump()}
+            obj["mod_by"] = self.user_id
+            obj["mod_date"] = datetime.now(timezone.utc)
 
-                user = collection.find_one({"google.email": profile["email"]})
-                if user:
-                    raise ValueError("This Gmail is already linked to another account. Try using a different one")
-                
-                update_user = collection.find_one_and_update({"_id": self.user_id}, {"$set": obj}, return_document=True)
-                if not update_user:
-                    # write audit trail for fail
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="update",
-                        target=self.collection_name,
-                        target_id=self.user_id,
-                        details={"$set": obj},
-                        status="failure",
-                        error_message="User not found"
-                    )
-                    raise ValueError("User not found")
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="update",
-                    target=self.collection_name,
-                    target_id=self.user_id,
-                    details={"$set": obj},
-                    status="success"
-                )
-                del update_user["password"]
-                return update_user
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
+            user = collection.find_one({"google.email": profile["email"]})
+            if user:
+                raise ValueError("This Gmail is already linked to another account. Try using a different one")
+            
+            update_user = collection.find_one_and_update({"_id": self.user_id}, {"$set": obj}, return_document=True)
+            if not update_user:
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
-                    mongo,
+                    self.mongo,
                     action="update",
                     target=self.collection_name,
                     target_id=self.user_id,
                     details={"$set": obj},
                     status="failure",
-                    error_message=str(pme)
+                    error_message="User not found"
                 )
-                raise ValueError("Database error occurred while update document.") from pme
-            except Exception as e:
-                logger.exception(f"Error updating user: {str(e)}")
-                raise
+                raise ValueError("User not found")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_name,
+                target_id=self.user_id,
+                details={"$set": obj},
+                status="success"
+            )
+            del update_user["password"]
+            return update_user
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            # write audit trail for fail
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_name,
+                target_id=self.user_id,
+                details={"$set": obj},
+                status="failure",
+                error_message=str(pme)
+            )
+            raise ValueError("Database error occurred while update document.") from pme
+        except Exception as e:
+            logger.exception(f"Error updating user: {str(e)}")
+            raise
 
     def login_google(self, auth_code):
         postData = parse.urlencode({
@@ -137,69 +146,67 @@ class CRUD:
         """
         Retrieve a user by Google ID.
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-            try:
-                profile = self._getProfile(data.access_token)
-                user = collection.find_one({"google.email": profile["email"]})
-                if not user:
-                    raise ValueError("User not found")
-                return user
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
-                raise ValueError("Database error occurred while find document.") from pme
-            except Exception as e:
-                logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
-                raise
+        collection = self.mongo.get_database()[self.collection_name]
+        try:
+            profile = self._getProfile(data.access_token)
+            user = collection.find_one({"google.email": profile["email"]})
+            if not user:
+                raise ValueError("User not found")
+            return user
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            raise ValueError("Database error occurred while find document.") from pme
+        except Exception as e:
+            logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
+            raise
 
     def unlink_to_google(self):
         """
         Unlink current account from google
         """
-        with mongodb.MongoConn() as mongo:
-            collection = mongo.get_database()[self.collection_name]
-            try:
-                obj = {"google":None}
-                obj["mod_by"] = self.user_id
-                obj["mod_date"] = datetime.now(timezone.utc)
+        collection = self.mongo.get_database()[self.collection_name]
+        try:
+            obj = {"google":None}
+            obj["mod_by"] = self.user_id
+            obj["mod_date"] = datetime.now(timezone.utc)
 
-                update_user = collection.find_one_and_update({"_id": self.user_id}, {"$set": obj}, return_document=True)
-                if not update_user:
-                    # write audit trail for fail
-                    self.audit_trail.log_audittrail(
-                        mongo,
-                        action="update",
-                        target=self.collection_name,
-                        target_id=self.user_id,
-                        details={"$set": obj},
-                        status="failure",
-                        error_message="User not found"
-                    )
-                    raise ValueError("User not found")
-                # write audit trail for success
-                self.audit_trail.log_audittrail(
-                    mongo,
-                    action="update",
-                    target=self.collection_name,
-                    target_id=self.user_id,
-                    details={"$set": obj},
-                    status="success"
-                )
-                del update_user["password"]
-                return update_user
-            except PyMongoError as pme:
-                logger.error(f"Database error occurred: {str(pme)}")
+            update_user = collection.find_one_and_update({"_id": self.user_id}, {"$set": obj}, return_document=True)
+            if not update_user:
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
-                    mongo,
+                    self.mongo,
                     action="update",
                     target=self.collection_name,
                     target_id=self.user_id,
                     details={"$set": obj},
                     status="failure",
-                    error_message=str(pme)
+                    error_message="User not found"
                 )
-                raise ValueError("Database error occurred while update document.") from pme
-            except Exception as e:
-                logger.exception(f"Error updating user: {str(e)}")
-                raise
+                raise ValueError("User not found")
+            # write audit trail for success
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_name,
+                target_id=self.user_id,
+                details={"$set": obj},
+                status="success"
+            )
+            del update_user["password"]
+            return update_user
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            # write audit trail for fail
+            self.audit_trail.log_audittrail(
+                self.mongo,
+                action="update",
+                target=self.collection_name,
+                target_id=self.user_id,
+                details={"$set": obj},
+                status="failure",
+                error_message=str(pme)
+            )
+            raise ValueError("Database error occurred while update document.") from pme
+        except Exception as e:
+            logger.exception(f"Error updating user: {str(e)}")
+            raise

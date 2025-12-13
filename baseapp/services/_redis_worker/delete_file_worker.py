@@ -11,8 +11,7 @@ class DeleteFileWorker(BaseWorker):
         super().__init__(queue_manager)
         self.collection_file = "_dmsfile"
         self.collection_organization = "_organization"
-        self.minio_conn = minio.MinioConn()
-
+    
     def process_task(self, data: dict):
         """
         Process a task (e.g., send OTP).
@@ -22,7 +21,7 @@ class DeleteFileWorker(BaseWorker):
         with mongodb.MongoConn() as mongo:
             collection = mongo.get_database()[self.collection_file]
             collection_org = mongo.get_database()[self.collection_organization]
-            with self.minio_conn as minio_client:
+            with minio.MinioConn() as minio_client:
                 try:
                     # Apply filters
                     query_filter = {
