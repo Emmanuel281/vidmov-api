@@ -2,16 +2,14 @@ from fastapi import APIRouter, Query, Depends
 
 from baseapp.model.common import ApiResponse, CurrentUser, Status, UpdateStatus, RoleAction, Authority
 from baseapp.utils.jwt import get_current_user
-
 from baseapp.config import setting
-config = setting.get_settings()
+from baseapp.services.permission_check_service import PermissionChecker
 
 from baseapp.services._api_credentials.model import ApiCredential, ApiCredentialCreate
-
 from baseapp.services._api_credentials.crud import CRUD
-from baseapp.services.permission_check_service import PermissionChecker
-permission_checker = PermissionChecker()
 
+config = setting.get_settings()
+permission_checker = PermissionChecker()
 router = APIRouter(prefix="/v1/api_credentials", tags=["API Credentials"])
 
 @router.post("/create", response_model=ApiResponse)

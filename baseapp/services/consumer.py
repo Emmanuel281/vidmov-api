@@ -2,13 +2,13 @@ import argparse, json
 import logging.config
 from baseapp.config.logging import get_logging_config
 from baseapp.config.rabbitmq import RabbitMqConn
+from baseapp.utils.logger import Logger
 
 logging.config.dictConfig(get_logging_config())
-logger = logging.getLogger("baseapp.services.consumer")
+logger = Logger("baseapp.services.consumer")
 
 # Importing the worker class
 from baseapp.services._rabbitmq_worker._webhook_worker import WebhookWorker
-
 
 WORKER_MAP = {
     "webhook_tasks": WebhookWorker,

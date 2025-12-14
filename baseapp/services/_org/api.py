@@ -10,8 +10,6 @@ from baseapp.services.permission_check_service import PermissionChecker
 from baseapp.services._org import model
 from baseapp.services._org.crud import CRUD
 
-
-
 config = setting.get_settings()
 permission_checker = PermissionChecker()
 logger = Logger("baseapp.services._org.api")

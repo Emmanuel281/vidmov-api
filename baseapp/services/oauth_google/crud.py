@@ -10,6 +10,9 @@ from baseapp.config import setting, mongodb
 from baseapp.utils.logger import Logger
 from baseapp.services.oauth_google.model import Google, GoogleToken
 from baseapp.services.audit_trail_service import AuditTrailService
+from baseapp.services._org.model import Organization, User
+from baseapp.services._org.crud import CRUD as OrgCRUD
+from baseapp.model.common import Status, Authority
 
 config = setting.get_settings()
 logger = Logger("baseapp.services.oauth_google.crud")
@@ -158,6 +161,88 @@ class CRUD:
             raise ValueError("Database error occurred while find document.") from pme
         except Exception as e:
             logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
+            raise
+    
+    def register_with_google(self, data: GoogleToken):
+        """
+        Register a new user with Google OAuth.
+        """
+        collection_org = self.mongo.get_database()["_organization"]
+        collection_user = self.mongo.get_database()[self.collection_name]
+        
+        try:
+            # Get profile from Google
+            profile = self._getProfile(data.access_token)
+            
+            # Check if user already exists (by email or google email)
+            existing_user_by_email = collection_user.find_one({"username": profile["email"]})
+            if existing_user_by_email:
+                logger.warning(f"User with this email already exists.", email=profile["email"])
+                raise ValueError("User with this email already exists.")
+            
+            existing_user_by_google = collection_user.find_one({"google.email": profile["email"]})
+            if existing_user_by_google:
+                logger.warning(f"User with this Google account already exists.", email=profile["email"])
+                raise ValueError("User with this Google account already exists.")
+            
+            # Check if organization exists
+            existing_org = collection_org.find_one({"org_email": profile["email"]})
+            if existing_org:
+                logger.warning(f"Organization with this email already exists.", email=profile["email"])
+                raise ValueError("Organization with this email already exists.")
+            
+            # Create Google data object
+            google_data = Google(
+                email=profile["email"],
+                id=profile["id"],
+                name=profile["name"],
+                picture=profile["picture"]
+            )
+            
+            # Prepare organization and user data
+            payload_data = {
+                "org": {
+                    "org_name": profile.get("name", profile["email"]),
+                    "org_email": profile["email"],
+                    "org_phone": "",
+                    "authority": Authority.MEMBER.value,
+                    "status": Status.ACTIVE
+                },
+                "user": {
+                    "username": profile["email"],
+                    "email": profile["email"],
+                    "password": None,  # No password for Google OAuth users
+                    "status": Status.ACTIVE,
+                    "google": google_data.model_dump()
+                }
+            }
+            
+            # Create organization and user
+            org_svc = OrgCRUD()
+            org_svc.set_context(
+                user_id=None,
+                org_id=None,
+                ip_address=self.ip_address,
+                user_agent=self.user_agent
+            )
+            
+            result = org_svc.reg_member(
+                org_data=Organization.model_validate(payload_data["org"]),
+                user_data=User.model_validate(payload_data["user"])
+            )
+            
+            logger.info(f"User registered with Google successfully", 
+                       org_id=result.org.id, 
+                       user_id=result.user.id,
+                       email=profile["email"])
+            
+            return result
+            
+        except PyMongoError as pme:
+            logger.error(f"Database error occurred: {str(pme)}")
+            raise ValueError("Database error occurred while creating document.") from pme
+        except Exception as e:
+            logger.exception(f"Unexpected error occurred while registering with Google: {str(e)}")
             raise
 
     def unlink_to_google(self):

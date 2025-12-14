@@ -56,6 +56,13 @@ class CRUD:
             logger.warning(f"User {user_info.get('username')} is not active.")
             raise ValueError("User is not active.")
         
+        if user_info.get("password") is None and user_info.get("google") is not None:
+            logger.warning(f"User {user_info.get('username')} attempted login with password but is a Google account.")
+            raise ValueError(
+                "This account was created using Google Sign-In. "
+                "Please use 'Continue with Google' to login."
+            )
+        
         stored_hash = user_info.get("password")
         if not stored_hash:
             logger.error(f"Password missing for user {user_info.get('username')}.")

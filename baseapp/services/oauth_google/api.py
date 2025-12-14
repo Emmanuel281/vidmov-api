@@ -3,8 +3,9 @@ from datetime import datetime, timedelta, timezone
 import json
 from urllib import parse
 import requests
-from fastapi import APIRouter, Response, Query, Depends
+from fastapi import APIRouter, Response, Query, Depends, Request, Header
 from fastapi.responses import RedirectResponse
+from typing import Optional
 
 from baseapp.config import setting, redis
 from baseapp.model.common import ApiResponse, CurrentUser
@@ -111,7 +112,14 @@ async def unlink_google_account(cu: CurrentUser = Depends(get_current_user)) -> 
     return ApiResponse(status=0, message="Google account was removed from your account.", data=response)
 
 @router.post("/login-google-account", response_model=ApiResponse)
-async def login_google_account(response: Response, req: GoogleToken) -> ApiResponse:
+async def login_google_account(
+    ctx: Request,
+    response: Response,
+    req: GoogleToken,
+    x_client_type: Optional[str] = Header(None)
+) -> ApiResponse:
+    session_id = generate_uuid()
+
     # Validasi user
     with CRUD() as _crud:
         user = _crud.get_by_google_id(req)
@@ -128,7 +136,8 @@ async def login_google_account(response: Response, req: GoogleToken) -> ApiRespo
         "authority": user_info.authority,
         "org_id": user_info.org_id,
         "features": user_info.feature,
-        "bitws": user_info.bitws
+        "bitws": user_info.bitws,
+        "session_id": session_id
     }
 
     # Buat akses token dan refresh token
@@ -136,7 +145,7 @@ async def login_google_account(response: Response, req: GoogleToken) -> ApiRespo
     refresh_token, expire_refresh_in = create_refresh_token(token_data)
 
     # Simpan refresh token ke Redis
-    session_id = generate_uuid()
+    
     redis_key = f"refresh_token:{user_info.id}:{session_id}"
     with redis.RedisConn() as redis_conn:
         redis_conn.set(
@@ -153,17 +162,102 @@ async def login_google_account(response: Response, req: GoogleToken) -> ApiRespo
         "expired_at": expired_at.isoformat(),
     }
 
-    # Atur cookie refresh token
-    response.set_cookie(
-        key="refresh_token",
-        path="/",
-        value=refresh_token,
-        httponly=True,
-        max_age=timedelta(days=expire_refresh_in),
-        secure=config.app_env == "production",  # Gunakan secure hanya di production
-        samesite="None",  # Prevent CSRF
-        domain=config.domain
-    )
+    # For mobile clients, include refresh token in response
+    if x_client_type == 'mobile':
+        data["refresh_token"] = refresh_token
+
+    # Set cookie refresh token for web clients
+    if x_client_type == 'web':
+        response.set_cookie(
+            key="refresh_token",
+            path="/",
+            value=refresh_token,
+            httponly=True,
+            max_age=timedelta(days=expire_refresh_in),
+            secure=config.app_env == "production",
+            samesite="Lax",
+            domain=config.domain
+        )
 
     # Return response berhasil
     return ApiResponse(status=0, data=data)
+
+@router.post("/register-google-account", response_model=ApiResponse)
+async def register_google_account(
+    ctx: Request,
+    response: Response,
+    req: GoogleToken,
+    x_client_type: Optional[str] = Header(None)
+) -> ApiResponse:
+    """
+    Register a new user with Google OAuth
+    """
+    session_id = generate_uuid()
+    
+    with CRUD() as _crud:
+        _crud.set_context(
+            user_id=None,
+            org_id=None,
+            ip_address=ctx.client.host,
+            user_agent=ctx.headers.get("user-agent")
+        )
+        
+        # Register user with Google
+        register_result = _crud.register_with_google(req)
+    
+    # Validate user
+    with UserCrud() as _user_crud:
+        user_info = _user_crud.validate_user(register_result.user.username)
+    
+    # Data token
+    token_data = {
+        "sub": register_result.user.username,
+        "id": user_info.id,
+        "roles": user_info.roles,
+        "authority": user_info.authority,
+        "org_id": user_info.org_id,
+        "features": user_info.feature,
+        "bitws": user_info.bitws,
+        "session_id": session_id
+    }
+
+    # Create access token and refresh token
+    access_token, expire_access_in = create_access_token(token_data)
+    refresh_token, expire_refresh_in = create_refresh_token(token_data)
+
+    # Save refresh token to Redis
+    redis_key = f"refresh_token:{user_info.id}:{session_id}"
+    with redis.RedisConn() as redis_conn:
+        redis_conn.set(
+            redis_key,
+            refresh_token,
+            ex=timedelta(days=expire_refresh_in),
+        )
+        
+    # Calculate access token expiration time
+    expired_at = datetime.now(timezone.utc) + timedelta(minutes=float(expire_access_in))
+    data = {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expired_at": expired_at.isoformat(),
+    }
+
+    # For mobile clients, include refresh token in response
+    if x_client_type == 'mobile':
+        data["refresh_token"] = refresh_token
+
+    # Set cookie refresh token for web clients
+    if x_client_type == 'web':
+        response.set_cookie(
+            key="refresh_token",
+            path="/",
+            value=refresh_token,
+            httponly=True,
+            max_age=timedelta(days=expire_refresh_in),
+            secure=config.app_env == "production",
+            samesite="Lax",
+            domain=config.domain
+        )
+
+    # Return success response
+    return ApiResponse(status=0, message="User registered successfully with Google account.", data=data)

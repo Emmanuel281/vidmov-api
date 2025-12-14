@@ -40,3 +40,13 @@ X-Client-Type: mobile
     "session": "4bbaf0e6449e4182812cbbaefc37878c",
     "otp": "953288"
 }
+
+###
+# GROUP: Register (Google OAuth)
+###
+PUT {{host}}/v1/oauth/register-google-account
+Content-Type: application/json
+
+{ 
+    "access_token":"ya29.a0AZYkNZhPzqHTFZ28GCnWI4VnoSKQPHGh1OAXLgHiGQ9EPHjTcqL4OP2F0TzMoySZIM30tWhzIP-8d_zQnI0Ci6omHzcCnZ6jTCpIPc2UNq0r2enHLWXxaIO0yyH3XXJyc0tUYkPe3_TbIaRCV0YAKbynBIlKEz_GKweSd-x-aCgYKAbASARUSFQHGX2MiLNDiLXUYJxvSOifr7RRc9g0175" 
+}

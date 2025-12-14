@@ -1,8 +1,9 @@
 import json
 from baseapp.config.redis import RedisConn
 
-import logging
-logger = logging.getLogger("")
+from baseapp.utils.logger import Logger
+
+logger = Logger("baseapp.services.redis_queue")
 
 class RedisQueueManager:
     def __init__(self, redis_conn: RedisConn, queue_name: str):

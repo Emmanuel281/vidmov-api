@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-import logging
 from typing import Dict, Any, Optional, Union
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -10,8 +9,10 @@ from baseapp.model.common import CurrentUser, CurrentClient
 from baseapp.config.setting import get_settings
 from baseapp.config.logging import user_id_ctx
 from baseapp.config.redis import RedisConn
+from baseapp.utils.logger import Logger
 
 config = get_settings()
+logger = Logger("baseapp.utils.jwt")
 jwt_secret_key = config.jwt_secret_key
 jwt_algorithm = config.jwt_algorithm
 jwt_access_expired_in = int(config.jwt_access_expired_in)
@@ -50,12 +51,12 @@ def _get_current_user(ctx: Request, token: str = Depends(OAuth2PasswordBearer(to
         user_id_ctx.set(str(credentials["id"]))
     except ExpiredSignatureError as err:
         error_message = f"_get_current_user - Log ID: , Error Code: 4, Error Message: {err=}, {type(err)=}"
-        logging.error(error_message)
+        logger.error(error_message)
         raise credentials_exception(message="Token expired")
     
     except JWTError as err:
         error_message = f"_get_current_user - Log ID: , Error Code: 4, Error Message: {err=}, {type(err)=}"
-        logging.error(error_message)
+        logger.error(error_message)
         raise credentials_exception(message="Could not validate credentials")
 
     jti = credentials.get("jti")
@@ -115,7 +116,7 @@ def _perform_revoke_token(redis_conn, user_id: str):
     
     if keys_to_delete:
         redis_conn.delete(*keys_to_delete)
-        logging.info(f"{len(keys_to_delete)} refresh token(s) for user {user_id} have been revoked.")
+        logger.info(f"{len(keys_to_delete)} refresh token(s) for user {user_id} have been revoked.")
 
 def revoke_all_refresh_tokens(user_id: str, conn=None):
     """Mencabut semua refresh token untuk user tertentu."""
@@ -124,4 +125,4 @@ def revoke_all_refresh_tokens(user_id: str, conn=None):
     else:
         with RedisConn() as redis_conn:
             _perform_revoke_token(redis_conn, user_id)
-    logging.info(f"All refresh tokens for user {user_id} have been revoked.")
+    logger.info(f"All refresh tokens for user {user_id} have been revoked.")
