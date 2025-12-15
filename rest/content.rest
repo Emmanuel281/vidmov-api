@@ -45,8 +45,14 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "title":"Kisah Kasih Di Sekolah", 
-    "synopsis":"Kisah Kasih", 
+    "title":{
+        "en":"Love Story at School",
+        "id":"Kisah Kasih Di Sekolah"
+    }, 
+    "synopsis":{
+        "en":"Love Story",
+        "id":"Kisah Kasih"
+    }, 
     "genre":["23c41302-37f8-4fb5-8845-9dc721f76ffa"],
     "release_date": "2025-03-20T00:00:00Z", 
     "cast":"Alex, Siska", 
@@ -72,8 +78,14 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { 
-    "title":"Kisah Kasih Di Sekolah", 
-    "synopsis":"Kisah Kasih", 
+    "title":{
+        "en":"Love Story at School",
+        "id":"Kisah Kasih Di Sekolah"
+    }, 
+    "synopsis":{
+        "en":"Love Story",
+        "id":"Kisah Kasih"
+    },
     "genre":["23c41302-37f8-4fb5-8845-9dc721f76ffa"],
     "release_date": "2025-03-20T00:00:00Z", 
     "cast":"Alex, Siska", 
