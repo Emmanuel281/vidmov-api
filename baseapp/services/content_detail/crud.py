@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from baseapp.config import setting, mongodb, minio
 from baseapp.utils.logger import Logger
 from baseapp.utils.utility import generate_uuid
-from baseapp.services.content_detail.model import ContentDetail
+from baseapp.services.content_detail.model import ContentDetail, ContentDetailResponse, ContentDetailListItem
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
@@ -62,7 +62,7 @@ class CRUD:
         obj["org_id"] = self.org_id
         try:
             result = collection.insert_one(obj)
-            return obj
+            return ContentDetailResponse(**obj)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             raise ValueError("Database error occurred while creating document.") from pme
@@ -83,14 +83,11 @@ class CRUD:
             selected_fields = {
                 "id": "$_id",
                 "content_id": 1,
-                "title": 1,
-                "description": 1,
                 "episode": 1,
                 "duration": 1,
                 "rating": 1,
                 "status": 1,
                 "video": 1,
-                "release_date": 1,
                 "is_free": 1,
                 "episode_price": 1,
                 "episode_sponsor": 1,
@@ -109,7 +106,7 @@ class CRUD:
                             {
                                 "$match": {
                                     "$expr": { "$eq": ["$refkey_id", "$$video_id"] },
-                                    "doctype": "95a871c8cc0c4225a064676031b4249f"
+                                    "doctype": "d67d38fe623b40ccb0ddb4671982c0d3"
                                 }
                             },
                             {
@@ -127,7 +124,7 @@ class CRUD:
                 },
                 {
                     "$addFields": {
-                        "video": { "$arrayElemAt": ["$video_data", 0] }
+                        "video": "$video_data"
                     }
                 },
                 {"$project": selected_fields}  # Project only selected fields
@@ -163,13 +160,15 @@ class CRUD:
             )
             
             # presigned url
-            if "video" in content_data:
-                content_data['video']['url'] = None
-                url = self.minio.presigned_get_object(config.minio_bucket, content_data['video']['filename'])
-                if url:
-                    content_data['video']['url'] = url
+            if "video" in content_data and isinstance(content_data['video'], list):
+                for video_item in content_data['video']:
+                    video_item['url'] = None
+                    if 'filename' in video_item:
+                        url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
+                        if url:
+                            video_item['url'] = url
 
-            return content_data
+            return ContentDetailResponse(**content_data)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             # write audit trail for fail
@@ -228,7 +227,7 @@ class CRUD:
                 details={"$set": obj},
                 status="success"
             )
-            return update_content
+            return ContentDetailResponse(**update_content)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             # write audit trail for fail
@@ -266,14 +265,11 @@ class CRUD:
             selected_fields = {
                 "id": "$_id",
                 "content_id": 1,
-                "title": 1,
-                "description": 1,
                 "episode": 1,
                 "duration": 1,
                 "rating": 1,
                 "status": 1,
                 "video": 1,
-                "release_date": 1,
                 "is_free": 1,
                 "episode_price": 1,
                 "episode_sponsor": 1,
@@ -293,7 +289,7 @@ class CRUD:
                             {
                                 "$match": {
                                     "$expr": { "$eq": ["$refkey_id", "$$video_id"] },
-                                    "doctype": "95a871c8cc0c4225a064676031b4249f"
+                                    "doctype": "d67d38fe623b40ccb0ddb4671982c0d3"
                                 }
                             },
                             {
@@ -311,7 +307,7 @@ class CRUD:
                 },
                 {
                     "$addFields": {
-                        "video": { "$arrayElemAt": ["$video_data", 0] }
+                        "video": "$video_data"
                     }
                 },
                 {"$skip": skip},  # Pagination skip stage
@@ -322,6 +318,7 @@ class CRUD:
             # Execute aggregation pipeline
             cursor = collection.aggregate(pipeline)
             results = list(cursor)
+            parsed_results = [ContentDetailListItem(**item) for item in results]
 
             # Total count
             total_count = collection.count_documents(query_filter)
@@ -339,14 +336,16 @@ class CRUD:
 
             for i, data in enumerate(results):
                 # presigned url
-                if "video" in data:
-                    data['video']['url'] = None
-                    url = self.minio.presigned_get_object(config.minio_bucket, data['video']['filename'])
-                    if url:
-                        data['video']['url'] = url
+                if "video" in data and isinstance(data['video'], list):
+                    for video_item in data['video']:
+                        video_item['url'] = None
+                        if 'filename' in video_item:
+                            url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
+                            if url:
+                                video_item['url'] = url
 
             return {
-                "data": results,
+                "data": parsed_results,
                 "pagination": {
                     "current_page": page,
                     "items_per_page": per_page,

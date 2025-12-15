@@ -1,7 +1,7 @@
 @prod = https://arena.gai.co.id/service
 @dev = http://localhost:17178
 @host = {{prod}}
-@upload_host = {{dev}}
+@upload_host = {{prod}}
 
 # --- TOKENS ---
 # Token Owner (Arena)
@@ -17,117 +17,6 @@
 @token = {{owner}}
 
 
-###
-# GROUP: AUTH (LOGIN)
-###
-
-### Login Owner
-POST {{host}}/v1/auth/login
-Content-Type: application/json
-X-Client-Type: web
-
-{ 
-    "username": "admin@arena.co.id", 
-    "password": "arena123" 
-}
-
-### Login Partner
-POST {{host}}/v1/auth/login
-Content-Type: application/json
-X-Client-Type: web
-
-{ 
-    "username": "admin@kopken.com", 
-    "password": "kopken123" 
-}
-
-### Login Client
-POST {{host}}/v1/auth/login
-Content-Type: application/json
-X-Client-Type: mobile
-
-{ 
-    "username": "aldian.gnusa@gmail.com", 
-    "password": "SecurePassword123" 
-}
-
-### Auth Status
-POST {{host}}/v1/auth/status
+### List
+GET {{host}}/v1/_organization?authority=2
 Authorization: Bearer {{token}}
-
-### Refresh Token
-POST {{host}}/v1/auth/refresh-token
-Authorization: Bearer {{refresh_token}}
-X-Client-Type: mobile
-
-
-
-###
-# GROUP: AUTH (OTP)
-###
-POST {{host}}/v1/auth/request-otp
-Content-Type: application/json
-
-{ 
-    "username": "aldian@gai.co.id", 
-    "password": "SecurePassword123" 
-}
-
-
-
-###
-# GROUP: FORGOT PASSWORD
-###
-# Send OTP
-POST {{host}}/v1/forgot-password/send-otp
-Content-Type: application/json
-
-{ 
-    "email":"admin@playup.com" 
-}
-
-### Verify OTP
-POST {{host}}/v1/forgot-password/verify-otp
-Content-Type: application/json
-
-{ 
-    "email":"admin@playup.com", 
-    "otp":"" 
-}
-
-### Reset Password
-POST {{host}}/v1/forgot-password/reset-password
-Content-Type: application/json
-
-{ 
-    "email":"admin@playup.com", 
-    "reset_token":"", 
-    "new_password":"" 
-}
-
-
-
-###
-# GROUP: OAUTH GOOGLE
-###
-
-### Linked Account
-PUT {{host}}/v1/oauth/link-google-account
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ 
-    "access_token":"ya29.a0AZYkNZhPzqHTFZ28GCnWI4VnoSKQPHGh1OAXLgHiGQ9EPHjTcqL4OP2F0TzMoySZIM30tWhzIP-8d_zQnI0Ci6omHzcCnZ6jTCpIPc2UNq0r2enHLWXxaIO0yyH3XXJyc0tUYkPe3_TbIaRCV0YAKbynBIlKEz_GKweSd-x-aCgYKAbASARUSFQHGX2MiLNDiLXUYJxvSOifr7RRc9g0175" 
-}
-
-### Unlinked Account
-DELETE {{host}}/v1/oauth/unlink-google-account
-Authorization: Bearer {{token}}
-
-### Login
-POST {{host}}/v1/oauth/login-google-account
-Content-Type: application/json
-
-{ 
-    "access_token":"ya29.a0AZYkNZiwHcRdgRLqGkefTrbHarQ90qNLUwCWCCxGpHDHBbKRU3o4chWG94nujS95Mp1GX60d8duZQl1Nq6MDlM6eK-VQ3Ow3TMZaQVnh2fhy9Enqa5Pn5ucg2i0-32y3z_VyL1mG_X_WXCZwhm8KheZoR5dFJYi5F-gw8xNeaCgYKAc8SARUSFQHGX2MiGhh20ZE82W_enZGNjh2sTw0175" 
-}

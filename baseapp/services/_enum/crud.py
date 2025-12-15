@@ -128,7 +128,19 @@ class CRUD:
             enum_class = getattr(module, model_name)
             if not (isinstance(enum_class, type) and issubclass(enum_class, Enum)):
                 raise ValueError(f"{model_name} is not an Enum class")
-            enum_data = {item.name: item.value for item in enum_class}
+            enum_data = {}
+            for item in enum_class:
+                # Cek apakah enum member memiliki property 'label' (seperti pada LanguageCode)
+                # hasattr akan mentrigger @property jika ada
+                if hasattr(item, "label"):
+                    enum_data[item.name] = {
+                        "value": item.value,
+                        "label": item.label
+                    }
+                else:
+                    # Fallback untuk Enum biasa (hanya return value)
+                    enum_data[item.name] = item.value
+                    
             return enum_data
         except AttributeError:
             error_message = f"Model {model_name} not found in model"

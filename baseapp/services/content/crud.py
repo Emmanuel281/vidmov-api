@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from baseapp.config import setting, mongodb, minio
 from baseapp.utils.logger import Logger
 from baseapp.utils.utility import generate_uuid
-from baseapp.services.content.model import Content
+from baseapp.services.content.model import Content, ContentResponse, ContentListItem
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
@@ -63,7 +63,7 @@ class CRUD:
         obj["org_id"] = self.org_id
         try:
             result = collection.insert_one(obj)
-            return obj
+            return ContentResponse(**obj)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             raise ValueError("Database error occurred while creating document.") from pme
@@ -83,23 +83,25 @@ class CRUD:
             # Selected field
             selected_fields = {
                 "id": "$_id",
-                "name": 1,
-                "description": 1,
+                "title": 1,
+                "synopsis": 1,
                 "cast": 1,
+                "tags": 1,
                 "genre": 1,
                 "genre_details":1,
-                "duration": 1,
-                "type": 1,
-                "episodes": 1,
                 "origin": 1,
+                "territory": 1,
                 "rating": 1,
                 "status": 1,
-                "poster": 1,
                 "release_date": 1,
+                "license_from": 1,
                 "licence_date": 1,
                 "is_full_paid": 1,
                 "full_price_coins": 1,
                 "main_sponsor": 1,
+                "poster": 1,
+                "fyp": 1,
+                "highlight": 1,
                 "_id": 0
             }
 
@@ -154,9 +156,61 @@ class CRUD:
                         "as": "poster_data"
                     }
                 },
+                # Lookup for FYP data
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "content_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
+                                    "doctype": "31c557f0f4574f7aae55c1b6860a2e19"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "fyp_data"
+                    }
+                },
+                # Lookup for Highlight data
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "content_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
+                                    "doctype": "8014149170ad41148f5ae01d9b0aac7b"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "highlight_data"
+                    }
+                },
                 {
                     "$addFields": {
-                        "poster": { "$arrayElemAt": ["$poster_data", 0] }
+                        "poster": { "$arrayElemAt": ["$poster_data", 0] },
+                        "fyp": "$fyp_data", 
+                        "highlight": "$highlight_data"
                     }
                 },
                 {"$project": selected_fields}  # Project only selected fields
@@ -198,7 +252,23 @@ class CRUD:
                 if url:
                     content_data['poster']['url'] = url
 
-            return content_data
+            if "fyp" in content_data and isinstance(content_data['fyp'], list):
+                for video_item in content_data['fyp']:
+                    video_item['url'] = None
+                    if 'filename' in video_item:
+                        url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
+                        if url:
+                            video_item['url'] = url
+
+            if "highlight" in content_data and isinstance(content_data['highlight'], list):
+                for video_item in content_data['highlight']:
+                    video_item['url'] = None
+                    if 'filename' in video_item:
+                        url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
+                        if url:
+                            video_item['url'] = url
+
+            return ContentResponse(**content_data)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             # write audit trail for fail
@@ -257,7 +327,7 @@ class CRUD:
                 details={"$set": obj},
                 status="success"
             )
-            return update_content
+            return ContentResponse(**update_content)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             # write audit trail for fail
@@ -284,6 +354,10 @@ class CRUD:
             # Apply filters
             query_filter = filters or {}
 
+            # Handle sort field
+            if sort_field == "title":
+                sort_field = "title.id"
+
             # Handle role filter specifically
             if 'genre' in query_filter:
                 # Jika roles adalah string, konversi ke format $in
@@ -303,19 +377,19 @@ class CRUD:
             # Selected fields
             selected_fields = {
                 "id": "$_id",
-                "name": 1,
-                "description": 1,
+                "title": 1,
+                "synopsis": 1,
                 "cast": 1,
+                "tags": 1,
                 "genre": 1,
                 "genre_details":1,
-                "duration": 1,
-                "type": 1,
-                "episodes": 1,
                 "origin": 1,
+                "territory": 1,
                 "rating": 1,
                 "status": 1,
                 "poster": 1,
                 "release_date": 1,
+                "license_from": 1,
                 "licence_date": 1,
                 "is_full_paid": 1,
                 "full_price_coins": 1,
@@ -389,6 +463,7 @@ class CRUD:
             # Execute aggregation pipeline
             cursor = collection.aggregate(pipeline)
             results = list(cursor)
+            parsed_results = [ContentListItem(**item) for item in results]
 
             # Total count
             total_count = collection.count_documents(query_filter)
@@ -413,7 +488,7 @@ class CRUD:
                         data['poster']['url'] = url
 
             return {
-                "data": results,
+                "data": parsed_results,
                 "pagination": {
                     "current_page": page,
                     "items_per_page": per_page,

@@ -50,6 +50,7 @@ async def get_all_data(
         sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         org_name: Optional[str] = Query(None, description="Filter by organization name"),
         status: Optional[str] = Query(None, description="Filter by status"),
+        authority: Optional[int] = Query(None, description="Filter by authority"),
         cu: CurrentUser = Depends(get_current_user)
     ) -> ApiResponse:
 
@@ -73,6 +74,8 @@ async def get_all_data(
             filters["org_name"] = org_name
         if status:
             filters["status"] = status
+        if authority:
+            filters["authority"] = authority
 
         # Call CRUD function
         response = _crud.get_all(

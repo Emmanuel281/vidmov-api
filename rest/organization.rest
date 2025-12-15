@@ -62,9 +62,6 @@ Content-Type: application/json
 }
 
 
-### Check Owner
-POST {{host}}/v1/_organization/is_owner_exist
-
 ### Find by ID
 GET {{host}}/v1/_organization/find/e190910982024c87a514512467edf47f
 Authorization: Bearer {{token}}

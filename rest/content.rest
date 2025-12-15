@@ -1,11 +1,11 @@
 @prod = https://arena.gai.co.id/service
-@dev = http://localhost:1899
-@host = {{prod}}
+@dev = http://localhost:17178
+@host = {{dev}}
 @upload_host = {{prod}}
 
 # --- TOKENS ---
 # Token Owner (Arena)
-@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiODYxNzFkNDU0YzBmNDExMWIwOWRkMmQ0NWIzNGIwNmIiLCJyb2xlcyI6WyI4YWJjYmRlNGM2NzI0OTliYmM1NjY2MjAxNjI3NTcwNiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImM0YWYyMzY5ZWNmYzRlNjJiNjAxMmE2ODA4YjFlYzNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7InZpZXciOjEsImFkZCI6MiwiZWRpdCI6NCwiZGVsZXRlIjo4LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJhcHByb3ZhbCI6NjQsInNldHRpbmciOjEyOH0sInNlc3Npb25faWQiOiI0YjRjMGRjM2QzMjk0ZGRlOWI3YTBiMTkwZGViNzU3MSIsImV4cCI6MTc2NTQ0Nzc3NiwianRpIjoiMTQ3ZDYwMGQ0Y2ZiNDU5MGFlN2Y1ODg3NDkxMWUyZWUifQ.jGTwt7CwC9tnIMalux-ZxIp_LHgjHvEsuV0qyzEbMug
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiODY5Y2RjZDcwZjFmNDM4ZGFhMDEyOTFmZjZlZDRjZGIiLCJyb2xlcyI6WyIwNTRhODBlYTA3Mzk0YTg0YTc0MWRjYWQ4OWM1ZjBiZiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImJhYzUxODk3NWMzZDQ1MGU4NDYxOGYxNjk0ZmVkNzcyIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7InZpZXciOjEsImFkZCI6MiwiZWRpdCI6NCwiZGVsZXRlIjo4LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJhcHByb3ZhbCI6NjQsInNldHRpbmciOjEyOH0sInNlc3Npb25faWQiOiI3NmRlYWFmYzgxYWU0NmNlOTUzNWIwNGIxNWIxNzM1OCIsImV4cCI6MTc2NTc5MDcwOSwianRpIjoiYWY4Mjg5YWJiYzY4NDBjYWJlMzM5Mzc5NGMyMmYzYWEifQ.txRlI2vLJa_PcrJDXV7FYnjiOm7S71cU-_-PxG9imNo
 # Token Partner
 @partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
 # Token Client
@@ -17,8 +17,9 @@
 @token = {{owner}}
 
 ###
-# GROUP: CONTENT (ENUM)
+# GROUP: ENUMERATION
 ###
+
 ### GET GENRE
 GET {{host}}/v1/_enum?app_name=baseapp&module=GENRE
 Authorization: Bearer {{token}}
@@ -28,11 +29,15 @@ GET {{host}}/v1/_enum/from/common/ContentStatus
 Authorization: Bearer {{token}}
 
 ### GET LANGUAGE
-GET {{host}}/v1/_enum/from/common/Language
+GET {{host}}/v1/_enum/from/common/LanguageCode
+Authorization: Bearer {{token}}
+
+### GET RESOLUTION
+GET {{host}}/v1/_enum/from/common/ContentResolution
 Authorization: Bearer {{token}}
 
 ###
-# GROUP: CONTENT (HEADER)
+# GROUP: CONTENT
 ###
 ### Create
 POST {{host}}/v1/content/create
@@ -40,26 +45,82 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "name":"Kisah Kasih Di Sekolah", 
-    "description":"Kisah Kasih", 
-    "cast":"Alex, Siska", 
+    "title":"Kisah Kasih Di Sekolah", 
+    "synopsis":"Kisah Kasih", 
     "genre":["23c41302-37f8-4fb5-8845-9dc721f76ffa"],
     "release_date": "2025-03-20T00:00:00Z", 
-    "license_date": "2025-03-20T00:00:00Z", 
-    "episodes":60, 
-    "duration":120,
+    "cast":"Alex, Siska", 
+    "tags":"CEO love triangle, Money and Power", 
+    "license_from": null, 
+    "licence_date": null, // 2025-03-20T00:00:00Z
     "origin":"Indonesia", 
+    "territory":"Indonesia", 
     "is_full_paid":true,
     "full_price_coins":840,
     "main_sponsor":{
         "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
         "brand_name":"BrandX",
         "campaign_name":"Campaign Spring"
-    },
+    }, // optional default null
     "status":"DRAFT"
 }
 
-### Upload Poster (Content)
+
+### Update
+PUT {{host}}/v1/content/update/728f1a79-b8e2-42ca-860d-6535aaa45a57
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ 
+    "title":"Kisah Kasih Di Sekolah", 
+    "synopsis":"Kisah Kasih", 
+    "genre":["23c41302-37f8-4fb5-8845-9dc721f76ffa"],
+    "release_date": "2025-03-20T00:00:00Z", 
+    "cast":"Alex, Siska", 
+    "tags":"CEO love triangle, Money and Power", 
+    "license_from": null, 
+    "licence_date": null, // 2025-03-20T00:00:00Z
+    "origin":"Indonesia", 
+    "territory":"Indonesia", 
+    "is_full_paid":true,
+    "full_price_coins":840,
+    "main_sponsor":{
+        "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
+        "brand_name":"BrandX",
+        "campaign_name":"Campaign Spring"
+    }, // optional default null
+}
+
+
+### Set Published
+PUT {{host}}/v1/content/update_status/728f1a79-b8e2-42ca-860d-6535aaa45a57
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ 
+    "status":"PUBLISHED" 
+}
+
+
+### List
+GET {{host}}/v1/content?status=PUBLISHED
+Authorization: Bearer {{token}}
+
+
+### Explore
+GET {{host}}/v1/content/explore?status=PUBLISHED
+
+
+### Find
+GET {{host}}/v1/content/find/728f1a79-b8e2-42ca-860d-6535aaa45a57
+Authorization: Bearer {{token}}
+
+
+###
+# GROUP: ATTACHMENT
+###
+
+### Upload Poster
 POST {{upload_host}}/v1/_dms/upload
 Authorization: Bearer {{token}}
 Content-Type: multipart/form-data; boundary=boundary
@@ -70,11 +131,11 @@ Content-Disposition: form-data; name="file"; filename="thumb.png"
 --boundary
 Content-Disposition: form-data; name="doctype"
 
-8e79c84ee66542db9aa5a1252c47530d
+64c1c7ba4a5246648bf224bfd19fe118
 --boundary
 Content-Disposition: form-data; name="metadata"
 
-{"Content ID":"728f1a79-b8e2-42ca-860d-6535aaa45a57"}
+{"Content ID":"728f1a79-b8e2-42ca-860d-6535aaa45a57", "Title":"Kisah Kasih Di Sekolah", "Language":"ID"}
 --boundary
 Content-Disposition: form-data; name="refkey_id"
 
@@ -89,142 +150,71 @@ Content-Disposition: form-data; name="refkey_name"
 poster
 --boundary--
 
-### Update
-PUT {{host}}/v1/content/update/728f1a79-b8e2-42ca-860d-6535aaa45a57
-Authorization: Bearer {{token}}
-Content-Type: application/json
 
-{ 
-    "name":"Kisah Kasih Di Sekolah", 
-    "description":"Updated", 
-    "cast":"Alex", 
-    "genre":[], 
-    "release_date": "2025-03-20T00:00:00Z", 
-    "license_date": "2025-03-20T00:00:00Z", 
-    "episodes":60, 
-    "duration":120,
-    "origin":"Indonesia", 
-    "is_full_paid":true,
-    "full_price_coins":840,
-    "main_sponsor":{
-        "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
-        "brand_name":"BrandX",
-        "campaign_name":"Campaign Spring"
-    }
-}
-
-
-### Set Published
-PUT {{host}}/v1/content/update_status/728f1a79-b8e2-42ca-860d-6535aaa45a57
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ 
-    "status":"PUBLISHED" 
-}
-
-### List
-GET {{host}}/v1/content?status=PUBLISHED
-Authorization: Bearer {{token}}
-
-### Explore
-GET {{host}}/v1/content/explore?status=PUBLISHED
-
-### Find
-GET {{host}}/v1/content/find/728f1a79-b8e2-42ca-860d-6535aaa45a57
-Authorization: Bearer {{token}}
-
-###
-# GROUP: CONTENT (DETAIL/EPISODE)
-###
-### Create Episode
-POST {{host}}/v1/content-detail/create
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ 
-    "content_id":"728f1a79-b8e2-42ca-860d-6535aaa45a57", 
-    "title":"Pandangan Pertama", 
-    "description":"Episode 1 Description", 
-    "episode":1, 
-    "duration":1, 
-    "release_date": "2025-03-20T00:00:00Z",
-    "is_free":false,
-    "episode_price":21,
-    "episode_sponsor":{
-        "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
-        "brand_name":"BrandY",
-        "campaign_name":"Campaign Summer"
-    },
-    "status":"DRAFT" 
-}
-
-### Upload Video
+### Upload FYP
 POST {{upload_host}}/v1/_dms/upload
 Authorization: Bearer {{token}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
-Content-Disposition: form-data; name="file"; filename="video.mp4"
-< ./path/to/video.mp4
+Content-Disposition: form-data; name="file"; filename="fyp.mp4"
+< ./path/to/fyp.mp4
 --boundary
 Content-Disposition: form-data; name="doctype"
 
-8e79c84ee66542db9aa5a1252c47530d
+31c557f0f4574f7aae55c1b6860a2e19
 --boundary
 Content-Disposition: form-data; name="metadata"
 
-{"Content ID":"728f1a79-b8e2-42ca-860d-6535aaa45a57","Video ID":"40825a75-0a39-4dec-8dc6-ad1bcedc98cc","Eps":1}
+{"Content ID":"728f1a79-b8e2-42ca-860d-6535aaa45a57", "Title":"Kisah Kasih Di Sekolah", "Language":"ID", "Resolution":"HD"}
 --boundary
 Content-Disposition: form-data; name="refkey_id"
 
-40825a75-0a39-4dec-8dc6-ad1bcedc98cc
+728f1a79-b8e2-42ca-860d-6535aaa45a57
 --boundary
 Content-Disposition: form-data; name="refkey_table"
 
-content_video
+content
 --boundary
 Content-Disposition: form-data; name="refkey_name"
 
-video
+fyp
 --boundary--
 
-### Update Detail
-PUT {{host}}/v1/content-detail/update/40825a75-0a39-4dec-8dc6-ad1bcedc98cc
+
+### Upload Hightlight
+POST {{upload_host}}/v1/_dms/upload
 Authorization: Bearer {{token}}
-Content-Type: application/json
+Content-Type: multipart/form-data; boundary=boundary
 
-{ 
-    "content_id":"728f1a79-b8e2-42ca-860d-6535aaa45a57", 
-    "title":"Pandangan Pertama", 
-    "description":"Episode 1 Description", 
-    "episode":1, 
-    "duration":1, 
-    "release_date": "2025-03-20T00:00:00Z", 
-    "revise_date": "2025-03-20T00:00:00Z", 
-    "is_free":false,
-    "episode_price":21,
-    "episode_sponsor":{
-        "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
-        "brand_name":"BrandY",
-        "campaign_name":"Campaign Summer"
-    },
-    "status":"DRAFT" 
-}
+--boundary
+Content-Disposition: form-data; name="file"; filename="highlight.mp4"
+< ./path/to/highlight.mp4
+--boundary
+Content-Disposition: form-data; name="doctype"
 
-### Set Status Episode
-PUT {{host}}/v1/content-detail/update_status/40825a75-0a39-4dec-8dc6-ad1bcedc98cc
-Authorization: Bearer {{token}}
-Content-Type: application/json
+8014149170ad41148f5ae01d9b0aac7b
+--boundary
+Content-Disposition: form-data; name="metadata"
 
-{ 
-    "status":"PUBLISHED" 
-}
+{"Content ID":"728f1a79-b8e2-42ca-860d-6535aaa45a57", "Title":"Kisah Kasih Di Sekolah", "Language":"ID", "Resolution":"HD"}
+--boundary
+Content-Disposition: form-data; name="refkey_id"
 
-### List Episode
-GET {{host}}/v1/content-detail?content_id=728f1a79-b8e2-42ca-860d-6535aaa45a57
-Authorization: Bearer {{token}}
+728f1a79-b8e2-42ca-860d-6535aaa45a57
+--boundary
+Content-Disposition: form-data; name="refkey_table"
 
-### Find Episode
-GET {{host}}/v1/content-detail/find/40825a75-0a39-4dec-8dc6-ad1bcedc98cc
+content
+--boundary
+Content-Disposition: form-data; name="refkey_name"
+
+fyp
+--boundary--
+
+
+###
+# GROUP: BROWSE ATTACHMENT
+###
+GET {{host}}/v1/_dms/browse/content/728f1a79-b8e2-42ca-860d-6535aaa45a57
 Authorization: Bearer {{token}}

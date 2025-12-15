@@ -90,7 +90,19 @@ class WalletType(str, Enum):
     REWARD = "REWARD"
     USE = "USE"
 
-class Language(str, Enum):
+class LanguageCode(str, Enum):
     """Type of a language"""
-    id = "Indonesia"
-    en = "English"
+    EN = "en"
+    ID = "id"
+    @property
+    def label(self) -> str:
+        match self:
+            case LanguageCode.EN: return "English"
+            case LanguageCode.ID: return "Indonesia"
+            case _: return self.value.upper() # Fallback
+
+class ContentResolution(str, Enum):
+    """Resolution of a content"""
+    SD = "SD"
+    HD = "HD"
+    UHD = "4K"
