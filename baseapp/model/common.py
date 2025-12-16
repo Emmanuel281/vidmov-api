@@ -58,6 +58,16 @@ class DMSOperationType(str, Enum):
     TO_TRASH = "to_trash"
     RESTORE = "restore"
 
+class DMSOperationType(str, Enum):
+    TO_TRASH = "to_trash"
+    RESTORE = "restore"
+
+class DMSDataType(str, Enum):
+    Str = "Str"
+    Int = "Int"
+    Float = "Float"
+    Datetime = "Datetime"
+
 class Authority(IntEnum):
     OWNER = 1
     PARTNER = 2

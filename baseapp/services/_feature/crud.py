@@ -6,7 +6,7 @@ from baseapp.utils.logger import Logger
 from baseapp.model.common import RoleAction
 from baseapp.services._feature.model import Feature
 from baseapp.services.audit_trail_service import AuditTrailService
-from baseapp.utils.utility import get_enum, generate_uuid
+from baseapp.utils.utility import generate_uuid
 
 config = setting.get_settings()
 logger = Logger("baseapp.services._feature.crud")

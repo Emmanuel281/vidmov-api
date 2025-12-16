@@ -8,7 +8,7 @@ from typing import Optional, Dict, Any
 from baseapp.config import setting, mongodb
 from baseapp.services._org import model
 from baseapp.model.common import UpdateStatus, MINIO_STORAGE_SIZE_LIMIT, Authority, RoleAction
-from baseapp.utils.utility import hash_password, get_enum, generate_uuid
+from baseapp.utils.utility import hash_password, generate_uuid
 from baseapp.services.audit_trail_service import AuditTrailService
 from baseapp.utils.logger import Logger
 

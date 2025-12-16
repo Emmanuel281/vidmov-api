@@ -2,7 +2,7 @@ from typing import Optional
 from baseapp.config import setting, mongodb
 from baseapp.services.auth.model import UserInfo, ClientInfo
 from baseapp.model.common import Status, RoleAction
-from baseapp.utils.utility import get_enum, check_password
+from baseapp.utils.utility import check_password
 from baseapp.utils.logger import Logger
 
 config = setting.get_settings()

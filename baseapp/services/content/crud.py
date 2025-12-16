@@ -63,6 +63,7 @@ class CRUD:
         obj["org_id"] = self.org_id
         try:
             result = collection.insert_one(obj)
+            obj["id"] = obj.pop("_id")
             return ContentResponse(**obj)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")

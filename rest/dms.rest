@@ -17,7 +17,7 @@
 @token = {{owner}}
 
 ### GET DATA TYPE ENUM
-GET {{host}}/v1/_enum/find/dmsDataType
+GET {{host}}/v1/_enum/from/common/DMSDataType
 Authorization: Bearer {{token}}
 
 ###
