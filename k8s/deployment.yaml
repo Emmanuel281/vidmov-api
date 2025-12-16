@@ -3,6 +3,40 @@ kind: Namespace
 metadata:
   name: gai-arena
 ---
+# Migration Job - Runs once and exits
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: arena-migration
+  namespace: gai-arena
+  labels:
+    app: arena-migration
+spec:
+  # Job will be deleted after 100 seconds of completion
+  ttlSecondsAfterFinished: 100
+  template:
+    metadata:
+      labels:
+        app: arena-migration
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: gai-registry
+      containers:
+        - name: migration
+          image: registry.gai.co.id/gai/arena-api:latest
+          args: ["migrate"]
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          envFrom:
+            - secretRef:
+                name: arena-env
+---
 # API Deployment
 apiVersion: apps/v1
 kind: Deployment
