@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: arena-api-ingress
+  namespace: gai-arena
+  annotations:
+    # 1. Capture the second group ($2) from the path regex below
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    
+    # 2. OPTIONAL: Explicitly enable regex (good practice for complex paths)
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "500m"
+    nginx.ingress.kubernetes.io/proxy-set-headers: |
+      X-Forwarded-For: $proxy_add_x_forwarded_for
+      Host: $http_host
+    nginx.ingress.kubernetes.io/proxy-redirect-off: "true"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600s"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "500s"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - arena.gai.co.id
+      secretName: arena-tls
+  rules:
+    - host: arena.gai.co.id
+      http:
+        paths:
+          # 3. Define the Regex groups:
+          #    Group 1: (/|$)  -> matches the slash after service or end of line
+          #    Group 2: (.*)   -> matches everything else (e.g., "v1/test")
+          - path: /service(/|$)(.*)
+            # 4. MUST use ImplementationSpecific to allow regex in path
+            pathType: ImplementationSpecific 
+            backend:
+              service:
+                name: arena-api-service
+                port:
+                  number: 1899
