@@ -72,9 +72,9 @@ class ContentResponse(Content):
     # Mewarisi semua field Organization (name, email, dll)
     id: str = Field(serialization_alias="id")
     genre_details: Optional[List[Any]] = None
-    poster: Optional[Dict[str,str]] = None
-    fyp: Optional[List[Dict]] = None
-    highlight: Optional[List[Dict]] = None
+    poster: Optional[Dict] = None
+    fyp: Optional[Dict[str, Dict[str, Any]]] = None
+    highlight: Optional[Dict[str, Dict[str, Any]]] = None
     rec_date: Optional[datetime] = None
     rec_by: Optional[str] = None
     mod_date: Optional[datetime] = None
@@ -88,13 +88,14 @@ class ContentResponse(Content):
 class ContentListItem(BaseModel):
     """Response model untuk item dalam list (lebih ringkas)"""
     id: str
-    title: str
-    synopsis: str
+    title: Dict[str, str] = {}
+    synopsis: Dict[str, str] = {}
     genre: List[str] = None
+    genre_details: Optional[List[Any]] = None
     total_views: Optional[int] = 0
     total_saved: Optional[int] = 0
     total_episodes: Optional[int] = 0
-    poster: Optional[Dict[str,str]] = None
+    poster: Optional[Dict] = None
     status: ContentStatus
     
     model_config = {

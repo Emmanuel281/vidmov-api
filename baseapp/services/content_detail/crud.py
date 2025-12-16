@@ -188,7 +188,7 @@ class CRUD:
                 host=config.minio_host,
                 port=config.minio_port,
                 bucket=config.minio_bucket,
-                error=str(e),
+                error=str(s3e.message),
                 error_type="S3Error"
             )
             raise ValueError("Minio presigned object failed") from s3e

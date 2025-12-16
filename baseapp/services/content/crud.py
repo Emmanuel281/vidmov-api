@@ -141,7 +141,7 @@ class CRUD:
                             {
                                 "$match": {
                                     "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
-                                    "doctype": "8e79c84ee66542db9aa5a1252c47530d"
+                                    "doctype": "64c1c7ba4a5246648bf224bfd19fe118"
                                 }
                             },
                             {
@@ -149,6 +149,7 @@ class CRUD:
                                     "id": "$_id",
                                     "_id": 0,
                                     "filename": "$filename",
+                                    "metadata": "$metadata",
                                     "path": "$folder_path",
                                     "info_file": "$filestat"
                                 }
@@ -174,6 +175,7 @@ class CRUD:
                                     "id": "$_id",
                                     "_id": 0,
                                     "filename": "$filename",
+                                    "metadata": "$metadata",
                                     "path": "$folder_path",
                                     "info_file": "$filestat"
                                 }
@@ -199,6 +201,7 @@ class CRUD:
                                     "id": "$_id",
                                     "_id": 0,
                                     "filename": "$filename",
+                                    "metadata": "$metadata",
                                     "path": "$folder_path",
                                     "info_file": "$filestat"
                                 }
@@ -209,7 +212,7 @@ class CRUD:
                 },
                 {
                     "$addFields": {
-                        "poster": { "$arrayElemAt": ["$poster_data", 0] },
+                        "poster": "$poster_data",
                         "fyp": "$fyp_data", 
                         "highlight": "$highlight_data"
                     }
@@ -247,27 +250,88 @@ class CRUD:
             )
 
             # presigned url
-            if "poster" in content_data:
-                content_data['poster']['url'] = None
-                url = self.minio.presigned_get_object(config.minio_bucket, content_data['poster']['filename'])
-                if url:
-                    content_data['poster']['url'] = url
+            if "poster" in content_data and isinstance(content_data['poster'], list):
+                grouped_poster = {}
+                for poster_item in content_data['poster']:
+                    # Generate URL
+                    poster_item['url'] = None
+                    if 'filename' in poster_item:
+                        url = self.minio.presigned_get_object(config.minio_bucket, poster_item['filename'])
+                        if url:
+                            poster_item['url'] = url
+                    
+                    # Grouping Logic
+                    lang_key = "other"
+                    if "metadata" in poster_item and poster_item["metadata"] and "Language" in poster_item["metadata"]:
+                        # Mengambil bahasa dari metadata, contoh: "ID" -> "id"
+                        lang_key = poster_item["metadata"]["Language"].lower()
+                    
+                    if lang_key not in grouped_poster:
+                        grouped_poster[lang_key] = {}
+                    
+                    grouped_poster[lang_key] = poster_item
+                    poster_item.pop("metadata")
+
+                # Replace list with grouped dictionary
+                content_data['poster'] = grouped_poster
 
             if "fyp" in content_data and isinstance(content_data['fyp'], list):
+                grouped_fyp = {}
                 for video_item in content_data['fyp']:
+                    # Generate URL
                     video_item['url'] = None
                     if 'filename' in video_item:
                         url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
                         if url:
                             video_item['url'] = url
+                    
+                    # Determine Keys
+                    lang_key = "other"
+                    res_key = "original"
+                    
+                    if "metadata" in video_item and video_item["metadata"]:
+                        if "Language" in video_item["metadata"]:
+                            lang_key = video_item["metadata"]["Language"].lower()
+                        if "Resolution" in video_item["metadata"]:
+                            res_key = video_item["metadata"]["Resolution"].lower()
+
+                    # Build Nested Dict
+                    if lang_key not in grouped_fyp:
+                        grouped_fyp[lang_key] = {}
+                    
+                    grouped_fyp[lang_key][res_key] = video_item
+                    video_item.pop("metadata")
+
+                content_data['fyp'] = grouped_fyp
 
             if "highlight" in content_data and isinstance(content_data['highlight'], list):
+                grouped_highlight = {}
                 for video_item in content_data['highlight']:
+                    # Generate URL
                     video_item['url'] = None
                     if 'filename' in video_item:
                         url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
                         if url:
                             video_item['url'] = url
+                    
+                    # Determine Keys
+                    lang_key = "other"
+                    res_key = "original"
+                    
+                    if "metadata" in video_item and video_item["metadata"]:
+                        if "Language" in video_item["metadata"]:
+                            lang_key = video_item["metadata"]["Language"].lower()
+                        if "Resolution" in video_item["metadata"]:
+                            res_key = video_item["metadata"]["Resolution"].lower()
+
+                    # Build Nested Dict
+                    if lang_key not in grouped_highlight:
+                        grouped_highlight[lang_key] = {}
+                    
+                    grouped_highlight[lang_key][res_key] = video_item
+                    video_item.pop("metadata")
+                    
+                content_data['highlight'] = grouped_highlight
 
             return ContentResponse(**content_data)
         except PyMongoError as pme:
@@ -289,7 +353,7 @@ class CRUD:
                 host=config.minio_host,
                 port=config.minio_port,
                 bucket=config.minio_bucket,
-                error=str(e),
+                error=str(s3e.message),
                 error_type="S3Error"
             )
             raise ValueError("Minio presigned object failed") from s3e
@@ -435,7 +499,7 @@ class CRUD:
                             {
                                 "$match": {
                                     "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
-                                    "doctype": "8e79c84ee66542db9aa5a1252c47530d"
+                                    "doctype": "64c1c7ba4a5246648bf224bfd19fe118"
                                 }
                             },
                             {
@@ -443,6 +507,7 @@ class CRUD:
                                     "id": "$_id",
                                     "_id": 0,
                                     "filename": "$filename",
+                                    "metadata": "$metadata",
                                     "path": "$folder_path",
                                     "info_file": "$filestat"
                                 }
@@ -453,7 +518,7 @@ class CRUD:
                 },
                 {
                     "$addFields": {
-                        "poster": { "$arrayElemAt": ["$poster_data", 0] }
+                        "poster": "$poster_data"
                     }
                 },
                 {"$skip": skip},  # Pagination skip stage
@@ -464,7 +529,7 @@ class CRUD:
             # Execute aggregation pipeline
             cursor = collection.aggregate(pipeline)
             results = list(cursor)
-            parsed_results = [ContentListItem(**item) for item in results]
+            
 
             # Total count
             total_count = collection.count_documents(query_filter)
@@ -482,11 +547,31 @@ class CRUD:
 
             for i, data in enumerate(results):
                 # presigned url
-                if "poster" in data:
-                    data['poster']['url'] = None
-                    url = self.minio.presigned_get_object(config.minio_bucket, data['poster']['filename'])
-                    if url:
-                        data['poster']['url'] = url
+                if "poster" in data and isinstance(data['poster'], list):
+                    grouped_poster = {}
+                    for poster_item in data['poster']:
+                        # Generate URL
+                        poster_item['url'] = None
+                        if 'filename' in poster_item:
+                            url = self.minio.presigned_get_object(config.minio_bucket, poster_item['filename'])
+                            if url:
+                                poster_item['url'] = url
+                        
+                        # Grouping Logic
+                        lang_key = "other"
+                        if "metadata" in poster_item and poster_item["metadata"] and "Language" in poster_item["metadata"]:
+                            lang_key = poster_item["metadata"]["Language"].lower()
+                        
+                        if lang_key not in grouped_poster:
+                            grouped_poster[lang_key] = {}
+                        
+                        grouped_poster[lang_key] = poster_item                    
+                        poster_item.pop("metadata")
+                        
+                    # Replace list with grouped dictionary
+                    data['poster'] = grouped_poster
+
+            parsed_results = [ContentListItem(**item) for item in results]
 
             return {
                 "data": parsed_results,
@@ -516,7 +601,7 @@ class CRUD:
                 host=config.minio_host,
                 port=config.minio_port,
                 bucket=config.minio_bucket,
-                error=str(e),
+                error=str(s3e.message),
                 error_type="S3Error"
             )
             raise ValueError("Minio presigned object error") from s3e
