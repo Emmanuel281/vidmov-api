@@ -63,6 +63,14 @@ class Authority(IntEnum):
     PARTNER = 2
     MEMBER = 4
     AFFILIATOR = 8
+    @property
+    def label(self) -> str:
+        match self:
+            case Authority.OWNER: return "Arena"
+            case Authority.PARTNER: return "Partner"
+            case Authority.MEMBER: return "Member"
+            case Authority.AFFILIATOR: return "Affiliator"
+            case _: return self.value.upper() # Fallback
 
 class RoleAction(IntEnum):
     VIEW = 1
@@ -73,6 +81,18 @@ class RoleAction(IntEnum):
     IMPORT = 32
     APPROVAL = 64
     SETTING = 128
+    @property
+    def label(self) -> str:
+        match self:
+            case RoleAction.VIEW: return "Read"
+            case RoleAction.ADD: return "Create"
+            case RoleAction.EDIT: return "Update"
+            case RoleAction.DELETE: return "Delete"
+            case RoleAction.EXPORT: return "Export"
+            case RoleAction.IMPORT: return "Import"
+            case RoleAction.APPROVAL: return "Approval"
+            case RoleAction.SETTING: return "Setting"
+            case _: return self.value.upper() # Fallback
 
 class ContentStatus(str, Enum):
     """Status of a content"""

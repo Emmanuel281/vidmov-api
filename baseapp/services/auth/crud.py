@@ -1,7 +1,7 @@
 from typing import Optional
 from baseapp.config import setting, mongodb
 from baseapp.services.auth.model import UserInfo, ClientInfo
-from baseapp.model.common import Status
+from baseapp.model.common import Status, RoleAction
 from baseapp.utils.utility import get_enum, check_password
 from baseapp.utils.logger import Logger
 
@@ -35,8 +35,7 @@ class CRUD:
         return find_org.get("authority")
 
     def get_role_action(self):
-        bitRA = get_enum(self.mongo,"ROLEACTION")
-        bitRA = bitRA["value"]
+        bitRA = {item.name: item.value for item in RoleAction}
         return bitRA
     
     def get_feature(self, roles):

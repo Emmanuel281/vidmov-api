@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 
 from baseapp.config import setting, mongodb
 from baseapp.services._org import model
-from baseapp.model.common import UpdateStatus, MINIO_STORAGE_SIZE_LIMIT, Authority
+from baseapp.model.common import UpdateStatus, MINIO_STORAGE_SIZE_LIMIT, Authority, RoleAction
 from baseapp.utils.utility import hash_password, get_enum, generate_uuid
 from baseapp.services.audit_trail_service import AuditTrailService
 from baseapp.utils.logger import Logger
@@ -232,8 +232,8 @@ class CRUD:
         initial_data = []
         try:
             # get enum bit of roleaction
-            bitRA = get_enum(self.mongo,"ROLEACTION")
-            totalBitRA = sum(bitRA["value"].values())
+            bitRA = {item.name: item.value for item in RoleAction}
+            totalBitRA = sum(bitRA.values())
 
             # list of features
             filters = {

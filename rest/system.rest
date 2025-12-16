@@ -63,6 +63,14 @@ Content-Type: application/json
 GET {{host}}/v1/_enum?app_name=baseapp&module=HISTORY_CATEGORY
 Authorization: Bearer {{token}}
 
+### GET AUTHORITY
+GET {{host}}/v1/_enum/from/common/Authority
+Authorization: Bearer {{token}}
+
+### GET ROLE ACTION
+GET {{host}}/v1/_enum/from/common/RoleAction
+Authorization: Bearer {{token}}
+
 ###
 # GROUP: FEATURE & MENU
 ###

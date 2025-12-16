@@ -115,8 +115,6 @@ class CRUD:
         """
         collection_feature = self.mongo.get_database()[self.collection_feature]
         collection_feature_on_role = self.mongo.get_database()[self.collection_feature_on_role]
-        # bitRA = get_enum(self.mongo,"ROLEACTION")
-        # bitRA = bitRA["value"]
         bitRA = {item.name: item.value for item in RoleAction}
         try:
             # Apply filters
