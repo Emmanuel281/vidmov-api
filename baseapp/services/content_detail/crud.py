@@ -88,6 +88,8 @@ class CRUD:
                 "rating": 1,
                 "status": 1,
                 "video": 1,
+                "subtitle": 1,
+                "dubbing": 1,
                 "is_free": 1,
                 "episode_price": 1,
                 "episode_sponsor": 1,
@@ -114,6 +116,7 @@ class CRUD:
                                     "id": "$_id",
                                     "_id": 0,
                                     "filename": "$filename",
+                                    "metadata": "$metadata",
                                     "path": "$folder_path",
                                     "info_file": "$filestat"
                                 }
@@ -122,9 +125,63 @@ class CRUD:
                         "as": "video_data"
                     }
                 },
+                # Lookup stage untuk subtitle
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "video_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$video_id"] },
+                                    "doctype": "ab176d7597704fe0b10f6521ca5b96bd"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "subtitle_data"
+                    }
+                },
+                # Lookup stage untuk dubber
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "video_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$video_id"] },
+                                    "doctype": "4a626e3ebb8242a7b448a6203af4aefb"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "dubbing_data"
+                    }
+                },
                 {
                     "$addFields": {
-                        "video": "$video_data"
+                        "video": "$video_data",
+                        "subtitle": "$subtitle_data",
+                        "dubbing": "$dubbing_data"
                     }
                 },
                 {"$project": selected_fields}  # Project only selected fields
@@ -161,12 +218,81 @@ class CRUD:
             
             # presigned url
             if "video" in content_data and isinstance(content_data['video'], list):
+                grouped_video = {}
                 for video_item in content_data['video']:
+                    # Generate URL
                     video_item['url'] = None
                     if 'filename' in video_item:
                         url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
                         if url:
                             video_item['url'] = url
+                    
+                    # Determine Keys
+                    lang_key = "other"
+                    res_key = "original"
+                    
+                    if "metadata" in video_item and video_item["metadata"]:
+                        if "Language" in video_item["metadata"]:
+                            lang_key = video_item["metadata"]["Language"].lower()
+                        if "Resolution" in video_item["metadata"]:
+                            res_key = video_item["metadata"]["Resolution"].lower()
+
+                    # Build Nested Dict
+                    if lang_key not in grouped_video:
+                        grouped_video[lang_key] = {}
+                    
+                    grouped_video[lang_key][res_key] = video_item
+                    video_item.pop("metadata")
+
+                content_data['video'] = grouped_video
+
+            if "subtitle" in content_data and isinstance(content_data['subtitle'], list):
+                grouped_subs = {}
+                for subs_item in content_data['subtitle']:
+                    # Generate URL
+                    subs_item['url'] = None
+                    if 'filename' in subs_item:
+                        url = self.minio.presigned_get_object(config.minio_bucket, subs_item['filename'])
+                        if url:
+                            subs_item['url'] = url
+                    
+                    # Grouping Logic
+                    lang_key = "other"
+                    if "metadata" in subs_item and subs_item["metadata"] and "Language" in subs_item["metadata"]:
+                        lang_key = subs_item["metadata"]["Language"].lower()
+                    
+                    if lang_key not in grouped_subs:
+                        grouped_subs[lang_key] = {}
+                    
+                    grouped_subs[lang_key] = subs_item                    
+                    subs_item.pop("metadata")
+                    
+                # Replace list with grouped dictionary
+                content_data['subtitle'] = grouped_subs
+
+            if "dubbing" in content_data and isinstance(content_data['dubbing'], list):
+                grouped_dubbing = {}
+                for dubbing_item in content_data['dubbing']:
+                    # Generate URL
+                    dubbing_item['url'] = None
+                    if 'filename' in dubbing_item:
+                        url = self.minio.presigned_get_object(config.minio_bucket, dubbing_item['filename'])
+                        if url:
+                            dubbing_item['url'] = url
+                    
+                    # Grouping Logic
+                    lang_key = "other"
+                    if "metadata" in dubbing_item and dubbing_item["metadata"] and "Language" in dubbing_item["metadata"]:
+                        lang_key = dubbing_item["metadata"]["Language"].lower()
+                    
+                    if lang_key not in grouped_dubbing:
+                        grouped_dubbing[lang_key] = {}
+                    
+                    grouped_dubbing[lang_key] = dubbing_item                    
+                    dubbing_item.pop("metadata")
+                    
+                # Replace list with grouped dictionary
+                content_data['dubbing'] = grouped_dubbing
 
             return ContentDetailResponse(**content_data)
         except PyMongoError as pme:

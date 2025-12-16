@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from baseapp.config import setting, mongodb, minio
 from baseapp.utils.logger import Logger
 from baseapp.utils.utility import generate_uuid
-from baseapp.services.content.model import Content, ContentResponse, ContentListItem
+from baseapp.services.content.model import Content, ContentResponse, ContentDetailResponse, ContentListItem
 from baseapp.services.audit_trail_service import AuditTrailService
 
 config = setting.get_settings()
@@ -333,7 +333,7 @@ class CRUD:
                     
                 content_data['highlight'] = grouped_highlight
 
-            return ContentResponse(**content_data)
+            return ContentDetailResponse(**content_data)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             # write audit trail for fail
@@ -392,6 +392,7 @@ class CRUD:
                 details={"$set": obj},
                 status="success"
             )
+            update_content["id"] = update_content.pop("_id")
             return ContentResponse(**update_content)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
@@ -453,6 +454,8 @@ class CRUD:
                 "rating": 1,
                 "status": 1,
                 "poster": 1,
+                "fyp": 1,
+                "highlight": 1,
                 "release_date": 1,
                 "license_from": 1,
                 "licence_date": 1,
@@ -516,9 +519,63 @@ class CRUD:
                         "as": "poster_data"
                     }
                 },
+                # Lookup for FYP data
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "content_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
+                                    "doctype": "31c557f0f4574f7aae55c1b6860a2e19"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "fyp_data"
+                    }
+                },
+                # Lookup for Highlight data
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "content_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
+                                    "doctype": "8014149170ad41148f5ae01d9b0aac7b"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "highlight_data"
+                    }
+                },
                 {
                     "$addFields": {
-                        "poster": "$poster_data"
+                        "poster": "$poster_data",
+                        "fyp": "$fyp_data", 
+                        "highlight": "$highlight_data"
                     }
                 },
                 {"$skip": skip},  # Pagination skip stage
@@ -570,6 +627,64 @@ class CRUD:
                         
                     # Replace list with grouped dictionary
                     data['poster'] = grouped_poster
+
+                if "fyp" in data and isinstance(data['fyp'], list):
+                    grouped_fyp = {}
+                    for video_item in data['fyp']:
+                        # Generate URL
+                        video_item['url'] = None
+                        if 'filename' in video_item:
+                            url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
+                            if url:
+                                video_item['url'] = url
+                        
+                        # Determine Keys
+                        lang_key = "other"
+                        res_key = "original"
+                        
+                        if "metadata" in video_item and video_item["metadata"]:
+                            if "Language" in video_item["metadata"]:
+                                lang_key = video_item["metadata"]["Language"].lower()
+                            if "Resolution" in video_item["metadata"]:
+                                res_key = video_item["metadata"]["Resolution"].lower()
+
+                        # Build Nested Dict
+                        if lang_key not in grouped_fyp:
+                            grouped_fyp[lang_key] = {}
+                        
+                        grouped_fyp[lang_key][res_key] = video_item
+                        video_item.pop("metadata")
+
+                    data['fyp'] = grouped_fyp
+
+                if "highlight" in data and isinstance(data['highlight'], list):
+                    grouped_highlight = {}
+                    for video_item in data['highlight']:
+                        # Generate URL
+                        video_item['url'] = None
+                        if 'filename' in video_item:
+                            url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
+                            if url:
+                                video_item['url'] = url
+                        
+                        # Determine Keys
+                        lang_key = "other"
+                        res_key = "original"
+                        
+                        if "metadata" in video_item and video_item["metadata"]:
+                            if "Language" in video_item["metadata"]:
+                                lang_key = video_item["metadata"]["Language"].lower()
+                            if "Resolution" in video_item["metadata"]:
+                                res_key = video_item["metadata"]["Resolution"].lower()
+
+                        # Build Nested Dict
+                        if lang_key not in grouped_highlight:
+                            grouped_highlight[lang_key] = {}
+                        
+                        grouped_highlight[lang_key][res_key] = video_item
+                        video_item.pop("metadata")
+                        
+                    data['highlight'] = grouped_highlight
 
             parsed_results = [ContentListItem(**item) for item in results]
 

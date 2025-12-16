@@ -38,7 +38,10 @@ class ContentDetailResponse(ContentDetail):
     
     episode: Optional[str] = Field(default=None, description="Episode number formatted (01, 02..)")
 
-    video: Optional[List[Dict]] = None
+    video: Optional[Dict[str, Dict[str, Any]]] = None
+    subtitle: Optional[Dict[str, Dict[str, Any]]] = None
+    dubbing: Optional[Dict[str, Dict[str, Any]]] = None
+
     rec_date: Optional[datetime] = None
     rec_by: Optional[str] = None
     mod_date: Optional[datetime] = None
@@ -62,7 +65,7 @@ class ContentDetailResponse(ContentDetail):
 class ContentDetailListItem(BaseModel):
     """Response model untuk item dalam list (lebih ringkas)"""
     id: str
-    episode: Optional[str] = None
+    episode: Optional[str] = Field(default=None, description="Episode number formatted (01, 02..)")
     is_free: bool = False
     total_views: Optional[int] = 0
     total_saved: Optional[int] = 0

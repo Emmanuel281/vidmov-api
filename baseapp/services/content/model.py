@@ -72,9 +72,6 @@ class ContentResponse(Content):
     # Mewarisi semua field Organization (name, email, dll)
     id: str = Field(serialization_alias="id")
     genre_details: Optional[List[Any]] = None
-    poster: Optional[Dict] = None
-    fyp: Optional[Dict[str, Dict[str, Any]]] = None
-    highlight: Optional[Dict[str, Dict[str, Any]]] = None
     rec_date: Optional[datetime] = None
     rec_by: Optional[str] = None
     mod_date: Optional[datetime] = None
@@ -84,6 +81,19 @@ class ContentResponse(Content):
         "populate_by_name": True,
         "from_attributes": True
     }
+
+
+class ContentDetailResponse(ContentResponse):
+    # Mewarisi semua field Organization (name, email, dll)
+    poster: Optional[Dict] = None
+    fyp: Optional[Dict[str, Dict[str, Any]]] = None
+    highlight: Optional[Dict[str, Dict[str, Any]]] = None
+    
+    model_config = {
+        "populate_by_name": True,
+        "from_attributes": True
+    }
+
 
 class ContentListItem(BaseModel):
     """Response model untuk item dalam list (lebih ringkas)"""
@@ -96,6 +106,8 @@ class ContentListItem(BaseModel):
     total_saved: Optional[int] = 0
     total_episodes: Optional[int] = 0
     poster: Optional[Dict] = None
+    fyp: Optional[Dict[str, Dict[str, Any]]] = None
+    highlight: Optional[Dict[str, Dict[str, Any]]] = None
     status: ContentStatus
     
     model_config = {

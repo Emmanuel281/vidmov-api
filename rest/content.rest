@@ -108,7 +108,7 @@ Content-Type: application/json
 
 
 ### Set Published
-PUT {{host}}/v1/content/update_status/728f1a79-b8e2-42ca-860d-6535aaa45a57
+PUT {{host}}/v1/content/update_status/fc3d27cf64274413ab74b3f72122707b
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -126,7 +126,7 @@ Authorization: Bearer {{token}}
 GET {{host}}/v1/content/explore?status=PUBLISHED
 
 
-### Find
+### Find By ID
 GET {{host}}/v1/content/find/fc3d27cf64274413ab74b3f72122707b
 Authorization: Bearer {{token}}
 

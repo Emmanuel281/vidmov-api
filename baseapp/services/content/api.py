@@ -151,21 +151,18 @@ async def find_by_id(content_id: str, cu: CurrentUser = Depends(get_current_user
         response = _crud.get_by_id(content_id)
     return ApiResponse(status=0, message="Data found", data=response)
 
-@router.get("/explore", response_model=ApiResponse)
-async def get_all_data(
+@router.get("/fyp", response_model=ApiResponse)
+async def get_fyp(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
         sort_field: str = Query("_id", description="Field to sort by"),
         sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         cu: Optional[CurrentUser] = Depends(get_current_user_optional),
-        name: str = Query(None, description="Name of role (exact match)"),
-        name_contains: str = Query(None, description="Name contains (case insensitive)"),
-        name_starts_with: str = Query(None, description="Name starts with"),
-        name_ends_with: str = Query(None, description="Name ends with"),
-        description_contains: str = Query(None, description="Descriptions contains (case insensitive)"),
+        title: str = Query(None, description="Title of role (exact match)"),
+        title_contains: str = Query(None, description="Title contains (case insensitive)"),
+        synopsis_contains: str = Query(None, description="Synopsis contains (case insensitive)"),
         genre: Optional[str] = Query(None, description="Filter by genre ID"),
         genres: Optional[List[str]] = Query(None, description="Filter by multiple genre IDs"),
-        type_content: str = Query(None, description="Type of content"),
         status: str = Query(None, description="Status of content")
     ) -> ApiResponse:
 
@@ -181,23 +178,16 @@ async def get_all_data(
                 user_agent=cu.user_agent   # Jika ada
             )
 
-        if name:
-            filters["name"] = name  # exact match
-        elif name_contains:
-            filters["name"] = {"$regex": f".*{name_contains}.*", "$options": "i"}
-        elif name_starts_with:
-            filters["name"] = {"$regex": f"^{name_starts_with}", "$options": "i"}
-        elif name_ends_with:
-            filters["name"] = {"$regex": f"{name_ends_with}$", "$options": "i"}
-
-        if description_contains:
-            filters["description"] = {"$regex": f".*{description_contains}.*", "$options": "i"}
+        if title:
+            filters["title"] = title  # exact match
+        elif title_contains:
+            filters["title"] = {"$regex": f".*{title_contains}.*", "$options": "i"}
+        
+        if synopsis_contains:
+            filters["synopsis"] = {"$regex": f".*{synopsis_contains}.*", "$options": "i"}
 
         if status:
             filters["status"] = status
-
-        if type_content:
-            filters["type"] = type_content
 
         # Filter by single role
         if genre:
