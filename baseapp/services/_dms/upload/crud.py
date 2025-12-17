@@ -68,8 +68,9 @@ class CRUD:
         Validate the MIME type of a file.
         """
         mime_type = from_buffer(file_content, mime=True)
+        logger.info(f"Detected MIME type: {mime_type}")
         if mime_type not in allowed_mime_types:
-            logger.warning("Invalid file type")
+            logger.warning("Invalid file type")            
             raise ValueError("Invalid file type")
     
     def get_storage_org(self, collection) -> int:
@@ -153,12 +154,12 @@ class CRUD:
         file_content = await file.read()
 
         # Validate file MIME type
-        allowed_mime_types = ["application/pdf", "image/jpeg", "image/png", "text/plain", "video/mp4", "video/mpeg"]
+        allowed_mime_types = ["application/pdf", "image/jpeg", "image/png", "text/plain", "video/mp4", "video/mpeg", "application/x-subrip", "text/srt", "audio/wav", "audio/x-wav", "audio/wave"]
         self.validate_mime_type(file_content, allowed_mime_types)
 
         # Validate file extension
         file_extension = self.get_file_extension(file)
-        if file_extension not in [".pdf", ".jpg", ".png", ".txt", ".mp4", ".mpeg"]:
+        if file_extension not in [".pdf", ".jpg", ".png", ".txt", ".mp4", ".mpeg", ".srt", ".wav"]:
             raise ValueError("Unsupported file extension")
         
         UUID = generate_uuid()

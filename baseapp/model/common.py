@@ -136,3 +136,17 @@ class ContentResolution(str, Enum):
     SD = "SD"
     HD = "HD"
     UHD = "4K"
+
+class LicenseFrom(str, Enum):
+    """Type of a License From"""
+    Turkey = "Turkey"
+    China = "China"
+    Australia = "Australia"
+
+class Territory(str, Enum):
+    """Type of a License From"""
+    Indonesia = "Indonesia"
+    Malaysia = "Malaysia"
+    Singapore = "Singapore"
+    Australia = "Australia"
+    Turkey = "Turkey"

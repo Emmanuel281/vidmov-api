@@ -1,11 +1,11 @@
 @prod = https://arena.gai.co.id/service
-@dev = http://localhost:1899
-@host = {{prod}}
+@dev = http://localhost:17178
+@host = {{dev}}
 @upload_host = {{prod}}
 
 # --- TOKENS ---
 # Token Owner (Arena)
-@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiODYxNzFkNDU0YzBmNDExMWIwOWRkMmQ0NWIzNGIwNmIiLCJyb2xlcyI6WyI4YWJjYmRlNGM2NzI0OTliYmM1NjY2MjAxNjI3NTcwNiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImM0YWYyMzY5ZWNmYzRlNjJiNjAxMmE2ODA4YjFlYzNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7InZpZXciOjEsImFkZCI6MiwiZWRpdCI6NCwiZGVsZXRlIjo4LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJhcHByb3ZhbCI6NjQsInNldHRpbmciOjEyOH0sInNlc3Npb25faWQiOiI0YjRjMGRjM2QzMjk0ZGRlOWI3YTBiMTkwZGViNzU3MSIsImV4cCI6MTc2NTQ0Nzc3NiwianRpIjoiMTQ3ZDYwMGQ0Y2ZiNDU5MGFlN2Y1ODg3NDkxMWUyZWUifQ.jGTwt7CwC9tnIMalux-ZxIp_LHgjHvEsuV0qyzEbMug
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiODY5Y2RjZDcwZjFmNDM4ZGFhMDEyOTFmZjZlZDRjZGIiLCJyb2xlcyI6WyIwNTRhODBlYTA3Mzk0YTg0YTc0MWRjYWQ4OWM1ZjBiZiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImJhYzUxODk3NWMzZDQ1MGU4NDYxOGYxNjk0ZmVkNzcyIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7IlZJRVciOjEsIkFERCI6MiwiRURJVCI6NCwiREVMRVRFIjo4LCJFWFBPUlQiOjE2LCJJTVBPUlQiOjMyLCJBUFBST1ZBTCI6NjQsIlNFVFRJTkciOjEyOH0sInNlc3Npb25faWQiOiJlMTAwODAzNmI3MzA0MjNmOTE1YjBmYzExMTRkOTZhYiIsImV4cCI6MTc2NTk2NDAyOSwianRpIjoiMWY2YzNjYzNhNzc5NDY4NGFlOGZkYzk1MWU2ZWI5NWEifQ.A6_wnpsGAYhQCEs590R7G5s8VuacS5g3E9Evr-Dkd3s
 # Token Partner
 @partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
 # Token Client
@@ -27,15 +27,15 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { 
-    "content_id":"728f1a79-b8e2-42ca-860d-6535aaa45a57", 
+    "content_id":"fc3d27cf64274413ab74b3f72122707b", 
     "episode":1, 
     "duration":1, 
     "is_free":false,
     "episode_price":21,
     "episode_sponsor":{
-        "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
-        "brand_name":"BrandY",
-        "campaign_name":"Campaign Summer"
+        "org_id":"e190910982024c87a514512467edf47f",
+        "brand_name":"Kopi Kenangan",
+        "campaign_name":"Nusantara Rasa"
     },
     "status":"DRAFT" 
 }
@@ -43,25 +43,25 @@ Content-Type: application/json
 
 
 ### Update Detail
-PUT {{host}}/v1/content-detail/update/40825a75-0a39-4dec-8dc6-ad1bcedc98cc
+PUT {{host}}/v1/content-detail/update/25cdb17694e346ee9ed5ef9ee1edf744
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { 
-    "content_id":"728f1a79-b8e2-42ca-860d-6535aaa45a57", 
+    "content_id":"fc3d27cf64274413ab74b3f72122707b", 
     "episode":1, 
     "duration":1, 
-    "is_free":false,
+    "is_free":true,
     "episode_price":21,
     "episode_sponsor":{
-        "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
-        "brand_name":"BrandY",
-        "campaign_name":"Campaign Summer"
-    }
+        "org_id":"e190910982024c87a514512467edf47f",
+        "brand_name":"Kopi Kenangan",
+        "campaign_name":"Nusantara Rasa"
+    },
 }
 
 ### Set Status Episode
-PUT {{host}}/v1/content-detail/update_status/40825a75-0a39-4dec-8dc6-ad1bcedc98cc
+PUT {{host}}/v1/content-detail/update_status/25cdb17694e346ee9ed5ef9ee1edf744
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -70,11 +70,11 @@ Content-Type: application/json
 }
 
 ### List Episode
-GET {{host}}/v1/content-detail?content_id=728f1a79-b8e2-42ca-860d-6535aaa45a57
+GET {{host}}/v1/content-detail?content_id=fc3d27cf64274413ab74b3f72122707b
 Authorization: Bearer {{token}}
 
 ### Find Episode
-GET {{host}}/v1/content-detail/find/40825a75-0a39-4dec-8dc6-ad1bcedc98cc
+GET {{host}}/v1/content-detail/find/25cdb17694e346ee9ed5ef9ee1edf744
 Authorization: Bearer {{token}}
 
 
@@ -82,7 +82,7 @@ Authorization: Bearer {{token}}
 # GROUP: ATTACHMENT
 ###
 
-### Upload Video
+### Upload Video Episode
 POST {{upload_host}}/v1/_dms/upload
 Authorization: Bearer {{token}}
 Content-Type: multipart/form-data; boundary=boundary
@@ -97,11 +97,11 @@ d67d38fe623b40ccb0ddb4671982c0d3
 --boundary
 Content-Disposition: form-data; name="metadata"
 
-{"Content ID":"728f1a79-b8e2-42ca-860d-6535aaa45a57", "Episode ID":"40825a75-0a39-4dec-8dc6-ad1bcedc98cc", "Resolution":"HD", "Eps":1}
+{"Content ID":"fc3d27cf64274413ab74b3f72122707b", "Episode ID":"25cdb17694e346ee9ed5ef9ee1edf744", "Resolution":"HD", "Eps":"01"}
 --boundary
 Content-Disposition: form-data; name="refkey_id"
 
-40825a75-0a39-4dec-8dc6-ad1bcedc98cc
+25cdb17694e346ee9ed5ef9ee1edf744
 --boundary
 Content-Disposition: form-data; name="refkey_table"
 
@@ -113,8 +113,70 @@ video
 --boundary--
 
 
+### Upload Subtitle Episode
+POST {{upload_host}}/v1/_dms/upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="english.srt"
+< ./path/to/english.srt
+--boundary
+Content-Disposition: form-data; name="doctype"
+
+ab176d7597704fe0b10f6521ca5b96bd
+--boundary
+Content-Disposition: form-data; name="metadata"
+
+{"Content ID":"fc3d27cf64274413ab74b3f72122707b", "Episode ID":"25cdb17694e346ee9ed5ef9ee1edf744", "Language":"EN", "Eps":"01"}
+--boundary
+Content-Disposition: form-data; name="refkey_id"
+
+25cdb17694e346ee9ed5ef9ee1edf744
+--boundary
+Content-Disposition: form-data; name="refkey_table"
+
+content_video
+--boundary
+Content-Disposition: form-data; name="refkey_name"
+
+subtitle
+--boundary--
+
+
+### Upload Dubbing Episode
+POST {{upload_host}}/v1/_dms/upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="english.wav"
+< ./path/to/english.wav
+--boundary
+Content-Disposition: form-data; name="doctype"
+
+4a626e3ebb8242a7b448a6203af4aefb
+--boundary
+Content-Disposition: form-data; name="metadata"
+
+{"Content ID":"fc3d27cf64274413ab74b3f72122707b", "Episode ID":"25cdb17694e346ee9ed5ef9ee1edf744", "Language":"EN", "Eps":"01"}
+--boundary
+Content-Disposition: form-data; name="refkey_id"
+
+25cdb17694e346ee9ed5ef9ee1edf744
+--boundary
+Content-Disposition: form-data; name="refkey_table"
+
+content_video
+--boundary
+Content-Disposition: form-data; name="refkey_name"
+
+dubbing
+--boundary--
+
+
 ###
 # GROUP: BROWSE ATTACHMENT
 ###
-GET {{host}}/v1/_dms/browse/video/728f1a79-b8e2-42ca-860d-6535aaa45a57
+GET {{host}}/v1/_dms/browse/content_video/fc3d27cf64274413ab74b3f72122707b
 Authorization: Bearer {{token}}

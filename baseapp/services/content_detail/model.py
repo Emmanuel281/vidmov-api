@@ -67,13 +67,16 @@ class ContentDetailListItem(BaseModel):
     id: str
     episode: Optional[str] = Field(default=None, description="Episode number formatted (01, 02..)")
     is_free: bool = False
+    
+    # Analisis statistik sederhana
     total_views: Optional[int] = 0
     total_saved: Optional[int] = 0
     total_episodes: Optional[int] = 0
-    rec_date: Optional[datetime] = None
     retention_rate: Optional[float] = 0.0
+
+    rec_date: Optional[datetime] = None
     status: ContentStatus
-    
+
     model_config = {
         "populate_by_name": True,
         "from_attributes": True

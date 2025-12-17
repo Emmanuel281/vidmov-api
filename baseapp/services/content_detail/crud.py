@@ -62,6 +62,7 @@ class CRUD:
         obj["org_id"] = self.org_id
         try:
             result = collection.insert_one(obj)
+            obj["id"] = obj.pop("_id")
             return ContentDetailResponse(**obj)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
@@ -228,20 +229,17 @@ class CRUD:
                             video_item['url'] = url
                     
                     # Determine Keys
-                    lang_key = "other"
                     res_key = "original"
                     
                     if "metadata" in video_item and video_item["metadata"]:
-                        if "Language" in video_item["metadata"]:
-                            lang_key = video_item["metadata"]["Language"].lower()
                         if "Resolution" in video_item["metadata"]:
                             res_key = video_item["metadata"]["Resolution"].lower()
 
                     # Build Nested Dict
-                    if lang_key not in grouped_video:
-                        grouped_video[lang_key] = {}
+                    if res_key not in grouped_video:
+                        grouped_video[res_key] = {}
                     
-                    grouped_video[lang_key][res_key] = video_item
+                    grouped_video[res_key] = video_item
                     video_item.pop("metadata")
 
                 content_data['video'] = grouped_video
@@ -353,6 +351,7 @@ class CRUD:
                 details={"$set": obj},
                 status="success"
             )
+            update_content["id"] = update_content.pop("_id")
             return ContentDetailResponse(**update_content)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
