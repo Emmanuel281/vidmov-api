@@ -3,7 +3,7 @@
 @host = {{dev}}
 @upload_host = {{dev}}
 
-@session_id = 39784c86ff3e45ab81ee28e3962d938e
+@session_id = f841a25efb2546ed9bb70331086e0fb6
 
 ###
 # GROUP: Register (Traditional)
@@ -13,8 +13,8 @@ Content-Type: application/json
 X-Client-Type: mobile
 
 { 
-    "email": "aldian.gnusa@gmail.com", 
-    "phone_number": "085778789851" ,
+    "email": "aldian.putra0594@gmail.com", 
+    "phone_number": "081219047051" ,
     "password": "SecurePassword123" 
 }
 
