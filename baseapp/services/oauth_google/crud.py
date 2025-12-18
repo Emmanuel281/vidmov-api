@@ -218,18 +218,18 @@ class CRUD:
             }
             
             # Create organization and user
-            org_svc = OrgCRUD()
-            org_svc.set_context(
-                user_id=None,
-                org_id=None,
-                ip_address=self.ip_address,
-                user_agent=self.user_agent
-            )
-            
-            result = org_svc.reg_member(
-                org_data=Organization.model_validate(payload_data["org"]),
-                user_data=User.model_validate(payload_data["user"])
-            )
+            with OrgCRUD() as org_svc:
+                org_svc.set_context(
+                    user_id=None,
+                    org_id=None,
+                    ip_address=self.ip_address,
+                    user_agent=self.user_agent
+                )
+                
+                result = org_svc.reg_member(
+                    org_data=Organization.model_validate(payload_data["org"]),
+                    user_data=User.model_validate(payload_data["user"])
+                )
             
             logger.info(f"User registered with Google successfully", 
                        org_id=result.org.id, 

@@ -143,15 +143,15 @@ class CRUD:
                 }
             }
 
-            org_svc = OrgCRUD()
-            org_svc.set_context(
-                user_id=None,
-                org_id=None,
-                ip_address=self.ip_address,
-                user_agent=self.user_agent
-            )
+            with OrgCRUD() as org_svc:
+                org_svc.set_context(
+                    user_id=None,
+                    org_id=None,
+                    ip_address=self.ip_address,
+                    user_agent=self.user_agent
+                )
 
-            result = org_svc.reg_member(org_data=Organization.model_validate(payload_data["org"]), user_data=User.model_validate(payload_data["user"]))
+                result = org_svc.reg_member(org_data=Organization.model_validate(payload_data["org"]), user_data=User.model_validate(payload_data["user"]))
             logger.info(f"Organization and User created successfully", org_id=result.org.id, user_id=result.user.id)
             self.redis.delete(f"reg:{obj['session']}")
             return result
