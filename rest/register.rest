@@ -1,9 +1,9 @@
 @prod = https://arena.gai.co.id/service
 @dev = http://localhost:17178
-@host = {{dev}}
+@host = {{prod}}
 @upload_host = {{dev}}
 
-@session_id = f841a25efb2546ed9bb70331086e0fb6
+@session_id = d44e20de5f364f2da698f346c8bbc90d
 
 ###
 # GROUP: Register (Traditional)
@@ -13,8 +13,8 @@ Content-Type: application/json
 X-Client-Type: mobile
 
 { 
-    "email": "aldian.putra0594@gmail.com", 
-    "phone_number": "081219047051" ,
+    "email": "aldian.gnusa@gmail.com", 
+    "phone_number": "085778789851" ,
     "password": "SecurePassword123" 
 }
 

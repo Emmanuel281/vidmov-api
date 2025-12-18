@@ -1,4 +1,5 @@
 import redis,time
+from redis.sentinel import Sentinel
 from baseapp.config import setting
 from baseapp.utils.logger import Logger
 
@@ -6,12 +7,19 @@ config = setting.get_settings()
 logger = Logger("baseapp.config.redis")
 
 class RedisConn:
-    def __init__(self, host=None, port=None, max_connections=10, retry_on_timeout=True, socket_timeout=5):
-        self.host = host or config.redis_host
-        self.port = port or config.redis_port
-        self.max_connections  = max_connections or config.redis_max_connections
-        self.retry_on_timeout = retry_on_timeout
-        self.socket_timeout = socket_timeout
+    def __init__(self,):
+        self.host = config.redis_host
+        self.port = config.redis_port
+        self.password = config.redis_pass
+        self.max_connections  = config.redis_max_connections
+        self.retry_on_timeout = config.redis_retry_on_timeout
+        self.socket_timeout = config.redis_socket_timeout
+        # if using sentinel, additional setup would be needed here
+        self.use_sentinel = config.redis_use_sentinel
+        self.sentinel_host = config.redis_sentinel_host
+        self.sentinel_port = config.redis_sentinel_port
+        self.master_name = config.redis_master_name
+        # Connection pool and connection placeholder
         self.pool = None
         self._conn = None
         self._context_start_time = None
@@ -19,15 +27,30 @@ class RedisConn:
     def __enter__(self):
         self._context_start_time = time.perf_counter()
         try:
-            self.pool = redis.ConnectionPool(
-                host=self.host,
-                port=self.port,
-                max_connections=self.max_connections,
-                decode_responses=True,
-                retry_on_timeout=self.retry_on_timeout,
-                socket_timeout=self.socket_timeout,
-            )
-            self._conn = redis.Redis(connection_pool=self.pool)
+            if self.use_sentinel:
+                sentinel = Sentinel(
+                    [(self.sentinel_host, self.sentinel_port)],
+                    socket_timeout=self.socket_timeout,
+                    retry_on_timeout=self.retry_on_timeout,
+                    password=self.password,
+                )
+                self._conn = sentinel.master_for(
+                    service_name=self.master_name,
+                    socket_timeout=self.socket_timeout,
+                    max_connections=self.max_connections,
+                    decode_responses=True,
+                )
+            else:
+                self.pool = redis.ConnectionPool(
+                    host=self.host,
+                    port=self.port,
+                    password=self.password,
+                    max_connections=self.max_connections,
+                    decode_responses=True,
+                    retry_on_timeout=self.retry_on_timeout,
+                    socket_timeout=self.socket_timeout,
+                )
+                self._conn = redis.Redis(connection_pool=self.pool)
             # Validate connection
             self._conn.ping()
             

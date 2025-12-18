@@ -40,7 +40,16 @@ class Settings(BaseSettings):
     # redis
     redis_host: str
     redis_port: int
+    redis_pass: str
     redis_max_connections: int
+    redis_retry_on_timeout: bool
+    redis_socket_timeout: int
+
+    # redis sentinel (optional)
+    redis_use_sentinel: bool
+    redis_sentinel_host: str
+    redis_sentinel_port: int
+    redis_master_name: str
 
     # rabbit mq
     rabbitmq_host: str
