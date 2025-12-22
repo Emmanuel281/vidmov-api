@@ -32,7 +32,6 @@ docker-build:
         docker push "registry.gai.co.id/$PROJECT_PATH_LOWER:latest"
       fi
 
-
 deploy-app:
   image:
     name: boxboat/kubectl:latest
