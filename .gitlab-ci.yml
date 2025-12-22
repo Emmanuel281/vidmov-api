@@ -31,11 +31,6 @@ docker-build:
         docker tag "$DOCKER_IMAGE_NAME" "registry.gai.co.id/$PROJECT_PATH_LOWER:latest"
         docker push "registry.gai.co.id/$PROJECT_PATH_LOWER:latest"
       fi
-  # Run this job in a branch where a Dockerfile exists
-  rules:
-    - if: $CI_COMMIT_BRANCH
-      exists:
-        - Dockerfile
 
 deploy-app:
   image:
