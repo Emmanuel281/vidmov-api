@@ -65,11 +65,11 @@ spec:
             - containerPort: 1899
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
               memory: "512Mi"
-              cpu: "500m"
+              cpu: "400m"
+            limits:
+              memory: "1000Mi"
+              cpu: "1000m"
           # Dynamically loads all variables from the generated secret
           envFrom:
             - secretRef:
@@ -149,11 +149,11 @@ spec:
           args: ["rabbit_worker", "--queue", "webhook_tasks"]
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
               memory: "512Mi"
-              cpu: "500m"
+              cpu: "400m"
+            limits:
+              memory: "1000Mi"
+              cpu: "1000m"
           envFrom:
             - secretRef:
                 name: arena-env
@@ -217,11 +217,11 @@ spec:
           args: ["redis_worker", "--queue", "otp_tasks"]
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
               memory: "512Mi"
-              cpu: "500m"
+              cpu: "400m"
+            limits:
+              memory: "1000Mi"
+              cpu: "1000m"
           envFrom:
             - secretRef:
                 name: arena-env
