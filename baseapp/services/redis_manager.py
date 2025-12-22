@@ -20,6 +20,7 @@ WORKER_MAP = {
 }
 
 worker = None
+
 def signal_handler(signum, frame):
     """Handle termination signals"""
     logger.info(f"Received signal {signum}. Shutting down gracefully...")

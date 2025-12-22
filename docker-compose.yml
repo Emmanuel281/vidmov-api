@@ -41,6 +41,8 @@ services:
   # Run the worker service for processing other tasks using RabbitMQ
   webhook_worker:
     build: .
+    # Uncomment the line below to enable advanced options
+    # command: rabbit_worker --queue email_tasks --max-errors 5
     command: rabbit_worker --queue webhook_tasks
     restart: always
     # deploy:
