@@ -97,13 +97,8 @@ class ContentDetailResponse(ContentResponse):
     }
 
 
-class ContentListItem(BaseModel):
+class ContentListItem(ContentResponse):
     """Response model untuk item dalam list (lebih ringkas)"""
-    id: str
-    title: Dict[str, str] = {}
-    synopsis: Dict[str, str] = {}
-    genre: List[str] = None
-    genre_details: Optional[List[Any]] = None
     total_views: Optional[int] = 0
     total_saved: Optional[int] = 0
     total_episodes: Optional[int] = 0
