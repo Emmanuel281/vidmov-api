@@ -1,5 +1,7 @@
 import argparse
 import time
+import sys
+import signal
 import logging.config
 from baseapp.config.logging import get_logging_config
 from baseapp.config.redis import RedisConn
@@ -17,7 +19,19 @@ WORKER_MAP = {
     "minio_delete_file_tasks": DeleteFileWorker
 }
 
+worker = None
+def signal_handler(signum, frame):
+    """Handle termination signals"""
+    logger.info(f"Received signal {signum}. Shutting down gracefully...")
+    if worker:
+        worker.stop()
+    sys.exit(0)
+
 if __name__ == "__main__":
+    # Setup signal handlers untuk graceful shutdown
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
     # Buat parser untuk argumen command-line
     parser = argparse.ArgumentParser(description="Redis Worker Manager")
     parser.add_argument(
@@ -27,6 +41,18 @@ if __name__ == "__main__":
         choices=WORKER_MAP.keys(),
         help="Nama antrian yang akan di-consume."
     )
+    parser.add_argument(
+        '--max-retries',
+        type=int,
+        default=3,
+        help="Maximum consecutive errors before worker exits (default: 3)"
+    )
+    parser.add_argument(
+        '--health-check-interval',
+        type=int,
+        default=5,
+        help="Interval in seconds to check worker health (default: 5)"
+    )
     args = parser.parse_args()
     queue_name = args.queue
 
@@ -34,19 +60,36 @@ if __name__ == "__main__":
     WorkerClass = WORKER_MAP.get(queue_name)
     if not WorkerClass:
         logger.error(f"No worker class found for queue: '{queue_name}'")
-        exit(1)
+        sys.exit(1)
 
     logger.info(f"Starting {WorkerClass.__name__} for queue: '{queue_name}'...")
-    
-    redis_conn = RedisConn()
-    queue_manager = RedisQueueManager(redis_conn=redis_conn,queue_name=queue_name)
-    worker = WorkerClass(queue_manager)
-    worker.start()
-    
+
     try:
+        redis_conn = RedisConn()
+        queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name=queue_name)
+        worker = WorkerClass(queue_manager, max_retries=args.max_retries)
+        worker.start()
+        
+        logger.info(f"Worker started. Health check interval: {args.health_check_interval}s")
+        
+        # Main loop dengan health check
         while True:
-            time.sleep(1)
+            time.sleep(args.health_check_interval)
+            
+            # Periksa apakah worker thread masih hidup
+            if not worker.is_alive():
+                logger.critical("Worker thread has died unexpectedly. Exiting container.")
+                sys.exit(1)
+                
     except KeyboardInterrupt:
         logger.info(f"Stopping Redis worker for queue: '{queue_name}'...")
-        worker.stop()
+        if worker:
+            worker.stop()
         logger.info("Worker stopped gracefully.")
+        sys.exit(0)
+        
+    except Exception as e:
+        logger.critical(f"Fatal error initializing worker: {e}")
+        if worker:
+            worker.stop()
+        sys.exit(1)
