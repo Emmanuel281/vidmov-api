@@ -65,15 +65,48 @@ spec:
             - containerPort: 1899
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
               memory: "512Mi"
-              cpu: "500m"
+              cpu: "400m"
+            limits:
+              memory: "1000Mi"
+              cpu: "1000m"
           # Dynamically loads all variables from the generated secret
           envFrom:
             - secretRef:
                 name: arena-env
+          # Liveness probe - restarts pod if health check fails
+          livenessProbe:
+            httpGet:
+              path: /v1/test/all
+              port: 1899
+              scheme: HTTP
+            initialDelaySeconds: 30    # Wait 30s before first check
+            periodSeconds: 60           # Check every 60 seconds
+            timeoutSeconds: 10          # Timeout after 10 seconds
+            successThreshold: 1         # 1 success = healthy
+            failureThreshold: 3         # 3 failures = restart pod
+          # Readiness probe - removes pod from service if unhealthy
+          readinessProbe:
+            httpGet:
+              path: /v1/test/all
+              port: 1899
+              scheme: HTTP
+            initialDelaySeconds: 10    # Wait 10s before first check
+            periodSeconds: 30          # Check every 30 seconds
+            timeoutSeconds: 5          # Timeout after 5 seconds
+            successThreshold: 1        # 1 success = ready
+            failureThreshold: 2        # 2 failures = not ready
+          # Startup probe - gives app time to start up
+          startupProbe:
+            httpGet:
+              path: /v1/test/all
+              port: 1899
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 10          # Check every 10 seconds
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 30
 ---
 # API Service
 apiVersion: v1
@@ -116,14 +149,15 @@ spec:
           args: ["rabbit_worker", "--queue", "webhook_tasks"]
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
               memory: "512Mi"
-              cpu: "500m"
+              cpu: "400m"
+            limits:
+              memory: "1000Mi"
+              cpu: "1000m"
           envFrom:
             - secretRef:
                 name: arena-env
+
 ---
 # OTP Worker Deployment
 apiVersion: apps/v1
@@ -151,11 +185,11 @@ spec:
           args: ["redis_worker", "--queue", "otp_tasks"]
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
               memory: "512Mi"
-              cpu: "500m"
+              cpu: "400m"
+            limits:
+              memory: "1000Mi"
+              cpu: "1000m"
           envFrom:
             - secretRef:
                 name: arena-env

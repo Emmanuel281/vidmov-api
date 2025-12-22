@@ -36,3 +36,26 @@ async def test_connection_to_rabbit() -> ApiResponse:
 async def test_redis_worker() -> ApiResponse:
     resp = test.test_redis_worker()
     return ApiResponse(status=0, message=resp)
+
+@router.get("/all", response_model=ApiResponse)
+async def test_all_connections() -> ApiResponse:
+    results = {}
+    try:
+        results['mongodb'] = test.test_connection_to_mongodb()
+    except Exception as e:
+        logger.error(f"MongoDB connection test failed: {e}")
+        results['mongodb'] = f"Error: {str(e)}"
+    
+    try:
+        results['redis'] = test.test_connection_to_redis()
+    except Exception as e:
+        logger.error(f"Redis connection test failed: {e}")
+        results['redis'] = f"Error: {str(e)}"
+    
+    try:
+        results['minio'] = test.test_connection_to_minio()
+    except Exception as e:
+        logger.error(f"Minio connection test failed: {e}")
+        results['minio'] = f"Error: {str(e)}"
+    
+    return ApiResponse(status=0, message="All connection tests completed.", data=results)
