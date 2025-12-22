@@ -37,8 +37,8 @@ Content-Type: application/json
 X-Client-Type: mobile
 
 { 
-    "session": "4bbaf0e6449e4182812cbbaefc37878c",
-    "otp": "953288"
+    "session": "bcbd77ef4dae4c818b1d71ed9d34ba2b",
+    "otp": "572968"
 }
 
 ###

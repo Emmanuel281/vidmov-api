@@ -135,7 +135,6 @@ class ContentResolution(str, Enum):
     """Resolution of a content"""
     SD = "SD"
     HD = "HD"
-    UHD = "4K"
 
 class LicenseFrom(str, Enum):
     """Type of a License From"""

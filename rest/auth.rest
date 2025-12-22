@@ -1,6 +1,6 @@
 @prod = https://arena.gai.co.id/service
 @dev = http://localhost:17178
-@host = {{dev}}
+@host = {{prod}}
 @upload_host = {{dev}}
 
 # --- TOKENS ---
