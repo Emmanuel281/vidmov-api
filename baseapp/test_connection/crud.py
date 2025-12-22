@@ -28,7 +28,7 @@ def test_connection_to_minio():
     logger.info("Minio test connection")
     with minio.MinioConn() as minio_conn:
         try:
-            if minio_conn.bucket_exists(config.MINIO_BUCKET):
+            if minio_conn.bucket_exists(config.minio_bucket):
                 return "Bucket exist"
             else:
                 return "Bucket not exist"
