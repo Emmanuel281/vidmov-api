@@ -3,6 +3,8 @@
 # Keluar segera jika ada perintah yang gagal
 set -e
 
+trap 'echo "Error occurred, exiting..."; exit 1' ERR
+
 # Cek argumen pertama yang diberikan
 case "$1" in
     api)
