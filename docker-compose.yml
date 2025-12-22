@@ -58,6 +58,8 @@ services:
   # Run the worker service for processing OTP tasks using Redis
   otp_worker:
     build: .
+    # Uncomment the line below to enable advanced options
+    # command: redis_worker --queue otp_tasks --max-retries 5 --health-check-interval 10
     command: redis_worker --queue otp_tasks
     restart: always
     networks:
