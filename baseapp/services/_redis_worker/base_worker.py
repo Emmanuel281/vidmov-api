@@ -67,7 +67,8 @@ class BaseWorker:
         """
         Start the worker in a new thread.
         """
-        self.thread = Thread(target=self.worker_loop, daemon=True)
+        # Ubah daemon=False agar main thread menunggu worker thread
+        self.thread = Thread(target=self.worker_loop, daemon=False)
         self.thread.start()
         logger.info("Worker started.")
         return self.thread
