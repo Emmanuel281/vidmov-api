@@ -3,21 +3,21 @@ kind: Namespace
 metadata:
   name: gai-arena
 ---
-# Migration Job - Runs once and exits
+# Migration postgre Job - Runs once and exits
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: arena-migration
+  name: arena-postgre-migration
   namespace: gai-arena
   labels:
-    app: arena-migration
+    app: arena-postgre-migration
 spec:
   # Job will be deleted after 100 seconds of completion
   ttlSecondsAfterFinished: 100
   template:
     metadata:
       labels:
-        app: arena-migration
+        app: arena-postgre-migration
     spec:
       restartPolicy: Never
       imagePullSecrets:
@@ -25,7 +25,41 @@ spec:
       containers:
         - name: migration
           image: registry.gai.co.id/gai/arena-api:latest
-          args: ["migrate"]
+          args: ["postgresql_migrate"]
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          envFrom:
+            - secretRef:
+                name: arena-env
+---
+# Migration Job - Runs once and exits
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: arena-mongodb-migration
+  namespace: gai-arena
+  labels:
+    app: arena-mongodb-migration
+spec:
+  # Job will be deleted after 100 seconds of completion
+  ttlSecondsAfterFinished: 100
+  template:
+    metadata:
+      labels:
+        app: arena-mongodb-migration
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: gai-registry
+      containers:
+        - name: migration
+          image: registry.gai.co.id/gai/arena-api:latest
+          args: ["mongodb_migrate"]
           resources:
             requests:
               memory: "128Mi"
