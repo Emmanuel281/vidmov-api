@@ -143,9 +143,28 @@ def run_migrations_offline():
         filepath.write_text(content)
         logger.info(f"Created env.py: {filepath}")
     
+    def _ensure_migration_collection(self, mongo_conn):
+        """Ensure migration tracking collection exists"""
+        db = mongo_conn.get_database()
+        collections = db.list_collection_names()
+        
+        if self.MIGRATION_COLLECTION not in collections:
+            logger.info(f"Creating migration tracking collection: {self.MIGRATION_COLLECTION}")
+            db.create_collection(self.MIGRATION_COLLECTION)
+            
+            # Create index on version_num and applied_at
+            collection = getattr(mongo_conn, self.MIGRATION_COLLECTION)
+            collection.create_index("version_num", unique=True)
+            collection.create_index("applied_at")
+            
+            logger.info(f"✓ Migration collection created: {self.MIGRATION_COLLECTION}")
+
     def _get_current_revision(self, mongo_conn) -> Optional[str]:
         """Get current database revision"""
         try:
+            # Ensure migration collection exists
+            self._ensure_migration_collection(mongo_conn)
+
             # Use getattr to access collection from mongo_conn
             collection = getattr(mongo_conn, self.MIGRATION_COLLECTION)
             result = collection.find_one(
@@ -159,6 +178,9 @@ def run_migrations_offline():
     def _get_all_revisions(self, mongo_conn) -> List[str]:
         """Get all applied revisions in order"""
         try:
+            # Ensure migration collection exists
+            self._ensure_migration_collection(mongo_conn)
+
             collection = getattr(mongo_conn, self.MIGRATION_COLLECTION)
             results = collection.find(
                 {},
@@ -170,6 +192,9 @@ def run_migrations_offline():
     
     def _set_revision(self, mongo_conn, revision: str):
         """Mark revision as applied"""
+        # Ensure migration collection exists
+        self._ensure_migration_collection(mongo_conn)
+        
         collection = getattr(mongo_conn, self.MIGRATION_COLLECTION)
         collection.insert_one({
             "version_num": revision,
@@ -405,6 +430,9 @@ def downgrade(env):
             revision: Target revision ID or 'head' for latest
         """
         with mongodb.MongoConn() as mongo_conn:
+            # Ensure migration collection exists first
+            self._ensure_migration_collection(mongo_conn)
+            
             env = MigrationEnv(mongo_conn)
             current = self._get_current_revision(mongo_conn)
             revision_map = self._build_revision_map()

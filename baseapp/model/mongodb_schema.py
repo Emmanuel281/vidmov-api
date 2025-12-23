@@ -93,7 +93,9 @@ class AuditTrail(Collection):
     """Audit trail collection"""
     __collection_name__ = "_audittrail"
     __indexes__ = [
-        Index([("rec_date", 1), ("org_id", 1), ("uid", 1)])
+        Index("rec_date"),
+        Index("org_id"),
+        Index("uid")
     ]
 
 
@@ -101,7 +103,9 @@ class Organization(Collection):
     """Organization collection"""
     __collection_name__ = "_organization"
     __indexes__ = [
-        Index([("rec_date", 1), ("authority", 1), ("ref_id", 1), ("plan_id", 1)])
+        Index("rec_date"),
+        Index("authority"),
+        Index("ref_id")
     ]
 
 
@@ -110,7 +114,8 @@ class Role(Collection):
     __collection_name__ = "_role"
     __indexes__ = [
         Index("rec_date"),
-        Index([("name", 1), ("org_id", 1)])
+        Index("name"),
+        Index("org_id")
     ]
 
 
@@ -149,22 +154,6 @@ class Enum(Collection):
         Index([("app", 1), ("mod", 1), ("_sort", 1)], name="app_mod_sort")
     ]
     __initial_data__ = [
-        {
-            "_id": "dmsDataType",
-            "app": "baseapp",
-            "mod": "dmsDataType",
-            "code": "dmsDataType",
-            "type": "hardcoded",
-            "value": ["String", "Integer", "Datetime"]
-        },
-        {
-            "_id": "SEX",
-            "app": "baseapp",
-            "mod": "SEX",
-            "code": "SEX",
-            "type": "hardcoded",
-            "value": ["Male", "Female"]
-        },
         {
             "_id": "GENRE",
             "app": "baseapp",
@@ -570,7 +559,7 @@ ALL_COLLECTIONS = [
     Ads,
     QRProduct,
     Bundling,
-    Giveaway,
+    Giveaway
 ]
 
 
