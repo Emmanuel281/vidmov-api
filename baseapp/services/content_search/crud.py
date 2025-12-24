@@ -37,21 +37,31 @@ CONTENT_INDEX_MAPPING = {
             "content_id": {"type": "keyword"},
             
             # Multi-language title
+            # "title_id": {
+            #     "type": "text",
+            #     "analyzer": "multilang_analyzer",
+            #     "fields": {
+            #         "keyword": {"type": "keyword"},
+            #         "suggest": {"type": "completion"}
+            #     }
+            # },
+            # "title_en": {
+            #     "type": "text",
+            #     "analyzer": "multilang_analyzer"
+            # },
+            # "title_all": {
+            #     "type": "text",
+            #     "analyzer": "multilang_analyzer"
+            # },
+
             "title_id": {
-                "type": "text",
-                "analyzer": "multilang_analyzer",
-                "fields": {
-                    "keyword": {"type": "keyword"},
-                    "suggest": {"type": "completion"}
-                }
+                "type": "search_as_you_type"
             },
             "title_en": {
-                "type": "text",
-                "analyzer": "multilang_analyzer"
+                "type": "search_as_you_type"
             },
             "title_all": {
-                "type": "text",
-                "analyzer": "multilang_analyzer"
+                "type": "search_as_you_type"
             },
             
             # Multi-language synopsis
@@ -699,28 +709,60 @@ class ContentSearchCRUD:
         Autocomplete untuk search box
         """
         try:
-            field = f"title_{language}.suggest"
+            # field = f"title_{language}.suggest"
             
+            # search_body = {
+            #     "suggest": {
+            #         "title-suggest": {
+            #             "prefix": query,
+            #             "completion": {
+            #                 "field": field,
+            #                 "size": limit,
+            #                 "skip_duplicates": True
+            #             }
+            #         }
+            #     }
+            # }
+            
+            # response = self.opensearch.search(body=search_body)
+            
+            # suggestions = []
+            # for option in response.get('suggest', {}).get('title-suggest', [{}])[0].get('options', []):
+            #     suggestions.append(option['text'])
+            
+            # return suggestions
+
+            field_name = f"title_{language}"
+        
             search_body = {
-                "suggest": {
-                    "title-suggest": {
-                        "prefix": query,
-                        "completion": {
-                            "field": field,
-                            "size": limit,
-                            "skip_duplicates": True
-                        }
+                "size": limit,
+                "query": {
+                    "multi_match": {
+                        "query": query,
+                        "type": "bool_prefix",
+                        "fields": [
+                            field_name,
+                            f"{field_name}._2gram",
+                            f"{field_name}._3gram"
+                        ]
                     }
-                }
+                },
+                # Ambil field title saja agar response ringan
+                "_source": [field_name]
             }
             
             response = self.opensearch.search(body=search_body)
             
             suggestions = []
-            for option in response.get('suggest', {}).get('title-suggest', [{}])[0].get('options', []):
-                suggestions.append(option['text'])
+            for hit in response.get('hits', {}).get('hits', []):
+                source = hit.get('_source', {})
+                # Ambil value berdasarkan field yang aktif (id atau en)
+                val = source.get(field_name)
+                if val:
+                    suggestions.append(val)
             
-            return suggestions
+            # Menghapus duplikat jika ada
+            return list(dict.fromkeys(suggestions))
             
         except Exception as e:
             logger.log_error_with_context(e, {

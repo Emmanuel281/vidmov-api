@@ -22,7 +22,7 @@
 ### Basic Search - Simple text query
 # Query: cinta
 # Returns: Content with "cinta" in title, synopsis, cast, or tags
-GET {{host}}/v1/content/search/?q=kisah
+GET {{host}}/v1/content/search/?q=money
 Authorization: Bearer {{token}}
 
 ### Search with Language Preference
@@ -113,7 +113,7 @@ Authorization: Bearer {{token}}
 ### Get Content Detail by ID
 # Returns: Full content details with all media files (poster, videos)
 # Includes: Presigned URLs for all media (valid 7 days)
-GET {{host}}/v1/content/search/fc3d27cf64274413ab74b3f72122707b
+GET {{host}}/v1/content/search/8a66f138350e401d919d9125511fc7ab
 Authorization: Bearer {{token}}
 
 ###
@@ -129,11 +129,11 @@ GET {{host}}/v1/content/search/suggest/autocomplete?q=kis&language=id
 
 ### Autocomplete - English
 # Returns: Title suggestions based on English text
-GET {{host}}/v1/content/search/suggest/autocomplete?q=lov&language=en
+GET {{host}}/v1/content/search/suggest/autocomplete?q=love&language=en
 
 ### Autocomplete with Limit
 # limit: Max suggestions (default: 10, max: 20)
-GET {{host}}/v1/content/search/suggest/autocomplete?q=ka&language=id&limit=5
+GET {{host}}/v1/content/search/suggest/autocomplete?q=kis&language=id&limit=5
 
 ###
 # ====================================================================
@@ -227,11 +227,11 @@ GET {{host}}/v1/content/search/discover/trending?limit=20
 
 ### Example 2: Search Screen - User Types
 # Real-time autocomplete as user types
-GET {{host}}/v1/content/search/suggest/autocomplete?q=cin&language=id&limit=10
+GET {{host}}/v1/content/search/suggest/autocomplete?q=kis&language=id&limit=10
 
 ### Example 3: Search Results
 # User submits search query
-GET {{host}}/v1/content/search/?q=cinta&page=1&page_size=20
+GET {{host}}/v1/content/search/?q=kasih&page=1&page_size=20
 
 ### Example 4: Genre Browse
 # User taps "Romance" genre
