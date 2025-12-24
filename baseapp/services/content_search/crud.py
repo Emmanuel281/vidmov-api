@@ -616,12 +616,22 @@ class ContentSearchCRUD:
                 
                 items.append(enriched)
             
+            # return {
+            #     "total": total,
+            #     "page": page,
+            #     "page_size": page_size,
+            #     "total_pages": (total + page_size - 1) // page_size,
+            #     "items": items
+            # }
+
             return {
-                "total": total,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": (total + page_size - 1) // page_size,
-                "items": items
+                "data": items,
+                "pagination": {
+                    "current_page": page,
+                    "items_per_page": page_size,
+                    "total_items": total,
+                    "total_pages": (total + page_size - 1) // page_size,
+                },
             }
             
         except Exception as e:

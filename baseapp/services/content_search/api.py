@@ -68,7 +68,8 @@ async def search_contents(
             return ApiResponse(
                 status=0,
                 message="Search completed",
-                data=result
+                data=result.get("data", []),
+                pagination=result.get("pagination", None)
             )
             
     except Exception as e:
