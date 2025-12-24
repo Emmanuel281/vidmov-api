@@ -3,6 +3,7 @@ from datetime import datetime
 import time
 
 from baseapp.config import mongodb, opensearch, minio, setting
+from baseapp.model.common import ContentStatus
 from baseapp.utils.logger import Logger
 from baseapp.services.content_search.model import (
     ContentOpenSearchDocument,
@@ -525,7 +526,7 @@ class ContentSearchCRUD:
                 must_queries.append({"bool": {"should": should_queries}})
             
             # Filter by status (only published)
-            filter_queries.append({"term": {"status": "published"}})
+            filter_queries.append({"term": {"status": ContentStatus.PUBLISHED.value}})
             
             # Genre filter
             if genres:
@@ -642,7 +643,7 @@ class ContentSearchCRUD:
                         "bool": {
                             "must": [
                                 {"term": {"content_id": content_id}},
-                                {"term": {"status": "published"}}
+                                {"term": {"status": ContentStatus.PUBLISHED.value}}
                             ]
                         }
                     },
@@ -727,7 +728,7 @@ class ContentSearchCRUD:
                 "query": {
                     "bool": {
                         "filter": [
-                            {"term": {"status": "published"}},
+                            {"term": {"status": ContentStatus.PUBLISHED.value}},
                             {"range": {"total_views": {"gt": 0}}}
                         ]
                     }
