@@ -53,6 +53,11 @@ case "$1" in
         # Jalankan script python khusus Minio
         exec python -m baseapp.services.database.create_bucket
         ;;
+    init_opensearch)
+        echo "Initializing OpenSearch Index..."
+        # ⭐ NEW: Setup OpenSearch index untuk content search
+        exec python -m baseapp.services.content_search.setup_index
+        ;;
     *)
         # Jalankan perintah apa pun yang diberikan
         exec "$@"

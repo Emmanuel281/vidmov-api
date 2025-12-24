@@ -3,11 +3,12 @@ from fastapi import APIRouter, Query, Depends
 
 from baseapp.config import setting
 from baseapp.model.common import ApiResponse, CurrentUser, RoleAction
-from baseapp.utils.jwt import get_current_user, get_current_user_optional
+from baseapp.utils.jwt import get_current_user
 
 from baseapp.services.permission_check_service import PermissionChecker
 from baseapp.services.content.model import Content, ContentUpdate, ContentUpdateStatus
 from baseapp.services.content.crud import CRUD
+from baseapp.services.content_search.hooks import content_search_hooks
 
 config = setting.get_settings()
 permission_checker = PermissionChecker()
@@ -62,6 +63,9 @@ async def update_status(content_id: str, req: ContentUpdateStatus, cu: CurrentUs
         )
         
         response = _crud.update_by_id(content_id,req)
+
+        # ⭐ Enqueue status change task (important!)
+        content_search_hooks.after_status_change(content_id, req.status)
 
     return ApiResponse(status=0, message="Data updated", data=response)
 
@@ -137,7 +141,7 @@ async def get_all_data(
     return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
     
 @router.get("/find/{content_id}", response_model=ApiResponse)
-async def find_by_id(content_id: str, cu: CurrentUser = Depends(get_current_user_optional)) -> ApiResponse:
+async def find_by_id(content_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     with CRUD() as _crud:
         if cu:
             if not permission_checker.has_permission(cu.roles, "content", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
@@ -150,59 +154,3 @@ async def find_by_id(content_id: str, cu: CurrentUser = Depends(get_current_user
             )
         response = _crud.get_by_id(content_id)
     return ApiResponse(status=0, message="Data found", data=response)
-
-@router.get("/fyp", response_model=ApiResponse)
-async def get_fyp(
-        page: int = Query(1, ge=1, description="Page number"),
-        per_page: int = Query(10, ge=1, le=100, description="Items per page"),
-        sort_field: str = Query("_id", description="Field to sort by"),
-        sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
-        cu: Optional[CurrentUser] = Depends(get_current_user_optional),
-        title: str = Query(None, description="Title of role (exact match)"),
-        title_contains: str = Query(None, description="Title contains (case insensitive)"),
-        synopsis_contains: str = Query(None, description="Synopsis contains (case insensitive)"),
-        genre: Optional[str] = Query(None, description="Filter by genre ID"),
-        genres: Optional[List[str]] = Query(None, description="Filter by multiple genre IDs"),
-        status: str = Query(None, description="Status of content")
-    ) -> ApiResponse:
-
-    # Build filters dynamically
-    filters = {}
-
-    with CRUD() as _crud:
-        if cu:
-            _crud.set_context(
-                user_id=cu.id,
-                org_id=cu.org_id,
-                ip_address=cu.ip_address,  # Jika ada
-                user_agent=cu.user_agent   # Jika ada
-            )
-
-        if title:
-            filters["title"] = title  # exact match
-        elif title_contains:
-            filters["title"] = {"$regex": f".*{title_contains}.*", "$options": "i"}
-        
-        if synopsis_contains:
-            filters["synopsis"] = {"$regex": f".*{synopsis_contains}.*", "$options": "i"}
-
-        if status:
-            filters["status"] = status
-
-        # Filter by single role
-        if genre:
-            filters["genre"] = genre
-        
-        # Filter by multiple roles
-        if genres:
-            filters["genre"] = genres  # Akan diubah ke $in dalam CRUD
-
-        # Call CRUD function
-        response = _crud.get_all(
-            filters=filters,
-            page=page,
-            per_page=per_page,
-            sort_field=sort_field,
-            sort_order=sort_order,
-        )
-    return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])

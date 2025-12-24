@@ -36,6 +36,15 @@ class Settings(BaseSettings):
     postgresql_db: str
     postgresql_min_pool_size: int
     postgresql_max_pool_size: int
+
+    # opensearch
+    opensearch_host: str
+    opensearch_port: int
+    opensearch_user: str
+    opensearch_pass: str
+    opensearch_use_ssl: bool = False
+    opensearch_verify_certs: bool = False
+    opensearch_max_pool_size: int
     
     # redis
     redis_host: str

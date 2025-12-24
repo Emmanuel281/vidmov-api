@@ -227,3 +227,38 @@ spec:
           envFrom:
             - secretRef:
                 name: arena-env
+---
+# Content Sync Worker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arena-content-sync-worker
+  namespace: gai-arena
+  labels:
+    app: arena-content-sync-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arena-content-sync-worker
+  template:
+    metadata:
+      labels:
+        app: arena-content-sync-worker
+    spec:
+      imagePullSecrets:
+        - name: gai-registry
+      containers:
+        - name: content-sync-worker
+          image: registry.gai.co.id/gai/vidmov-api:latest
+          args: ["redis_worker", "--queue", "content_sync_tasks"]
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "400m"
+            limits:
+              memory: "1000Mi"
+              cpu: "1000m"
+          envFrom:
+            - secretRef:
+                name: arena-env

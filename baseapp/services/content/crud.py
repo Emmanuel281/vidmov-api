@@ -9,6 +9,7 @@ from baseapp.utils.logger import Logger
 from baseapp.utils.utility import generate_uuid
 from baseapp.services.content.model import Content, ContentResponse, ContentDetailResponse, ContentListItem
 from baseapp.services.audit_trail_service import AuditTrailService
+from baseapp.services.content_search.hooks import content_search_hooks
 
 config = setting.get_settings()
 logger = Logger("baseapp.services.content.crud")
@@ -17,7 +18,6 @@ class CRUD:
     def __init__(self, collection_name="content"):
         self.collection_name = collection_name
         self.audit_trail = None
-        self.minio_conn = minio.MinioConn()
 
     def __enter__(self):
         self._mongo_context = mongodb.MongoConn()
@@ -64,6 +64,10 @@ class CRUD:
         try:
             result = collection.insert_one(obj)
             obj["id"] = obj.pop("_id")
+            
+            # Enqueue sync task
+            content_search_hooks.after_create(obj["id"], obj)
+
             return ContentResponse(**obj)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
@@ -395,6 +399,10 @@ class CRUD:
                 status="success"
             )
             update_content["id"] = update_content.pop("_id")
+
+            # Enqueue sync task
+            content_search_hooks.after_create(obj["id"], obj)
+            
             return ContentResponse(**update_content)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
