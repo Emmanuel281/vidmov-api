@@ -52,7 +52,7 @@ class CRUD:
 
     def create(self, data: Content):
         """
-        Insert a new role into the collection.
+        Insert a new content into the collection.
         """
         collection = self.mongo.get_database()[self.collection_name]
 
@@ -369,7 +369,7 @@ class CRUD:
 
     def update_by_id(self, content_id: str, data):
         """
-        Update a role's data by ID.
+        Update a content's data by ID.
         """
         collection = self.mongo.get_database()[self.collection_name]
         obj = data.model_dump()
@@ -401,7 +401,7 @@ class CRUD:
             update_content["id"] = update_content.pop("_id")
 
             # Enqueue sync task
-            content_search_hooks.after_create(obj["id"], obj)
+            content_search_hooks.after_update(content_id, obj)
             
             return ContentResponse(**update_content)
         except PyMongoError as pme:

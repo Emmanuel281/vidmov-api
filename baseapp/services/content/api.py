@@ -73,9 +73,6 @@ async def update_status(content_id: str, req: ContentUpdateStatus, cu: CurrentUs
         
         response = _crud.update_by_id(content_id,req)
 
-        # ⭐ Enqueue status change task (important!)
-        content_search_hooks.after_status_change(content_id, req.status)
-
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.get("", response_model=ApiResponse)
