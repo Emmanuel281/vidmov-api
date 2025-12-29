@@ -84,6 +84,7 @@ Content-Type: application/json
 
 
 ### Update
+# main_sponsor=null → optional, jika terisi {org_id, brand_name, campaign_name}
 PUT {{host}}/v1/content/update/728f1a79-b8e2-42ca-860d-6535aaa45a57
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -112,7 +113,7 @@ Content-Type: application/json
         "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
         "brand_name":"BrandX",
         "campaign_name":"Campaign Spring"
-    }, // optional default null
+    }
 }
 
 

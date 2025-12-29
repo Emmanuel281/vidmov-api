@@ -157,6 +157,12 @@ class ContentSearchCRUD:
         title = mongo_doc.get('title', {})
         synopsis = mongo_doc.get('synopsis', {})
         
+        # Ensure title and synopsis are dictionaries
+        if not isinstance(title, dict):
+            title = {'id': str(title) if title else '', 'en': ''}
+        if not isinstance(synopsis, dict):
+            synopsis = {'id': str(synopsis) if synopsis else '', 'en': ''}
+        
         title_id = title.get('id', '')
         title_en = title.get('en', '')
         title_all = ' '.join([v for v in title.values() if v])
@@ -167,15 +173,34 @@ class ContentSearchCRUD:
         
         # Extract sponsor info
         main_sponsor = mongo_doc.get('main_sponsor')
-        sponsor_name = main_sponsor.get('brand_name') if main_sponsor else None
-        sponsor_campaign = main_sponsor.get('campaign_name') if main_sponsor else None
+        sponsor_name = None
+        sponsor_campaign = None
+        if main_sponsor and isinstance(main_sponsor, dict):
+            sponsor_name = main_sponsor.get('brand_name')
+            sponsor_campaign = main_sponsor.get('campaign_name')
+        
+        # Safely extract array fields
+        def safe_list(value):
+            """Convert value to list safely"""
+            if value is None:
+                return []
+            if isinstance(value, list):
+                return value
+            if isinstance(value, str):
+                return [value] if value else []
+            return []
+        
+        cast_list = safe_list(mongo_doc.get('cast'))
+        tags_list = safe_list(mongo_doc.get('tags'))
+        genre_list = safe_list(mongo_doc.get('genre'))
+        territory_list = safe_list(mongo_doc.get('territory'))
         
         # Build search text (kombinasi semua text untuk searching)
         search_parts = [
             title_all,
             synopsis_all,
-            ' '.join(mongo_doc.get('cast', [])),
-            ' '.join(mongo_doc.get('tags', [])),
+            ' '.join(cast_list),
+            ' '.join(tags_list),
             mongo_doc.get('origin', ''),
             sponsor_name or ''
         ]
@@ -189,10 +214,10 @@ class ContentSearchCRUD:
             synopsis_id=synopsis_id,
             synopsis_en=synopsis_en,
             synopsis_all=synopsis_all,
-            genre=mongo_doc.get('genre', []),
-            cast=mongo_doc.get('cast', []),
-            tags=mongo_doc.get('tags', []),
-            territory=mongo_doc.get('territory', []),
+            genre=genre_list,
+            cast=cast_list,
+            tags=tags_list,
+            territory=territory_list,
             release_date=mongo_doc.get('release_date'),
             origin=mongo_doc.get('origin'),
             rating=mongo_doc.get('rating', 0.0),

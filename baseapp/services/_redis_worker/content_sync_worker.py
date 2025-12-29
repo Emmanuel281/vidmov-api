@@ -221,12 +221,28 @@ class ContentSyncWorker(BaseWorker):
         sponsor_name = main_sponsor.get('brand_name') if main_sponsor else None
         sponsor_campaign = main_sponsor.get('campaign_name') if main_sponsor else None
         
+        # Safely extract array fields
+        def safe_list(value):
+            """Convert value to list safely"""
+            if value is None:
+                return []
+            if isinstance(value, list):
+                return value
+            if isinstance(value, str):
+                return [value] if value else []
+            return []
+        
+        cast_list = safe_list(mongo_doc.get('cast'))
+        tags_list = safe_list(mongo_doc.get('tags'))
+        genre_list = safe_list(mongo_doc.get('genre'))
+        territory_list = safe_list(mongo_doc.get('territory'))
+
         # Build search text (kombinasi semua text untuk searching)
         search_parts = [
             title_all,
             synopsis_all,
-            ' '.join(mongo_doc.get('cast', [])),
-            ' '.join(mongo_doc.get('tags', [])),
+            ' '.join(cast_list),
+            ' '.join(tags_list),
             mongo_doc.get('origin', ''),
             sponsor_name or ''
         ]
@@ -245,10 +261,10 @@ class ContentSyncWorker(BaseWorker):
             "synopsis_all": synopsis_all,
             
             # Arrays
-            "genre": mongo_doc.get('genre', []),
-            "cast": mongo_doc.get('cast', []),
-            "tags": mongo_doc.get('tags', []),
-            "territory": mongo_doc.get('territory', []),
+            "genre": genre_list,
+            "cast": cast_list,
+            "tags": tags_list,
+            "territory": territory_list,
             
             # Single values
             "release_date": mongo_doc.get('release_date'),

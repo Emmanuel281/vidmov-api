@@ -73,7 +73,7 @@ async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
         sort_field: str = Query("_id", description="Field to sort by"),
-        sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
+        sort_order: str = Query("asc", pattern="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         cu: CurrentUser = Depends(get_current_user),
         org_id: str = Query(None, description="Organization ID"),
         status: str = Query(None, description="Status data")
