@@ -3,7 +3,6 @@ from datetime import datetime
 import time
 
 from baseapp.config import mongodb, opensearch, minio, setting
-from baseapp.model.common import ContentStatus
 from baseapp.utils.logger import Logger
 from baseapp.services.content_search.model import (
     ContentOpenSearchDocument,
@@ -37,31 +36,21 @@ CONTENT_INDEX_MAPPING = {
             "content_id": {"type": "keyword"},
             
             # Multi-language title
-            # "title_id": {
-            #     "type": "text",
-            #     "analyzer": "multilang_analyzer",
-            #     "fields": {
-            #         "keyword": {"type": "keyword"},
-            #         "suggest": {"type": "completion"}
-            #     }
-            # },
-            # "title_en": {
-            #     "type": "text",
-            #     "analyzer": "multilang_analyzer"
-            # },
-            # "title_all": {
-            #     "type": "text",
-            #     "analyzer": "multilang_analyzer"
-            # },
-
             "title_id": {
-                "type": "search_as_you_type"
+                "type": "text",
+                "analyzer": "multilang_analyzer",
+                "fields": {
+                    "keyword": {"type": "keyword"},
+                    "suggest": {"type": "completion"}
+                }
             },
             "title_en": {
-                "type": "search_as_you_type"
+                "type": "text",
+                "analyzer": "multilang_analyzer"
             },
             "title_all": {
-                "type": "search_as_you_type"
+                "type": "text",
+                "analyzer": "multilang_analyzer"
             },
             
             # Multi-language synopsis
@@ -515,17 +504,44 @@ class ContentSearchCRUD:
             
             # Text search (multi-language aware)
             if query:
+                # Prioritize search in selected language, fallback to all fields
                 should_queries = [
+                    # Primary: Search in selected language (highest boost)
+                    {
+                        "match": {
+                            f"title_{language}": {
+                                "query": query,
+                                "boost": 5,
+                                "operator": "or"
+                            }
+                        }
+                    },
+                    {
+                        "match": {
+                            f"synopsis_{language}": {
+                                "query": query,
+                                "boost": 3,
+                                "operator": "or"
+                            }
+                        }
+                    },
+                    # Secondary: Search in opposite language (lower boost)
+                    {
+                        "match": {
+                            f"title_{'en' if language == 'id' else 'id'}": {
+                                "query": query,
+                                "boost": 1,
+                                "operator": "or"
+                            }
+                        }
+                    },
+                    # Tertiary: Search in combined fields and metadata
                     {
                         "multi_match": {
                             "query": query,
                             "fields": [
-                                f"title_{language}^3",
-                                "title_all^2",
-                                f"synopsis_{language}^2",
-                                "synopsis_all",
-                                "cast",
-                                "tags",
+                                "cast^2",
+                                "tags^2",
                                 "search_text"
                             ],
                             "type": "best_fields",
@@ -533,10 +549,10 @@ class ContentSearchCRUD:
                         }
                     }
                 ]
-                must_queries.append({"bool": {"should": should_queries}})
+                must_queries.append({"bool": {"should": should_queries, "minimum_should_match": 1}})
             
             # Filter by status (only published)
-            filter_queries.append({"term": {"status": ContentStatus.PUBLISHED.value}})
+            filter_queries.append({"term": {"status": "published"}})
             
             # Genre filter
             if genres:
@@ -622,26 +638,16 @@ class ContentSearchCRUD:
                 source['id'] = source.pop('content_id')
                 
                 # Enrich with media
-                enriched = self.enrich_content_with_media(source, include_videos=True)
+                enriched = self.enrich_content_with_media(source, include_videos=False)
                 
                 items.append(enriched)
             
-            # return {
-            #     "total": total,
-            #     "page": page,
-            #     "page_size": page_size,
-            #     "total_pages": (total + page_size - 1) // page_size,
-            #     "items": items
-            # }
-
             return {
-                "data": items,
-                "pagination": {
-                    "current_page": page,
-                    "items_per_page": page_size,
-                    "total_items": total,
-                    "total_pages": (total + page_size - 1) // page_size,
-                },
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": (total + page_size - 1) // page_size,
+                "items": items
             }
             
         except Exception as e:
@@ -663,7 +669,7 @@ class ContentSearchCRUD:
                         "bool": {
                             "must": [
                                 {"term": {"content_id": content_id}},
-                                {"term": {"status": ContentStatus.PUBLISHED.value}}
+                                {"term": {"status": "published"}}
                             ]
                         }
                     },
@@ -709,60 +715,28 @@ class ContentSearchCRUD:
         Autocomplete untuk search box
         """
         try:
-            # field = f"title_{language}.suggest"
+            field = f"title_{language}.suggest"
             
-            # search_body = {
-            #     "suggest": {
-            #         "title-suggest": {
-            #             "prefix": query,
-            #             "completion": {
-            #                 "field": field,
-            #                 "size": limit,
-            #                 "skip_duplicates": True
-            #             }
-            #         }
-            #     }
-            # }
-            
-            # response = self.opensearch.search(body=search_body)
-            
-            # suggestions = []
-            # for option in response.get('suggest', {}).get('title-suggest', [{}])[0].get('options', []):
-            #     suggestions.append(option['text'])
-            
-            # return suggestions
-
-            field_name = f"title_{language}"
-        
             search_body = {
-                "size": limit,
-                "query": {
-                    "multi_match": {
-                        "query": query,
-                        "type": "bool_prefix",
-                        "fields": [
-                            field_name,
-                            f"{field_name}._2gram",
-                            f"{field_name}._3gram"
-                        ]
+                "suggest": {
+                    "title-suggest": {
+                        "prefix": query,
+                        "completion": {
+                            "field": field,
+                            "size": limit,
+                            "skip_duplicates": True
+                        }
                     }
-                },
-                # Ambil field title saja agar response ringan
-                "_source": [field_name]
+                }
             }
             
             response = self.opensearch.search(body=search_body)
             
             suggestions = []
-            for hit in response.get('hits', {}).get('hits', []):
-                source = hit.get('_source', {})
-                # Ambil value berdasarkan field yang aktif (id atau en)
-                val = source.get(field_name)
-                if val:
-                    suggestions.append(val)
+            for option in response.get('suggest', {}).get('title-suggest', [{}])[0].get('options', []):
+                suggestions.append(option['text'])
             
-            # Menghapus duplikat jika ada
-            return list(dict.fromkeys(suggestions))
+            return suggestions
             
         except Exception as e:
             logger.log_error_with_context(e, {
@@ -780,7 +754,7 @@ class ContentSearchCRUD:
                 "query": {
                     "bool": {
                         "filter": [
-                            {"term": {"status": ContentStatus.PUBLISHED.value}},
+                            {"term": {"status": "published"}},
                             {"range": {"total_views": {"gt": 0}}}
                         ]
                     }
