@@ -3,6 +3,7 @@ from datetime import datetime
 import time
 
 from baseapp.config import mongodb, opensearch, minio, setting
+from baseapp.model.common import ContentStatus
 from baseapp.utils.logger import Logger
 from baseapp.services.content_search.model import (
     ContentOpenSearchDocument,
@@ -577,7 +578,7 @@ class ContentSearchCRUD:
                 must_queries.append({"bool": {"should": should_queries, "minimum_should_match": 1}})
             
             # Filter by status (only published)
-            filter_queries.append({"term": {"status": "published"}})
+            filter_queries.append({"term": {"status": ContentStatus.PUBLISHED.value}})
             
             # Genre filter
             if genres:
@@ -666,14 +667,6 @@ class ContentSearchCRUD:
                 enriched = self.enrich_content_with_media(source, include_videos=False)
                 
                 items.append(enriched)
-            
-            # return {
-            #     "total": total,
-            #     "page": page,
-            #     "page_size": page_size,
-            #     "total_pages": (total + page_size - 1) // page_size,
-            #     "items": items
-            # }
 
             return {
                 "data": items,
@@ -704,7 +697,7 @@ class ContentSearchCRUD:
                         "bool": {
                             "must": [
                                 {"term": {"content_id": content_id}},
-                                {"term": {"status": "published"}}
+                                {"term": {"status": ContentStatus.PUBLISHED.value}}
                             ]
                         }
                     },
@@ -789,7 +782,7 @@ class ContentSearchCRUD:
                 "query": {
                     "bool": {
                         "filter": [
-                            {"term": {"status": "published"}},
+                            {"term": {"status": ContentStatus.PUBLISHED.value}},
                             {"range": {"total_views": {"gt": 0}}}
                         ]
                     }
