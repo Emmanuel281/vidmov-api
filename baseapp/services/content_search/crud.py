@@ -664,7 +664,7 @@ class ContentSearchCRUD:
                 source['id'] = source.pop('content_id')
                 
                 # Enrich with media
-                enriched = self.enrich_content_with_media(source, include_videos=False)
+                enriched = self.enrich_content_with_media(source, include_videos=True)
                 
                 items.append(enriched)
 
