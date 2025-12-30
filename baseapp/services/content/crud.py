@@ -108,7 +108,8 @@ class CRUD:
                 "full_price_coins": 1,
                 "main_sponsor": 1,
                 "poster": 1,
-                "fyp": 1,
+                "fyp_1": 1,
+                "fyp_2": 1,
                 "_id": 0
             }
 
@@ -221,14 +222,41 @@ class CRUD:
                                 }
                             }
                         ],
-                        "as": "fyp_data"
+                        "as": "fyp_1_data"
+                    }
+                },
+                # Lookup for FYP #2 data
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "content_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
+                                    "doctype": "3551a74699394f22b21ecf8277befa39"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "fyp_2_data"
                     }
                 },
                 # Add fields for poster, fyp, and main_sponsor with logo
                 {
                     "$addFields": {
                         "poster": "$poster_data",
-                        "fyp": "$fyp_data",
+                        "fyp_1": "$fyp_1_data",
+                        "fyp_2": "$fyp_2_data",
                         "main_sponsor": {
                             "$cond": {
                                 "if": { "$and": [
@@ -305,9 +333,9 @@ class CRUD:
                 # Replace list with grouped dictionary
                 content_data['poster'] = grouped_poster
 
-            if "fyp" in content_data and isinstance(content_data['fyp'], list):
+            if "fyp_1" in content_data and isinstance(content_data['fyp_1'], list):
                 grouped_fyp = {}
-                for video_item in content_data['fyp']:
+                for video_item in content_data['fyp_1']:
                     # Generate URL
                     video_item['url'] = None
                     if 'filename' in video_item:
@@ -332,7 +360,36 @@ class CRUD:
                     grouped_fyp[lang_key][res_key] = video_item
                     video_item.pop("metadata")
 
-                content_data['fyp'] = grouped_fyp
+                content_data['fyp_1'] = grouped_fyp
+
+            if "fyp_2" in content_data and isinstance(content_data['fyp_2'], list):
+                grouped_fyp = {}
+                for video_item in content_data['fyp_2']:
+                    # Generate URL
+                    video_item['url'] = None
+                    if 'filename' in video_item:
+                        url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
+                        if url:
+                            video_item['url'] = url
+                    
+                    # Determine Keys
+                    lang_key = "other"
+                    res_key = "original"
+                    
+                    if "metadata" in video_item and video_item["metadata"]:
+                        if "Language" in video_item["metadata"]:
+                            lang_key = video_item["metadata"]["Language"].lower()
+                        if "Resolution" in video_item["metadata"]:
+                            res_key = video_item["metadata"]["Resolution"].lower()
+
+                    # Build Nested Dict
+                    if lang_key not in grouped_fyp:
+                        grouped_fyp[lang_key] = {}
+                    
+                    grouped_fyp[lang_key][res_key] = video_item
+                    video_item.pop("metadata")
+
+                content_data['fyp_2'] = grouped_fyp
 
             if content_data.get("main_sponsor") and content_data["main_sponsor"].get("logo"):
                     logo_data = content_data["main_sponsor"]["logo"]
@@ -467,7 +524,8 @@ class CRUD:
                 "rating": 1,
                 "status": 1,
                 "poster": 1,
-                "fyp": 1,
+                "fyp_1": 1,
+                "fyp_2": 1,
                 "release_date": 1,
                 "license_from": 1,
                 "licence_date_start": 1,
@@ -589,14 +647,41 @@ class CRUD:
                                 }
                             }
                         ],
-                        "as": "fyp_data"
+                        "as": "fyp_1_data"
+                    }
+                },
+                # Lookup for FYP #2 data
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "content_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
+                                    "doctype": "3551a74699394f22b21ecf8277befa39"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "fyp_2_data"
                     }
                 },
                 # Add fields for poster, fyp, and main_sponsor with logo
                 {
                     "$addFields": {
                         "poster": "$poster_data",
-                        "fyp": "$fyp_data",
+                        "fyp_1": "$fyp_1_data",
+                        "fyp_2": "$fyp_2_data",
                         "main_sponsor": {
                             "$cond": {
                                 "if": { "$and": [
@@ -665,9 +750,9 @@ class CRUD:
                     # Replace list with grouped dictionary
                     data['poster'] = grouped_poster
 
-                if "fyp" in data and isinstance(data['fyp'], list):
+                if "fyp_1" in data and isinstance(data['fyp_1'], list):
                     grouped_fyp = {}
-                    for video_item in data['fyp']:
+                    for video_item in data['fyp_1']:
                         # Generate URL
                         video_item['url'] = None
                         if 'filename' in video_item:
@@ -692,7 +777,36 @@ class CRUD:
                         grouped_fyp[lang_key][res_key] = video_item
                         video_item.pop("metadata")
 
-                    data['fyp'] = grouped_fyp
+                    data['fyp_1'] = grouped_fyp
+
+                if "fyp_2" in data and isinstance(data['fyp_2'], list):
+                    grouped_fyp = {}
+                    for video_item in data['fyp_2']:
+                        # Generate URL
+                        video_item['url'] = None
+                        if 'filename' in video_item:
+                            url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
+                            if url:
+                                video_item['url'] = url
+                        
+                        # Determine Keys
+                        lang_key = "other"
+                        res_key = "original"
+                        
+                        if "metadata" in video_item and video_item["metadata"]:
+                            if "Language" in video_item["metadata"]:
+                                lang_key = video_item["metadata"]["Language"].lower()
+                            if "Resolution" in video_item["metadata"]:
+                                res_key = video_item["metadata"]["Resolution"].lower()
+
+                        # Build Nested Dict
+                        if lang_key not in grouped_fyp:
+                            grouped_fyp[lang_key] = {}
+                        
+                        grouped_fyp[lang_key][res_key] = video_item
+                        video_item.pop("metadata")
+
+                    data['fyp_2'] = grouped_fyp
 
                 if data.get("main_sponsor") and data["main_sponsor"].get("logo"):
                     logo_data = data["main_sponsor"]["logo"]

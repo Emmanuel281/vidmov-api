@@ -340,7 +340,50 @@ class ContentSearchCRUD:
                     info_file=video.get('filestat')
                 )
             
-            content['fyp'] = grouped_fyp
+            content['fyp_1'] = grouped_fyp
+
+            # FYP #2 videos
+            fyp_files = list(
+                self.mongo.get_database()['_dmsfile'].find(
+                    {
+                        "refkey_id": content_id,
+                        "doctype": "3551a74699394f22b21ecf8277befa39"
+                    },
+                    {
+                        "_id": 1,
+                        "filename": 1,
+                        "metadata": 1,
+                        "folder_path": 1,
+                        "filestat": 1
+                    }
+                )
+            )
+            
+            grouped_fyp = {}
+            for video in fyp_files:
+                lang_key = "other"
+                res_key = "original"
+                
+                if video.get("metadata"):
+                    if "Language" in video["metadata"]:
+                        lang_key = video["metadata"]["Language"].lower()
+                    if "Resolution" in video["metadata"]:
+                        res_key = video["metadata"]["Resolution"].lower()
+                
+                url = self.minio.presigned_get_object(config.minio_bucket, video['filename'])
+                
+                if lang_key not in grouped_fyp:
+                    grouped_fyp[lang_key] = {}
+                
+                grouped_fyp[lang_key][res_key] = MediaFile(
+                    id=str(video['_id']),
+                    filename=video['filename'],
+                    url=url,
+                    path=video.get('folder_path'),
+                    info_file=video.get('filestat')
+                )
+            
+            content['fyp_2'] = grouped_fyp
         
         return content
     
