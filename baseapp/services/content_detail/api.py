@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Query, Depends
 
 from baseapp.config import setting
-from baseapp.model.common import ApiResponse, CurrentUser, RoleAction
+from baseapp.model.common import ApiResponse, CurrentUser, RoleAction, Authority
 from baseapp.utils.jwt import get_current_user, get_current_user_optional
 
 from baseapp.services.permission_check_service import PermissionChecker
@@ -15,9 +15,9 @@ router = APIRouter(prefix="/v1/content-detail", tags=["Content Detail"])
 
 @router.post("/create", response_model=ApiResponse)
 async def create(
-    req: ContentDetail,
-    cu: CurrentUser = Depends(get_current_user)
-) -> ApiResponse:
+        req: ContentDetail,
+        cu: CurrentUser = Depends(get_current_user)
+    ) -> ApiResponse:
 
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.ADD.value, mongo_conn=_crud.mongo):  # 2 untuk izin simpan baru
@@ -34,7 +34,11 @@ async def create(
     return ApiResponse(status=0, message="Data created", data=response)
     
 @router.put("/update/{video_id}", response_model=ApiResponse)
-async def update_by_id(video_id: str, req: ContentDetailUpdate, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_by_id(
+        video_id: str, 
+        req: ContentDetailUpdate, 
+        cu: CurrentUser = Depends(get_current_user)
+    ) -> ApiResponse:
     
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.EDIT.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
@@ -51,7 +55,11 @@ async def update_by_id(video_id: str, req: ContentDetailUpdate, cu: CurrentUser 
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.put("/update_status/{video_id}", response_model=ApiResponse)
-async def update_status(video_id: str, req: ContentDetailUpdateStatus, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def update_status(
+        video_id: str, 
+        req: ContentDetailUpdateStatus, 
+        cu: CurrentUser = Depends(get_current_user)
+    ) -> ApiResponse:
     
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.EDIT.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
@@ -73,13 +81,17 @@ async def get_all_data(
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
         sort_field: str = Query("_id", description="Field to sort by"),
         sort_order: str = Query("asc", pattern="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
-        cu: CurrentUser = Depends(get_current_user),
         content_id: str = Query(None, description="Reference ID to the main content."),
         title: str = Query(None, description="Title of video (exact match)"),
         title_contains: str = Query(None, description="Title contains (case insensitive)"),
-        status: str = Query(None, description="Status of video")
+        status: str = Query(None, description="Status of video"),
+        cu: CurrentUser = Depends(get_current_user),
     ) -> ApiResponse:
 
+    # check authority is not owner
+    if cu.authority != Authority.OWNER.value:
+        raise PermissionError("Access denied")
+    
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
             raise PermissionError("Access denied")
@@ -119,7 +131,10 @@ async def get_all_data(
     return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
     
 @router.get("/find/{video_id}", response_model=ApiResponse)
-async def find_by_id(video_id: str, cu: CurrentUser = Depends(get_current_user_optional)) -> ApiResponse:
+async def find_by_id(
+        video_id: str, 
+        cu: CurrentUser = Depends(get_current_user_optional)
+    ) -> ApiResponse:
     
     with CRUD() as _crud:
         if cu:
@@ -135,16 +150,16 @@ async def find_by_id(video_id: str, cu: CurrentUser = Depends(get_current_user_o
     return ApiResponse(status=0, message="Data found", data=response)
 
 @router.get("/explore", response_model=ApiResponse)
-async def get_all_data(
+async def explore_episodes(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
         sort_field: str = Query("_id", description="Field to sort by"),
-        sort_order: str = Query("asc", pattern="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
-        cu: Optional[CurrentUser] = Depends(get_current_user_optional),
+        sort_order: str = Query("asc", pattern="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),        
         content_id: str = Query(None, description="Reference ID to the main content."),
         title: str = Query(None, description="Title of video (exact match)"),
         title_contains: str = Query(None, description="Title contains (case insensitive)"),
-        status: str = Query(None, description="Status of video")
+        status: str = Query(None, description="Status of video"),
+        cu: Optional[CurrentUser] = Depends(get_current_user_optional),
     ) -> ApiResponse:
 
     # Build filters dynamically

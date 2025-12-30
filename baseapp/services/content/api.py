@@ -8,7 +8,6 @@ from baseapp.utils.jwt import get_current_user
 from baseapp.services.permission_check_service import PermissionChecker
 from baseapp.services.content.model import Content, ContentUpdate, ContentUpdateStatus
 from baseapp.services.content.crud import CRUD
-from baseapp.services.content_search.hooks import content_search_hooks
 
 config = setting.get_settings()
 permission_checker = PermissionChecker()
@@ -19,10 +18,6 @@ async def create(
     req: Content,
     cu: CurrentUser = Depends(get_current_user)
 ) -> ApiResponse:
-    # check authority is not owner
-    if cu.authority != Authority.OWNER.value:
-        raise PermissionError("Access denied")
-    
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.ADD.value, mongo_conn=_crud.mongo):  # 2 untuk izin simpan baru
             raise PermissionError("Access denied")
@@ -38,10 +33,6 @@ async def create(
     
 @router.put("/update/{content_id}", response_model=ApiResponse)
 async def update_by_id(content_id: str, req: ContentUpdate, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    # check authority is not owner
-    if cu.authority != Authority.OWNER.value:
-        raise PermissionError("Access denied")
-    
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.EDIT.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
             raise PermissionError("Access denied")
@@ -57,10 +48,6 @@ async def update_by_id(content_id: str, req: ContentUpdate, cu: CurrentUser = De
 
 @router.put("/update_status/{content_id}", response_model=ApiResponse)
 async def update_status(content_id: str, req: ContentUpdateStatus, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    # check authority is not owner
-    if cu.authority != Authority.OWNER.value:
-        raise PermissionError("Access denied")
-    
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.EDIT.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
             raise PermissionError("Access denied")
@@ -95,6 +82,7 @@ async def get_all_data(
     # check authority is not owner
     if cu.authority != Authority.OWNER.value:
         raise PermissionError("Access denied")
+    
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
             raise PermissionError("Access denied")
@@ -150,9 +138,7 @@ async def get_all_data(
     
 @router.get("/find/{content_id}", response_model=ApiResponse)
 async def find_by_id(content_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    # check authority is not owner
-    if cu.authority != Authority.OWNER.value:
-        raise PermissionError("Access denied")
+    
     with CRUD() as _crud:
         if cu:
             if not permission_checker.has_permission(cu.roles, "content", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
@@ -165,3 +151,34 @@ async def find_by_id(content_id: str, cu: CurrentUser = Depends(get_current_user
             )
         response = _crud.get_by_id(content_id)
     return ApiResponse(status=0, message="Data found", data=response)
+
+@router.get("/by-brand/{brand_id}", response_model=ApiResponse)
+async def get_by_brand(
+    brand_id: str, 
+    title_contains: Optional[str] = Query(None, description="Cari judul konten (case-insensitive)"),
+    cu: CurrentUser = Depends(get_current_user)
+) -> ApiResponse:
+
+    if cu.authority != Authority.OWNER.value:
+        raise PermissionError("Access denied")
+    
+    with CRUD() as _crud:
+        if not permission_checker.has_permission(cu.roles, "content", RoleAction.VIEW.value, mongo_conn=_crud.mongo):
+            raise PermissionError("Access denied")
+            
+        _crud.set_context(
+            user_id=cu.id,
+            org_id=cu.org_id
+        )
+        
+        # 3. Eksekusi pencarian dengan regex
+        response = _crud.get_content_by_brand(
+            brand_id=brand_id, 
+            title_contains=title_contains
+        )
+        
+    return ApiResponse(
+        status=0, 
+        message="Data loaded", 
+        data=response
+    )

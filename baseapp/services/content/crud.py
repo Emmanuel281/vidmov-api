@@ -738,3 +738,71 @@ class CRUD:
         except Exception as e:
             logger.exception(f"Unexpected error during deletion: {str(e)}")
             raise
+
+    def get_content_by_brand(self, brand_id: str, title_contains: Optional[str] = None):
+        """
+        Mengambil konten berdasarkan brand_id (Sponsor Utama atau Sponsor Episode)
+        dengan tambahan filter pencarian judul menggunakan regex.
+        """
+        collection = self.mongo.get_database()[self.collection_name]
+        
+        try:
+            # Match dasar untuk Brand (Sponsor Utama atau di dalam array episodes)
+            match_condition = {
+                "$or": [
+                    {"main_sponsor.brand_id": brand_id},
+                    {"episodes.episode_sponsor.brand_id": brand_id}
+                ]
+            }
+
+            # Tambahkan filter Regex untuk judul jika parameter title_contains diberikan
+            if title_contains:
+                # Menggunakan title.id karena field title adalah dictionary dan 'id' wajib ada
+                match_condition["title.id"] = {
+                    "$regex": f".*{title_contains}.*", 
+                    "$options": "i"
+                }
+
+            pipeline = [
+                # 1. Join dengan koleksi content_video
+                {
+                    "$lookup": {
+                        "from": self.colls_content_video,
+                        "localField": "_id",
+                        "foreignField": "content_id",
+                        "as": "episodes"
+                    }
+                },
+                # 2. Filter gabungan (Brand + Title Regex)
+                {"$match": match_condition},
+                # 3. Project output
+                {
+                    "$project": {
+                        "_id": 0,
+                        "id": "$_id",
+                        "title": 1,
+                        "status": 1
+                    }
+                }
+            ]
+
+            cursor = collection.aggregate(pipeline)
+            results = list(cursor)
+
+            if self.audit_trail:
+                self.audit_trail.log_audittrail(
+                    self.mongo,
+                    action="retrieve_by_brand_search",
+                    target=self.collection_name,
+                    target_id=brand_id,
+                    details={"brand_id": brand_id, "search": title_contains},
+                    status="success"
+                )
+
+            return {
+                "data": results
+            }
+
+        except PyMongoError as pme:
+            logger.error(f"Database error in get_content_by_brand: {str(pme)}")
+            raise ValueError("Gagal mencari data.") from pme

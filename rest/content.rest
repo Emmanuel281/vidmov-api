@@ -136,6 +136,11 @@ Authorization: Bearer {{token}}
 GET {{host}}/v1/content/find/fc3d27cf64274413ab74b3f72122707b
 Authorization: Bearer {{token}}
 
+### Find By Brand
+# /{brand_id}?title_contains=string
+GET {{host}}/v1/content/by-brand/fc3d27cf64274413ab74b3f72122707b
+Authorization: Bearer {{token}}
+
 
 ###
 # GROUP: ATTACHMENT

@@ -10,7 +10,7 @@ from baseapp.services.brand.crud import CRUD
 
 config = setting.get_settings()
 permission_checker = PermissionChecker()
-router = APIRouter(prefix="/v1/owner/brand", tags=["Brand"])
+router = APIRouter(prefix="/v1/brand", tags=["Brand"])
 
 @router.post("/create", response_model=ApiResponse)
 async def create(
@@ -38,6 +38,7 @@ async def update_by_id(brand_id: str, req: Brand, cu: CurrentUser = Depends(get_
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "brand", RoleAction.EDIT.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
             raise PermissionError("Access denied")
+        
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -50,11 +51,12 @@ async def update_by_id(brand_id: str, req: Brand, cu: CurrentUser = Depends(get_
     return ApiResponse(status=0, message="Data updated", data=response)
 
 @router.delete("/delete/{brand_id}", response_model=ApiResponse)
-async def update_status(brand_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+async def delete_brand(brand_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
     
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "brand", RoleAction.DELETE.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
             raise PermissionError("Access denied")
+        
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
