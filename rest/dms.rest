@@ -1,11 +1,11 @@
 @prod = https://arena.gai.co.id/service
 @dev = http://localhost:17178
-@host = {{dev}}
+@host = {{prod}}
 @upload_host = {{prod}}
 
 # --- TOKENS ---
 # Token Owner (Arena)
-@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiODY5Y2RjZDcwZjFmNDM4ZGFhMDEyOTFmZjZlZDRjZGIiLCJyb2xlcyI6WyIwNTRhODBlYTA3Mzk0YTg0YTc0MWRjYWQ4OWM1ZjBiZiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImJhYzUxODk3NWMzZDQ1MGU4NDYxOGYxNjk0ZmVkNzcyIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7IlZJRVciOjEsIkFERCI6MiwiRURJVCI6NCwiREVMRVRFIjo4LCJFWFBPUlQiOjE2LCJJTVBPUlQiOjMyLCJBUFBST1ZBTCI6NjQsIlNFVFRJTkciOjEyOH0sInNlc3Npb25faWQiOiIwZDgzMGVkOTcxMTA0MmMzODAyMmNiYTA1MzIzM2M5YSIsImV4cCI6MTc2NTk1OTk0MSwianRpIjoiMjk0MGI0MDEyMzQ0NDc1OThhMzZjNjNkZjIwNzM0ZmYifQ.FI4poPZYkX5I0MWcqVaad6kULg9yEad5GPgDzcTmfH8
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiZjc4ODZhOTliNmIyNGVmZmFiYjczYmQ1M2YzYzliMDQiLCJyb2xlcyI6WyI3ZTU3YzBkOTQxYTc0YWE3YTZlZDhhNTI2MGI3MzVkNiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6IjcxNDgwMTc1NDI5ODQ4NDliYTE3YTlkOGZiMTBiMGZiIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7IlZJRVciOjEsIkFERCI6MiwiRURJVCI6NCwiREVMRVRFIjo4LCJFWFBPUlQiOjE2LCJJTVBPUlQiOjMyLCJBUFBST1ZBTCI6NjQsIlNFVFRJTkciOjEyOH0sInNlc3Npb25faWQiOiJkYmIwOWUzY2ExNDA0ZDdkOGNmOWUwMDY2NDQ0NDNkNiIsImV4cCI6MTc2NzA4MzQ4NSwianRpIjoiNjQwZWI1MzBlNTZjNGFkNmFkNDJlYjFlMGYzMzJhNDQifQ.NVf_IB4q-z-bsg-DNXsLP8FtM--7KZXcHF9WoxlwUTE
 # Token Partner
 @partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
 # Token Client
@@ -30,8 +30,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { 
-    "name":"Resolution", 
-    "description":"SD, HD, 4K", 
+    "name":"Brand Name", 
+    "description":"Brand Name", 
     "type":"String", 
     "status":"ACTIVE" 
 }
@@ -48,7 +48,7 @@ Content-Type: application/json
 }
 
 ### DELETE
-PUT {{host}}/v1/_dms/index/delete/5892d554706a48539ba7954e0278bfd7
+DELETE {{host}}/v1/_dms/index/delete/a311df04d7fa401fbcb53cf2e453d817
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -70,11 +70,11 @@ POST {{host}}/v1/_dms/doctype/create
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
-{ 
-    "name":"Subtitle", 
-    "metadata":["Content ID","Title","Language","Episode ID","Eps"], 
-    "folder":"Media >> {Content ID} >> Episode >> {Eps} >> Subtitle", 
-    "mapping":{"Content ID":"_id","Title":"title","Language":"language", "Episode ID":"_id", "Eps":"episode"}, 
+{  
+    "name":"Logo Brand", 
+    "metadata":["Title","Brand ID"], 
+    "folder":"Media >> {Brand ID} >> Logo", 
+    "mapping":{"Brand ID":"_id","Title":"name", "Brand ID":"_id"}, 
     "status":"ACTIVE" 
 }
 

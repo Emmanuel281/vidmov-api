@@ -188,29 +188,52 @@ class CRUD:
                     }
                 },
                 {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "brand_id": "$episode_sponsor.brand_id" },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$brand_id"] },
+                                    "doctype": "28f0634cdbea43f89010a147e365ae98" 
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "brand_logo_data"
+                    }
+                },
+                # Add fields for video, subtitle, dubbing and episode_sponsor
+                {
                     "$addFields": {
+                        "video": "$video_data",
+                        "subtitle": "$subtitle_data",
+                        "dubbing": "$dubbing_data",
                         "episode_sponsor": {
                             "$cond": {
-                                "if": { "$and": [ 
-                                    {"$gt": [{"$size": "$brand_info"}, 0]},
-                                    {"$ne": ["$episode_sponsor", None]}
+                                "if": { "$and": [
+                                    { "$gt": [{ "$size": "$brand_info" }, 0] },
+                                    { "$ne": ["$episode_sponsor", None] }
                                 ]},
                                 "then": {
                                     "$mergeObjects": [
                                         "$episode_sponsor",
-                                        {"$arrayElemAt": ["$brand_info", 0]}
+                                        { "$arrayElemAt": ["$brand_info", 0] },
+                                        { "logo": { "$arrayElemAt": ["$brand_logo_data", 0] } }
                                     ]
                                 },
                                 "else": "$episode_sponsor"
                             }
                         }
-                    }
-                },
-                {
-                    "$addFields": {
-                        "video": "$video_data",
-                        "subtitle": "$subtitle_data",
-                        "dubbing": "$dubbing_data"
                     }
                 },
                 {"$project": selected_fields}  # Project only selected fields
@@ -319,6 +342,13 @@ class CRUD:
                     
                 # Replace list with grouped dictionary
                 content_data['dubbing'] = grouped_dubbing
+
+            if content_data.get("episode_sponsor") and content_data["episode_sponsor"].get("logo"):
+                    logo_data = content_data["episode_sponsor"]["logo"]
+                    if "filename" in logo_data:
+                        # Generate URL menggunakan MinIO client
+                        url = self.minio.presigned_get_object(config.minio_bucket, logo_data['filename'])
+                        content_data["episode_sponsor"]["logo_url"] = url
 
             return ContentDetailResponse(**content_data)
         except PyMongoError as pme:
@@ -468,27 +498,49 @@ class CRUD:
                     }
                 },
                 {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "brand_id": "$episode_sponsor.brand_id" },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$brand_id"] },
+                                    "doctype": "28f0634cdbea43f89010a147e365ae98" 
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "brand_logo_data"
+                    }
+                },
+                {
                     "$addFields": {
+                        "video": "$video_data",
                         "episode_sponsor": {
                             "$cond": {
-                                "if": { "$and": [ 
-                                    {"$gt": [{"$size": "$brand_info"}, 0]},
-                                    {"$ne": ["$episode_sponsor", None]}
+                                "if": { "$and": [
+                                    { "$gt": [{ "$size": "$brand_info" }, 0] },
+                                    { "$ne": ["$episode_sponsor", None] }
                                 ]},
                                 "then": {
                                     "$mergeObjects": [
                                         "$episode_sponsor",
-                                        {"$arrayElemAt": ["$brand_info", 0]}
+                                        { "$arrayElemAt": ["$brand_info", 0] },
+                                        { "logo": { "$arrayElemAt": ["$brand_logo_data", 0] } }
                                     ]
                                 },
                                 "else": "$episode_sponsor"
                             }
                         }
-                    }
-                },
-                {
-                    "$addFields": {
-                        "video": "$video_data"
                     }
                 },
                 {"$skip": skip},  # Pagination skip stage
@@ -524,6 +576,13 @@ class CRUD:
                             url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
                             if url:
                                 video_item['url'] = url
+                
+                if data.get("episode_sponsor") and data["episode_sponsor"].get("logo"):
+                    logo_data = data["episode_sponsor"]["logo"]
+                    if "filename" in logo_data:
+                        # Generate URL menggunakan MinIO client
+                        url = self.minio.presigned_get_object(config.minio_bucket, logo_data['filename'])
+                        data["episode_sponsor"]["logo_url"] = url
 
             return {
                 "data": parsed_results,

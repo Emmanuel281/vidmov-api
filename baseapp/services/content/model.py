@@ -8,7 +8,8 @@ class BrandPlacement(BaseModel):
     org_id: str = Field(..., description="ID dari user/organisasi Brand (Authority 8)")
     brand_id: str = Field(..., description="ID brand yang dipilih dari brand milik organisasi tersebut")
     name: Optional[str] = Field(None, description="Nama brand dari hasil lookup")
-    logo_url: Optional[str] = Field(None, description="Logo brand dari hasil lookup")
+    logo: Optional[Dict[str, Any]] = Field(None, description="Logo brand dari hasil lookup")
+    logo_url: Optional[str] = None
 
 class Content(BaseModel):
     title: Dict[str, str] = Field(description="Title in multiple languages. Example: {'id': 'Judul', 'en': 'Title'}")
@@ -87,8 +88,7 @@ class ContentResponse(Content):
 class ContentDetailResponse(ContentResponse):
     # Mewarisi semua field Organization (name, email, dll)
     poster: Optional[Dict] = None
-    fyp_1: Optional[Dict[str, Dict[str, Any]]] = None
-    fyp_2: Optional[Dict[str, Dict[str, Any]]] = None
+    fyp: Optional[Dict[str, Dict[str, Any]]] = None
     
     model_config = {
         "populate_by_name": True,
@@ -102,8 +102,7 @@ class ContentListItem(ContentResponse):
     total_saved: Optional[int] = 0
     total_episodes: Optional[int] = 0
     poster: Optional[Dict] = None
-    fyp_1: Optional[Dict[str, Dict[str, Any]]] = None
-    fyp_2: Optional[Dict[str, Dict[str, Any]]] = None
+    fyp: Optional[Dict[str, Dict[str, Any]]] = None
     status: ContentStatus
     
     model_config = {

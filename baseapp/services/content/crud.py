@@ -148,22 +148,28 @@ class CRUD:
                     }
                 },
                 {
-                    "$addFields": {
-                        "main_sponsor": {
-                            "$cond": {
-                                "if": { "$and": [ 
-                                    {"$gt": [{"$size": "$brand_info"}, 0]},
-                                    {"$ne": ["$main_sponsor", None]}
-                                ]},
-                                "then": {
-                                    "$mergeObjects": [
-                                        "$main_sponsor",
-                                        {"$arrayElemAt": ["$brand_info", 0]}
-                                    ]
-                                },
-                                "else": "$main_sponsor"
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "brand_id": "$main_sponsor.brand_id" },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$brand_id"] },
+                                    "doctype": "28f0634cdbea43f89010a147e365ae98" 
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
                             }
-                        }
+                        ],
+                        "as": "brand_logo_data"
                     }
                 },
                 # Lookup for poster data
@@ -218,10 +224,27 @@ class CRUD:
                         "as": "fyp_data"
                     }
                 },
+                # Add fields for poster, fyp, and main_sponsor with logo
                 {
                     "$addFields": {
                         "poster": "$poster_data",
-                        "fyp": "$fyp_data"
+                        "fyp": "$fyp_data",
+                        "main_sponsor": {
+                            "$cond": {
+                                "if": { "$and": [
+                                    { "$gt": [{ "$size": "$brand_info" }, 0] },
+                                    { "$ne": ["$main_sponsor", None] }
+                                ]},
+                                "then": {
+                                    "$mergeObjects": [
+                                        "$main_sponsor",
+                                        { "$arrayElemAt": ["$brand_info", 0] },
+                                        { "logo": { "$arrayElemAt": ["$brand_logo_data", 0] } }
+                                    ]
+                                },
+                                "else": "$main_sponsor"
+                            }
+                        }
                     }
                 },
                 {"$project": selected_fields}  # Project only selected fields
@@ -310,6 +333,13 @@ class CRUD:
                     video_item.pop("metadata")
 
                 content_data['fyp'] = grouped_fyp
+
+            if content_data.get("main_sponsor") and content_data["main_sponsor"].get("logo"):
+                    logo_data = content_data["main_sponsor"]["logo"]
+                    if "filename" in logo_data:
+                        # Generate URL menggunakan MinIO client
+                        url = self.minio.presigned_get_object(config.minio_bucket, logo_data['filename'])
+                        content_data["main_sponsor"]["logo_url"] = url
 
             return ContentDetailResponse(**content_data)
         except PyMongoError as pme:
@@ -486,22 +516,28 @@ class CRUD:
                     }
                 },
                 {
-                    "$addFields": {
-                        "main_sponsor": {
-                            "$cond": {
-                                "if": { "$and": [ 
-                                    {"$gt": [{"$size": "$brand_info"}, 0]},
-                                    {"$ne": ["$main_sponsor", None]}
-                                ]},
-                                "then": {
-                                    "$mergeObjects": [
-                                        "$main_sponsor",
-                                        {"$arrayElemAt": ["$brand_info", 0]}
-                                    ]
-                                },
-                                "else": "$main_sponsor"
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "brand_id": "$main_sponsor.brand_id" },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$brand_id"] },
+                                    "doctype": "28f0634cdbea43f89010a147e365ae98" 
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
                             }
-                        }
+                        ],
+                        "as": "brand_logo_data"
                     }
                 },
                 # Lookup for poster data
@@ -556,10 +592,27 @@ class CRUD:
                         "as": "fyp_data"
                     }
                 },
+                # Add fields for poster, fyp, and main_sponsor with logo
                 {
                     "$addFields": {
                         "poster": "$poster_data",
-                        "fyp": "$fyp_data"
+                        "fyp": "$fyp_data",
+                        "main_sponsor": {
+                            "$cond": {
+                                "if": { "$and": [
+                                    { "$gt": [{ "$size": "$brand_info" }, 0] },
+                                    { "$ne": ["$main_sponsor", None] }
+                                ]},
+                                "then": {
+                                    "$mergeObjects": [
+                                        "$main_sponsor",
+                                        { "$arrayElemAt": ["$brand_info", 0] },
+                                        { "logo": { "$arrayElemAt": ["$brand_logo_data", 0] } }
+                                    ]
+                                },
+                                "else": "$main_sponsor"
+                            }
+                        }
                     }
                 },
                 {"$skip": skip},  # Pagination skip stage
@@ -640,6 +693,13 @@ class CRUD:
                         video_item.pop("metadata")
 
                     data['fyp'] = grouped_fyp
+
+                if data.get("main_sponsor") and data["main_sponsor"].get("logo"):
+                    logo_data = data["main_sponsor"]["logo"]
+                    if "filename" in logo_data:
+                        # Generate URL menggunakan MinIO client
+                        url = self.minio.presigned_get_object(config.minio_bucket, logo_data['filename'])
+                        data["main_sponsor"]["logo_url"] = url
 
             parsed_results = [ContentListItem(**item) for item in results]
 

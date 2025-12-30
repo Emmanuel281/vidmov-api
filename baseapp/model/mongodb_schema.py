@@ -286,7 +286,7 @@ class Feature(Collection):
             "_id": "_dmsindexlist",
             "feature_name": "_dmsindexlist",
             "negasiperm": {
-                "1": 248,
+                "1": 240,
                 "2": 255,
                 "4": 255,
                 "8": 255
@@ -297,7 +297,7 @@ class Feature(Collection):
             "_id": "_dmsdoctype",
             "feature_name": "_dmsdoctype",
             "negasiperm": {
-                "1": 248,
+                "1": 240,
                 "2": 255,
                 "4": 255,
                 "8": 255
