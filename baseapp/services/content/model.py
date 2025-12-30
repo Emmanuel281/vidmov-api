@@ -6,10 +6,9 @@ from pydantic import field_validator
 
 class BrandPlacement(BaseModel):
     org_id: str = Field(..., description="ID dari user/organisasi Brand (Authority 8)")
-    brand_name: str = Field(..., description="Nama brand yang akan muncul di player")
-    campaign_name: str
-    # logo_url: str = Field(..., description="URL logo brand yang akan muncul di player")
-    # cta_url: Optional[str] = Field(None, description="Link redirect jika user klik logo")
+    brand_id: str = Field(..., description="ID brand yang dipilih dari brand milik organisasi tersebut")
+    name: Optional[str] = Field(None, description="Nama brand dari hasil lookup")
+    logo_url: Optional[str] = Field(None, description="Logo brand dari hasil lookup")
 
 class Content(BaseModel):
     title: Dict[str, str] = Field(description="Title in multiple languages. Example: {'id': 'Judul', 'en': 'Title'}")

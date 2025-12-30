@@ -178,6 +178,34 @@ class CRUD:
                         "as": "dubbing_data"
                     }
                 },
+                # Lookup for brand data
+                {
+                    "$lookup": {
+                        "from": "brand",
+                        "localField": "episode_sponsor.brand_id",
+                        "foreignField": "_id",
+                        "as": "brand_info"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "episode_sponsor": {
+                            "$cond": {
+                                "if": { "$and": [ 
+                                    {"$gt": [{"$size": "$brand_info"}, 0]},
+                                    {"$ne": ["$episode_sponsor", None]}
+                                ]},
+                                "then": {
+                                    "$mergeObjects": [
+                                        "$episode_sponsor",
+                                        {"$arrayElemAt": ["$brand_info", 0]}
+                                    ]
+                                },
+                                "else": "$episode_sponsor"
+                            }
+                        }
+                    }
+                },
                 {
                     "$addFields": {
                         "video": "$video_data",
@@ -428,6 +456,34 @@ class CRUD:
                             }
                         ],
                         "as": "video_data"
+                    }
+                },
+                # Lookup for brand data
+                {
+                    "$lookup": {
+                        "from": "brand",
+                        "localField": "episode_sponsor.brand_id",
+                        "foreignField": "_id",
+                        "as": "brand_info"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "episode_sponsor": {
+                            "$cond": {
+                                "if": { "$and": [ 
+                                    {"$gt": [{"$size": "$brand_info"}, 0]},
+                                    {"$ne": ["$episode_sponsor", None]}
+                                ]},
+                                "then": {
+                                    "$mergeObjects": [
+                                        "$episode_sponsor",
+                                        {"$arrayElemAt": ["$brand_info", 0]}
+                                    ]
+                                },
+                                "else": "$episode_sponsor"
+                            }
+                        }
                     }
                 },
                 {

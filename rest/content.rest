@@ -5,7 +5,7 @@
 
 # --- TOKENS ---
 # Token Owner (Arena)
-@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiZjc4ODZhOTliNmIyNGVmZmFiYjczYmQ1M2YzYzliMDQiLCJyb2xlcyI6WyI3ZTU3YzBkOTQxYTc0YWE3YTZlZDhhNTI2MGI3MzVkNiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6IjcxNDgwMTc1NDI5ODQ4NDliYTE3YTlkOGZiMTBiMGZiIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7IlZJRVciOjEsIkFERCI6MiwiRURJVCI6NCwiREVMRVRFIjo4LCJFWFBPUlQiOjE2LCJJTVBPUlQiOjMyLCJBUFBST1ZBTCI6NjQsIlNFVFRJTkciOjEyOH0sInNlc3Npb25faWQiOiIzN2Y1MGY0MWIxYjE0NDJmYTYzOWRjOTc3N2IxZWExOSIsImV4cCI6MTc2NjU5NjQ1MSwianRpIjoiNzMxYmM3Y2NmNTI5NDgyMzhiYmE4NjJmOGI2NWRhZTcifQ.qUCIlCr8J1hpjyeElHSKuLqU1jka0GdrKedeyt39EMg
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiZjc4ODZhOTliNmIyNGVmZmFiYjczYmQ1M2YzYzliMDQiLCJyb2xlcyI6WyI3ZTU3YzBkOTQxYTc0YWE3YTZlZDhhNTI2MGI3MzVkNiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6IjcxNDgwMTc1NDI5ODQ4NDliYTE3YTlkOGZiMTBiMGZiIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7IlZJRVciOjEsIkFERCI6MiwiRURJVCI6NCwiREVMRVRFIjo4LCJFWFBPUlQiOjE2LCJJTVBPUlQiOjMyLCJBUFBST1ZBTCI6NjQsIlNFVFRJTkciOjEyOH0sInNlc3Npb25faWQiOiJlNGM5NzRiMjUyZWE0Yzc2OGZhYWM5ZGQ2OGY2NTk1MSIsImV4cCI6MTc2Njk5NzMwNiwianRpIjoiN2M5NDAzZTUxYWUzNDA1MWJiNjExNTU3OGQyYjBlYTIifQ.lydRc5p0zdnbA3a-4ovSWw2n59Yo02NDkcI0TNg1Gt8
 # Token Partner
 @partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
 # Token Client
@@ -85,7 +85,7 @@ Content-Type: application/json
 
 ### Update
 # main_sponsor=null → optional, jika terisi {org_id, brand_name, campaign_name}
-PUT {{host}}/v1/content/update/728f1a79-b8e2-42ca-860d-6535aaa45a57
+PUT {{host}}/v1/content/update/8a66f138350e401d919d9125511fc7ab
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -98,21 +98,21 @@ Content-Type: application/json
         "en":"Love Story",
         "id":"Kisah Kasih"
     },
-    "genre":["9a4c0f5a9c2a4b15bfaee6db589d6068"],
+    "genre":["9a4c0f5a9c2a4b15bfaee6db589d6068","6ee3557896624c599d091bd174d2abab"],
     "release_date": "2025-03-20T00:00:00Z", 
     "cast":["Alex", "Siska"], 
     "tags":["CEO love triangle", "Money and Power"], 
     "mature_content": false,  
     "license_from": null, 
-    "licence_date": null,
+    "licence_date_start": null,
+    "licence_date_end": null,
     "origin":"Indonesia", 
     "territory":["Indonesia"], 
     "is_full_paid":true,
     "full_price_coins":840,
     "main_sponsor": {
         "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
-        "brand_name":"BrandX",
-        "campaign_name":"Campaign Spring"
+        "brand_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b"
     }
 }
 

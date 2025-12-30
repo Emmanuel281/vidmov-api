@@ -402,6 +402,17 @@ class Feature(Collection):
                 "8": 252
             },
             "authority": 11
+        },
+        {
+            "_id": "brand",
+            "feature_name": "giveaway",
+            "negasiperm": {
+                "1": 240,
+                "2": 240,
+                "4": 255,
+                "8": 255
+            },
+            "authority": 3
         }
     ]
 
@@ -533,6 +544,16 @@ class Giveaway(Collection):
     ]
 
 
+class Brand(Collection):
+    """Brand collection"""
+    __collection_name__ = "brand"
+    __indexes__ = [
+        Index("rec_date"),
+        Index("uid"),
+        Index("org_id")
+    ]
+
+
 # ============================================
 # Schema Registry
 # ============================================
@@ -559,7 +580,8 @@ ALL_COLLECTIONS = [
     Ads,
     QRProduct,
     Bundling,
-    Giveaway
+    Giveaway,
+    Brand
 ]
 
 

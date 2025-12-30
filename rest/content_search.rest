@@ -28,7 +28,7 @@ Authorization: Bearer {{token}}
 ### Search with Language Preference
 # Language: id (Indonesian) or en (English)
 # Default: id
-GET {{host}}/v1/content/search/?q=kincir&language=id
+GET {{host}}/v1/content/search/?q=love&language=id
 
 ### Search with Pagination
 # page: Page number (default: 1)
@@ -37,7 +37,7 @@ GET {{host}}/v1/content/search/?q=kasih&page=1&page_size=10
 
 ### Search with Genre Filter
 # genres: Comma-separated genre IDs
-GET {{host}}/v1/content/search/?q=romance&genres=9a4c0f5a9c2a4b15bfaee6db589d6068
+GET {{host}}/v1/content/search/?genres=9a4c0f5a9c2a4b15bfaee6db589d6068
 Authorization: Bearer {{token}}
 
 ### Search with Multiple Genres

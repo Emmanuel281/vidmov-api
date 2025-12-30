@@ -17,6 +17,7 @@ logger = Logger("baseapp.services.content.crud")
 class CRUD:
     def __init__(self, collection_name="content"):
         self.collection_name = collection_name
+        self.colls_content_video = "content_video"
         self.audit_trail = None
 
     def __enter__(self):
@@ -107,8 +108,7 @@ class CRUD:
                 "full_price_coins": 1,
                 "main_sponsor": 1,
                 "poster": 1,
-                "fyp_1": 1,
-                "fyp_2": 1,
+                "fyp": 1,
                 "_id": 0
             }
 
@@ -134,6 +134,34 @@ class CRUD:
                                     "value": "$$genre.value",
                                     "sort": "$$genre.sort",
                                 }
+                            }
+                        }
+                    }
+                },
+                # Lookup for brand data
+                {
+                    "$lookup": {
+                        "from": "brand",
+                        "localField": "main_sponsor.brand_id",
+                        "foreignField": "_id",
+                        "as": "brand_info"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "main_sponsor": {
+                            "$cond": {
+                                "if": { "$and": [ 
+                                    {"$gt": [{"$size": "$brand_info"}, 0]},
+                                    {"$ne": ["$main_sponsor", None]}
+                                ]},
+                                "then": {
+                                    "$mergeObjects": [
+                                        "$main_sponsor",
+                                        {"$arrayElemAt": ["$brand_info", 0]}
+                                    ]
+                                },
+                                "else": "$main_sponsor"
                             }
                         }
                     }
@@ -164,7 +192,7 @@ class CRUD:
                         "as": "poster_data"
                     }
                 },
-                # Lookup for FYP #1 data
+                # Lookup for FYP data
                 {
                     "$lookup": {
                         "from": "_dmsfile",
@@ -187,40 +215,13 @@ class CRUD:
                                 }
                             }
                         ],
-                        "as": "fyp_1_data"
-                    }
-                },
-                # Lookup for FYP #2 data
-                {
-                    "$lookup": {
-                        "from": "_dmsfile",
-                        "let": { "content_id": { "$toString": "$_id" } },
-                        "pipeline": [
-                            {
-                                "$match": {
-                                    "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
-                                    "doctype": "8014149170ad41148f5ae01d9b0aac7b"
-                                }
-                            },
-                            {
-                                "$project": {
-                                    "id": "$_id",
-                                    "_id": 0,
-                                    "filename": "$filename",
-                                    "metadata": "$metadata",
-                                    "path": "$folder_path",
-                                    "info_file": "$filestat"
-                                }
-                            }
-                        ],
-                        "as": "fyp_2_data"
+                        "as": "fyp_data"
                     }
                 },
                 {
                     "$addFields": {
                         "poster": "$poster_data",
-                        "fyp_1": "$fyp_1_data", 
-                        "fyp_2": "$fyp_2_data"
+                        "fyp": "$fyp_data"
                     }
                 },
                 {"$project": selected_fields}  # Project only selected fields
@@ -281,9 +282,9 @@ class CRUD:
                 # Replace list with grouped dictionary
                 content_data['poster'] = grouped_poster
 
-            if "fyp_1" in content_data and isinstance(content_data['fyp_1'], list):
+            if "fyp" in content_data and isinstance(content_data['fyp'], list):
                 grouped_fyp = {}
-                for video_item in content_data['fyp_1']:
+                for video_item in content_data['fyp']:
                     # Generate URL
                     video_item['url'] = None
                     if 'filename' in video_item:
@@ -308,36 +309,7 @@ class CRUD:
                     grouped_fyp[lang_key][res_key] = video_item
                     video_item.pop("metadata")
 
-                content_data['fyp_1'] = grouped_fyp
-
-            if "fyp_2" in content_data and isinstance(content_data['fyp_2'], list):
-                grouped_highlight = {}
-                for video_item in content_data['fyp_2']:
-                    # Generate URL
-                    video_item['url'] = None
-                    if 'filename' in video_item:
-                        url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                        if url:
-                            video_item['url'] = url
-                    
-                    # Determine Keys
-                    lang_key = "other"
-                    res_key = "original"
-                    
-                    if "metadata" in video_item and video_item["metadata"]:
-                        if "Language" in video_item["metadata"]:
-                            lang_key = video_item["metadata"]["Language"].lower()
-                        if "Resolution" in video_item["metadata"]:
-                            res_key = video_item["metadata"]["Resolution"].lower()
-
-                    # Build Nested Dict
-                    if lang_key not in grouped_highlight:
-                        grouped_highlight[lang_key] = {}
-                    
-                    grouped_highlight[lang_key][res_key] = video_item
-                    video_item.pop("metadata")
-                    
-                content_data['fyp_2'] = grouped_highlight
+                content_data['fyp'] = grouped_fyp
 
             return ContentDetailResponse(**content_data)
         except PyMongoError as pme:
@@ -465,8 +437,7 @@ class CRUD:
                 "rating": 1,
                 "status": 1,
                 "poster": 1,
-                "fyp_1": 1,
-                "fyp_2": 1,
+                "fyp": 1,
                 "release_date": 1,
                 "license_from": 1,
                 "licence_date_start": 1,
@@ -505,6 +476,34 @@ class CRUD:
                         }
                     }
                 },
+                # Lookup for brand data
+                {
+                    "$lookup": {
+                        "from": "brand",
+                        "localField": "main_sponsor.brand_id",
+                        "foreignField": "_id",
+                        "as": "brand_info"
+                    }
+                },
+                {
+                    "$addFields": {
+                        "main_sponsor": {
+                            "$cond": {
+                                "if": { "$and": [ 
+                                    {"$gt": [{"$size": "$brand_info"}, 0]},
+                                    {"$ne": ["$main_sponsor", None]}
+                                ]},
+                                "then": {
+                                    "$mergeObjects": [
+                                        "$main_sponsor",
+                                        {"$arrayElemAt": ["$brand_info", 0]}
+                                    ]
+                                },
+                                "else": "$main_sponsor"
+                            }
+                        }
+                    }
+                },
                 # Lookup for poster data
                 {
                     "$lookup": {
@@ -531,7 +530,7 @@ class CRUD:
                         "as": "poster_data"
                     }
                 },
-                # Lookup for FYP #1 data
+                # Lookup for FYP data
                 {
                     "$lookup": {
                         "from": "_dmsfile",
@@ -554,40 +553,13 @@ class CRUD:
                                 }
                             }
                         ],
-                        "as": "fyp_1_data"
-                    }
-                },
-                # Lookup for FYP #2 data
-                {
-                    "$lookup": {
-                        "from": "_dmsfile",
-                        "let": { "content_id": { "$toString": "$_id" } },
-                        "pipeline": [
-                            {
-                                "$match": {
-                                    "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
-                                    "doctype": "8014149170ad41148f5ae01d9b0aac7b"
-                                }
-                            },
-                            {
-                                "$project": {
-                                    "id": "$_id",
-                                    "_id": 0,
-                                    "filename": "$filename",
-                                    "metadata": "$metadata",
-                                    "path": "$folder_path",
-                                    "info_file": "$filestat"
-                                }
-                            }
-                        ],
-                        "as": "fyp_2_data"
+                        "as": "fyp_data"
                     }
                 },
                 {
                     "$addFields": {
                         "poster": "$poster_data",
-                        "fyp_1": "$fyp_1_data", 
-                        "fyp_2": "$fyp_2_data"
+                        "fyp": "$fyp_data"
                     }
                 },
                 {"$skip": skip},  # Pagination skip stage
@@ -640,9 +612,9 @@ class CRUD:
                     # Replace list with grouped dictionary
                     data['poster'] = grouped_poster
 
-                if "fyp_1" in data and isinstance(data['fyp_1'], list):
+                if "fyp" in data and isinstance(data['fyp'], list):
                     grouped_fyp = {}
-                    for video_item in data['fyp_1']:
+                    for video_item in data['fyp']:
                         # Generate URL
                         video_item['url'] = None
                         if 'filename' in video_item:
@@ -667,36 +639,7 @@ class CRUD:
                         grouped_fyp[lang_key][res_key] = video_item
                         video_item.pop("metadata")
 
-                    data['fyp_1'] = grouped_fyp
-
-                if "fyp_2" in data and isinstance(data['fyp_2'], list):
-                    grouped_highlight = {}
-                    for video_item in data['fyp_2']:
-                        # Generate URL
-                        video_item['url'] = None
-                        if 'filename' in video_item:
-                            url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                            if url:
-                                video_item['url'] = url
-                        
-                        # Determine Keys
-                        lang_key = "other"
-                        res_key = "original"
-                        
-                        if "metadata" in video_item and video_item["metadata"]:
-                            if "Language" in video_item["metadata"]:
-                                lang_key = video_item["metadata"]["Language"].lower()
-                            if "Resolution" in video_item["metadata"]:
-                                res_key = video_item["metadata"]["Resolution"].lower()
-
-                        # Build Nested Dict
-                        if lang_key not in grouped_highlight:
-                            grouped_highlight[lang_key] = {}
-                        
-                        grouped_highlight[lang_key][res_key] = video_item
-                        video_item.pop("metadata")
-                        
-                    data['fyp_2'] = grouped_highlight
+                    data['fyp'] = grouped_fyp
 
             parsed_results = [ContentListItem(**item) for item in results]
 

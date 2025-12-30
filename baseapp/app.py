@@ -44,6 +44,8 @@ from baseapp.services.register.api import router as register_router # Register (
 
 from baseapp.services.content_search.api import router as content_search_router # Content Search API
 
+from baseapp.services.brand.api import router as brand_router # Brand API
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. BAGIAN STARTUP (Dijalankan sebelum aplikasi menerima request)
@@ -136,6 +138,7 @@ app.include_router(content_detail_router)
 app.include_router(register_router)
 # Content Search
 app.include_router(content_search_router)
+app.include_router(brand_router)
 
 @app.get("/v1/test")
 def read_root():
