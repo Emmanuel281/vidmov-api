@@ -13,9 +13,6 @@ class BrandCreateByOwner(Brand):
 class BrandResponseByOwner(BrandCreateByOwner):
     # Mewarisi semua field Brand (name, email, dll)
     id: str = Field(serialization_alias="id")
-    name: str
-    status: Status
-    org_id: str
     rec_date: Optional[datetime] = None
     rec_by: Optional[str] = None
     mod_date: Optional[datetime] = None

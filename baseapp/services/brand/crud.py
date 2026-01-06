@@ -55,6 +55,7 @@ class CRUD:
         obj["rec_date"] = datetime.now(timezone.utc)
         try:
             result = collection.insert_one(obj)
+            obj["id"] = obj.pop("_id")
             return BrandResponseByOwner(**obj)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
