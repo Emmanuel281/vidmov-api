@@ -29,7 +29,7 @@ case "$1" in
     postgresql_migrate)
         echo "Running PostgreSQL Migrations..."
         # 1. Jalankan Alembic untuk membuat tabel (Upgrade schema)
-        alembic upgrade head
+        exec alembic upgrade head
         
         # 2. (Opsional) Jalankan script seeding data awal jika Anda membuatnya
         # echo "Seeding initial data..."
@@ -39,8 +39,8 @@ case "$1" in
         ;;
     mongodb_migrate)
         echo "Running MongoDB Migrations..."
-        # 1. Jalankan manage.py untuk upgrade
-        python manage.py upgrade head
+        # 1. Jalankan Alembic untuk membuat tabel (Upgrade schema)
+        exec python manage.py upgrade head
         
         # 2. (Opsional) Jalankan script seeding data awal jika Anda membuatnya
         # echo "Seeding initial data..."
