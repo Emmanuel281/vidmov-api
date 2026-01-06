@@ -1,5 +1,4 @@
 from typing import Dict, List, Optional, Any
-from datetime import datetime
 import time
 
 from baseapp.config import mongodb, opensearch, minio, setting
@@ -7,11 +6,8 @@ from baseapp.model.common import ContentStatus
 from baseapp.utils.logger import Logger
 from baseapp.services.content_search.model import (
     ContentOpenSearchDocument,
-    ContentSearchItem,
-    ContentDetailSearchResponse,
     MediaFile,
-    GenreDetail,
-    BrandPlacementResponse
+    GenreDetail
 )
 
 config = setting.get_settings()

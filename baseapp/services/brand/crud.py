@@ -44,7 +44,7 @@ class CRUD:
             user_agent=self.user_agent
         )
 
-    def create_by_owner(self, data: BrandCreateByOwner):
+    def create(self, data: BrandCreateByOwner):
         """
         Insert a new brand into the collection.
         """
