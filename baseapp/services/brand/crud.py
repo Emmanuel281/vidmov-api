@@ -1,12 +1,13 @@
 from pymongo.errors import PyMongoError
+from minio.error import S3Error
 from typing import Optional, Dict, Any
 from pymongo import ASCENDING, DESCENDING
 from datetime import datetime, timezone
 
 from baseapp.utils.utility import generate_uuid
 from baseapp.model.common import UpdateStatus
-from baseapp.config import setting, mongodb
-from baseapp.services.brand.model import Brand, BrandCreateByOwner, BrandResponseByOwner
+from baseapp.config import setting, mongodb, minio
+from baseapp.services.brand.model import Brand, BrandCreateByOwner, BrandListResponse, BrandDetailResponse
 from baseapp.services.audit_trail_service import AuditTrailService
 from baseapp.utils.logger import Logger
 
@@ -20,6 +21,9 @@ class CRUD:
     def __enter__(self):
         self._mongo_context = mongodb.MongoConn()
         self.mongo = self._mongo_context.__enter__()
+
+        self._minio_context = minio.MinioConn()
+        self.minio = self._minio_context.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -56,7 +60,7 @@ class CRUD:
         try:
             result = collection.insert_one(obj)
             obj["id"] = obj.pop("_id")
-            return BrandResponseByOwner(**obj)
+            return BrandDetailResponse(**obj)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             raise ValueError("Database error occurred while creating document.") from pme
@@ -64,14 +68,125 @@ class CRUD:
             logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
             raise
 
-    def get_by_id(self, brand_id: str):
+    def get_by_id(self, brand_id: str, content_id: str = None):
         """
         Retrieve a brand by ID.
         """
         collection = self.mongo.get_database()[self.collection_name]
         try:
-            brand = collection.find_one({"_id": brand_id})
-            if not brand:
+            # Apply filters
+            query_filter = {"_id": brand_id}
+
+            # Selected field
+            selected_fields = {
+                "id": "$_id",
+                "name": 1,
+                "org_id": 1,
+                "logo": 1,
+                "ads_coin_mining": 1,
+                "ads_brand_placement": 1,
+                "_id": 0
+            }
+
+            # Aggregation pipeline
+            pipeline = [
+                {"$match": query_filter},  # Filter stage
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "brand_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$brand_id"] },
+                                    "doctype": "28f0634cdbea43f89010a147e365ae98" 
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "brand_logo_data"
+                    }
+                },
+                # Lookup for ads coin mining data
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "brand_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$brand_id"] },
+                                    "doctype": "d7fc34c825034be9a99763f1f0c4ad70"
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "ads_coin_mining_data"
+                    }
+                },
+                # Lookup for ads brand placement
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "brand_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$brand_id"] },
+                                    "doctype": "fdbbeaa7258844149c86cd1a283c541c",
+                                    "metadata": { "Content ID": content_id }  # Filter by Content ID if provided
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "ads_brand_placement_data"
+                    }
+                },
+                # Add fields for poster, fyp, and main_sponsor with logo
+                {
+                    "$addFields": {
+                        "logo": "$brand_logo_data",
+                        "ads_coin_mining": "$ads_coin_mining_data",
+                        "ads_brand_placement": "$ads_brand_placement_data",
+                    }
+                },
+                {"$project": selected_fields}  # Project only selected fields
+            ]
+
+            # Execute aggregation pipeline
+            cursor = collection.aggregate(pipeline)
+            results = list(cursor)
+
+            if len(results) > 0:
+                content_data = results[0]  # Get the first (and only) document
+            else:
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     self.mongo,
@@ -83,16 +198,18 @@ class CRUD:
                     error_message="Brand not found"
                 )
                 raise ValueError("Brand not found")
+
             # write audit trail for success
             self.audit_trail.log_audittrail(
                 self.mongo,
                 action="retrieve",
                 target=self.collection_name,
                 target_id=brand_id,
-                details={"_id": brand_id, "retrieved_data": brand_id},
+                details={"_id": brand_id, "retrieved_data": content_data},
                 status="success"
             )
-            return BrandResponseByOwner(**brand)
+
+            return BrandListResponse(**content_data)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             # write audit trail for fail
@@ -100,12 +217,22 @@ class CRUD:
                 self.mongo,
                 action="retrieve",
                 target=self.collection_name,
-                target_id=brand_id,
-                details={"_id": brand_id},
+                target_id=content_id,
+                details={"_id": content_id},
                 status="failure",
                 error_message=str(pme)
             )
             raise ValueError("Database error occurred while find document.") from pme
+        except S3Error as s3e:
+            logger.error(
+                "MinIO S3Error",
+                host=config.minio_host,
+                port=config.minio_port,
+                bucket=config.minio_bucket,
+                error=str(s3e.message),
+                error_type="S3Error"
+            )
+            raise ValueError("Minio presigned object failed") from s3e
         except Exception as e:
             logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
             raise
@@ -141,7 +268,7 @@ class CRUD:
                 details={"$set": obj},
                 status="success"
             )
-            return BrandResponseByOwner(**update_data)
+            return BrandDetailResponse(**update_data)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             # write audit trail for fail
@@ -191,7 +318,7 @@ class CRUD:
                 details={"$set": obj},
                 status="success"
             )
-            return BrandResponseByOwner(**update_data)
+            return BrandDetailResponse(**update_data)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
             # write audit trail for fail
@@ -237,9 +364,39 @@ class CRUD:
             # Aggregation pipeline
             pipeline = [
                 {"$match": query_filter},  # Filter stage
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "brand_id": { "$toString": "$_id" } },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$brand_id"] },
+                                    "doctype": "28f0634cdbea43f89010a147e365ae98" 
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
+                                }
+                            }
+                        ],
+                        "as": "brand_logo_data"
+                    }
+                },
                 {"$sort": {sort_field: order}},  # Sorting stage
                 {"$skip": skip},  # Pagination skip stage
                 {"$limit": limit},  # Pagination limit stage
+                {
+                    "$addFields": {
+                        "logo": "$brand_logo_data",
+                    }
+                },
                 {"$project": selected_fields}  # Project only selected fields
             ]
 
@@ -260,7 +417,7 @@ class CRUD:
                 status="success"
             )
 
-            parsed_results = [BrandResponseByOwner(**item) for item in results]
+            parsed_results = [BrandDetailResponse(**item) for item in results]
 
             return {
                 "data": parsed_results,

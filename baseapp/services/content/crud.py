@@ -50,7 +50,7 @@ class CRUD:
             ip_address=self.ip_address,
             user_agent=self.user_agent
         )
-
+    
     def create(self, data: Content):
         """
         Insert a new content into the collection.
@@ -116,27 +116,13 @@ class CRUD:
             # Aggregation pipeline
             pipeline = [
                 {"$match": query_filter},  # Filter stage
+                # lookup for genre details
                 {
                     "$lookup": {
                         "from": "_enum",  # The collection to join with
                         "localField": "genre",  # Array field in content collection
                         "foreignField": "_id",  # Field in genre_groups collection
                         "as": "genre_details"  # Output array field
-                    }
-                },
-                {
-                    "$addFields": {
-                        "genre_details": {
-                            "$map": {
-                                "input": "$genre_details",
-                                "as": "genre",
-                                "in": {
-                                    "id": "$$genre._id",
-                                    "value": "$$genre.value",
-                                    "sort": "$$genre.sort",
-                                }
-                            }
-                        }
                     }
                 },
                 # Lookup for brand data
@@ -251,9 +237,20 @@ class CRUD:
                         "as": "fyp_2_data"
                     }
                 },
-                # Add fields for poster, fyp, and main_sponsor with logo
+                # Add fields for genre_details, poster, fyp, and main_sponsor with logo
                 {
                     "$addFields": {
+                        "genre_details": {
+                            "$map": {
+                                "input": "$genre_details",
+                                "as": "genre",
+                                "in": {
+                                    "id": "$$genre._id",
+                                    "value": "$$genre.value",
+                                    "sort": "$$genre.sort",
+                                }
+                            }
+                        },
                         "poster": "$poster_data",
                         "fyp_1": "$fyp_1_data",
                         "fyp_2": "$fyp_2_data",
@@ -303,7 +300,7 @@ class CRUD:
                 action="retrieve",
                 target=self.collection_name,
                 target_id=content_id,
-                details={"_id": content_id, "retrieved_user": content_data},
+                details={"_id": content_id, "retrieved_data": content_data},
                 status="success"
             )
 
@@ -549,21 +546,6 @@ class CRUD:
                         "as": "genre_details"  # Output array field
                     }
                 },
-                {
-                    "$addFields": {
-                        "genre_details": {
-                            "$map": {
-                                "input": "$genre_details",
-                                "as": "genre",
-                                "in": {
-                                    "id": "$$genre._id",
-                                    "value": "$$genre.value",
-                                    "sort": "$$genre.sort",
-                                }
-                            }
-                        }
-                    }
-                },
                 # Lookup for brand data
                 {
                     "$lookup": {
@@ -679,6 +661,17 @@ class CRUD:
                 # Add fields for poster, fyp, and main_sponsor with logo
                 {
                     "$addFields": {
+                        "genre_details": {
+                            "$map": {
+                                "input": "$genre_details",
+                                "as": "genre",
+                                "in": {
+                                    "id": "$$genre._id",
+                                    "value": "$$genre.value",
+                                    "sort": "$$genre.sort",
+                                }
+                            }
+                        },
                         "poster": "$poster_data",
                         "fyp_1": "$fyp_1_data",
                         "fyp_2": "$fyp_2_data",
