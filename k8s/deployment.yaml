@@ -24,7 +24,7 @@ spec:
         - name: gai-registry
       containers:
         - name: migration
-          image: registry.gai.co.id/gai/arena-api:latest
+          image: registry.gai.co.id/gai/vidmov-api:latest
           args: ["postgresql_migrate"]
           resources:
             requests:
@@ -58,7 +58,7 @@ spec:
         - name: gai-registry
       containers:
         - name: migration
-          image: registry.gai.co.id/gai/arena-api:latest
+          image: registry.gai.co.id/gai/vidmov-api:latest
           args: ["mongodb_migrate"]
           resources:
             requests:
