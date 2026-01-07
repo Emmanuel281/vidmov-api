@@ -10,12 +10,14 @@ from baseapp.utils.utility import generate_uuid
 from baseapp.services.content.model import Content, ContentResponse, ContentDetailResponse, ContentListItem
 from baseapp.services.audit_trail_service import AuditTrailService
 from baseapp.services.content_search.hooks import content_search_hooks
+from baseapp.services.streaming.crud import StreamingURLMixin
 
 config = setting.get_settings()
 logger = Logger("baseapp.services.content.crud")
 
-class CRUD:
+class CRUD(StreamingURLMixin):
     def __init__(self, collection_name="content"):
+        super().__init__()
         self.collection_name = collection_name
         self.colls_content_video = "content_video"
         self.audit_trail = None
@@ -306,94 +308,29 @@ class CRUD:
 
             # presigned url
             if "poster" in content_data and isinstance(content_data['poster'], list):
-                grouped_poster = {}
-                for poster_item in content_data['poster']:
-                    # Generate URL
-                    poster_item['url'] = None
-                    if 'filename' in poster_item:
-                        url = self.minio.presigned_get_object(config.minio_bucket, poster_item['filename'])
-                        if url:
-                            poster_item['url'] = url
-                    
-                    # Grouping Logic
-                    lang_key = "other"
-                    if "metadata" in poster_item and poster_item["metadata"] and "Language" in poster_item["metadata"]:
-                        # Mengambil bahasa dari metadata, contoh: "ID" -> "id"
-                        lang_key = poster_item["metadata"]["Language"].lower()
-                    
-                    if lang_key not in grouped_poster:
-                        grouped_poster[lang_key] = {}
-                    
-                    grouped_poster[lang_key] = poster_item
-                    poster_item.pop("metadata")
-
-                # Replace list with grouped dictionary
-                content_data['poster'] = grouped_poster
+                content_data['poster'] = self.process_poster_items(
+                    content_id, 
+                    content_data['poster']
+                )
 
             if "fyp_1" in content_data and isinstance(content_data['fyp_1'], list):
-                grouped_fyp = {}
-                for video_item in content_data['fyp_1']:
-                    # Generate URL
-                    video_item['url'] = None
-                    if 'filename' in video_item:
-                        url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                        if url:
-                            video_item['url'] = url
-                    
-                    # Determine Keys
-                    lang_key = "other"
-                    res_key = "original"
-                    
-                    if "metadata" in video_item and video_item["metadata"]:
-                        if "Language" in video_item["metadata"]:
-                            lang_key = video_item["metadata"]["Language"].lower()
-                        if "Resolution" in video_item["metadata"]:
-                            res_key = video_item["metadata"]["Resolution"].lower()
-
-                    # Build Nested Dict
-                    if lang_key not in grouped_fyp:
-                        grouped_fyp[lang_key] = {}
-                    
-                    grouped_fyp[lang_key][res_key] = video_item
-                    video_item.pop("metadata")
-
-                content_data['fyp_1'] = grouped_fyp
+                content_data['fyp_1'] = self.process_video_items(
+                    content_id,
+                    content_data['fyp_1'],
+                    'fyp_1'
+                )
 
             if "fyp_2" in content_data and isinstance(content_data['fyp_2'], list):
-                grouped_fyp = {}
-                for video_item in content_data['fyp_2']:
-                    # Generate URL
-                    video_item['url'] = None
-                    if 'filename' in video_item:
-                        url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                        if url:
-                            video_item['url'] = url
-                    
-                    # Determine Keys
-                    lang_key = "other"
-                    res_key = "original"
-                    
-                    if "metadata" in video_item and video_item["metadata"]:
-                        if "Language" in video_item["metadata"]:
-                            lang_key = video_item["metadata"]["Language"].lower()
-                        if "Resolution" in video_item["metadata"]:
-                            res_key = video_item["metadata"]["Resolution"].lower()
-
-                    # Build Nested Dict
-                    if lang_key not in grouped_fyp:
-                        grouped_fyp[lang_key] = {}
-                    
-                    grouped_fyp[lang_key][res_key] = video_item
-                    video_item.pop("metadata")
-
-                content_data['fyp_2'] = grouped_fyp
+                content_data['fyp_2'] = self.process_video_items(
+                    content_id,
+                    content_data['fyp_2'],
+                    'fyp_2'
+                )
 
             if content_data.get("main_sponsor") and content_data["main_sponsor"].get("logo"):
-                    logo_data = content_data["main_sponsor"]["logo"]
-                    if "filename" in logo_data:
-                        # Generate URL menggunakan MinIO client
-                        url = self.minio.presigned_get_object(config.minio_bucket, logo_data['filename'])
-                        content_data["main_sponsor"]["logo_url"] = url
+                content_data["main_sponsor"] = self.add_logo_url(
+                    content_data["main_sponsor"]
+                )
 
             return ContentDetailResponse(**content_data)
         except PyMongoError as pme:
@@ -718,95 +655,33 @@ class CRUD:
                 )
 
             for i, data in enumerate(results):
+                content_id = data.get('id')
+
                 # presigned url
                 if "poster" in data and isinstance(data['poster'], list):
-                    grouped_poster = {}
-                    for poster_item in data['poster']:
-                        # Generate URL
-                        poster_item['url'] = None
-                        if 'filename' in poster_item:
-                            url = self.minio.presigned_get_object(config.minio_bucket, poster_item['filename'])
-                            if url:
-                                poster_item['url'] = url
-                        
-                        # Grouping Logic
-                        lang_key = "other"
-                        if "metadata" in poster_item and poster_item["metadata"] and "Language" in poster_item["metadata"]:
-                            lang_key = poster_item["metadata"]["Language"].lower()
-                        
-                        if lang_key not in grouped_poster:
-                            grouped_poster[lang_key] = {}
-                        
-                        grouped_poster[lang_key] = poster_item                    
-                        poster_item.pop("metadata")
-                        
-                    # Replace list with grouped dictionary
-                    data['poster'] = grouped_poster
+                    data['poster'] = self.process_poster_items(
+                        content_id,
+                        data['poster']
+                    )
 
                 if "fyp_1" in data and isinstance(data['fyp_1'], list):
-                    grouped_fyp = {}
-                    for video_item in data['fyp_1']:
-                        # Generate URL
-                        video_item['url'] = None
-                        if 'filename' in video_item:
-                            url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                            if url:
-                                video_item['url'] = url
-                        
-                        # Determine Keys
-                        lang_key = "other"
-                        res_key = "original"
-                        
-                        if "metadata" in video_item and video_item["metadata"]:
-                            if "Language" in video_item["metadata"]:
-                                lang_key = video_item["metadata"]["Language"].lower()
-                            if "Resolution" in video_item["metadata"]:
-                                res_key = video_item["metadata"]["Resolution"].lower()
-
-                        # Build Nested Dict
-                        if lang_key not in grouped_fyp:
-                            grouped_fyp[lang_key] = {}
-                        
-                        grouped_fyp[lang_key][res_key] = video_item
-                        video_item.pop("metadata")
-
-                    data['fyp_1'] = grouped_fyp
+                    data['fyp_1'] = self.process_video_items(
+                        content_id,
+                        data['fyp_1'],
+                        'fyp_1'
+                    )
 
                 if "fyp_2" in data and isinstance(data['fyp_2'], list):
-                    grouped_fyp = {}
-                    for video_item in data['fyp_2']:
-                        # Generate URL
-                        video_item['url'] = None
-                        if 'filename' in video_item:
-                            url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                            if url:
-                                video_item['url'] = url
-                        
-                        # Determine Keys
-                        lang_key = "other"
-                        res_key = "original"
-                        
-                        if "metadata" in video_item and video_item["metadata"]:
-                            if "Language" in video_item["metadata"]:
-                                lang_key = video_item["metadata"]["Language"].lower()
-                            if "Resolution" in video_item["metadata"]:
-                                res_key = video_item["metadata"]["Resolution"].lower()
-
-                        # Build Nested Dict
-                        if lang_key not in grouped_fyp:
-                            grouped_fyp[lang_key] = {}
-                        
-                        grouped_fyp[lang_key][res_key] = video_item
-                        video_item.pop("metadata")
-
-                    data['fyp_2'] = grouped_fyp
+                    data['fyp_2'] = self.process_video_items(
+                        content_id,
+                        data['fyp_2'],
+                        'fyp_2'
+                    )
 
                 if data.get("main_sponsor") and data["main_sponsor"].get("logo"):
-                    logo_data = data["main_sponsor"]["logo"]
-                    if "filename" in logo_data:
-                        # Generate URL menggunakan MinIO client
-                        url = self.minio.presigned_get_object(config.minio_bucket, logo_data['filename'])
-                        data["main_sponsor"]["logo_url"] = url
+                    data["main_sponsor"] = self.add_logo_url(
+                        data["main_sponsor"]
+                    )
 
             parsed_results = [ContentListItem(**item) for item in results]
 

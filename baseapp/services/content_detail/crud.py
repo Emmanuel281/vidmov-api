@@ -9,12 +9,14 @@ from baseapp.utils.logger import Logger
 from baseapp.utils.utility import generate_uuid
 from baseapp.services.content_detail.model import ContentDetail, ContentDetailResponse, ContentDetailListItem
 from baseapp.services.audit_trail_service import AuditTrailService
+from baseapp.services.streaming.crud import StreamingURLMixin
 
 config = setting.get_settings()
 logger = Logger("baseapp.services.content_detail.crud")
 
-class CRUD:
+class CRUD(StreamingURLMixin):
     def __init__(self, collection_name="content_video"):
+        super().__init__()
         self.collection_name = collection_name
         self.audit_trail = None
 
@@ -71,14 +73,14 @@ class CRUD:
             logger.exception(f"Unexpected error occurred while creating document: {str(e)}")
             raise
 
-    def get_by_id(self, content_id: str):
+    def get_by_id(self, episode_id: str):
         """
-        Retrieve a content by ID.
+        Retrieve a episode by ID.
         """
         collection = self.mongo.get_database()[self.collection_name]
         try:
             # Apply filters
-            query_filter = {"_id": content_id}
+            query_filter = {"_id": episode_id}
 
             # Selected field
             selected_fields = {
@@ -251,8 +253,8 @@ class CRUD:
                     self.mongo,
                     action="retrieve",
                     target=self.collection_name,
-                    target_id=content_id,
-                    details={"_id": content_id},
+                    target_id=episode_id,
+                    details={"_id": episode_id},
                     status="failure",
                     error_message="Content not found"
                 )
@@ -263,92 +265,34 @@ class CRUD:
                 self.mongo,
                 action="retrieve",
                 target=self.collection_name,
-                target_id=content_id,
-                details={"_id": content_id, "retrieved_user": content_data},
+                target_id=episode_id,
+                details={"_id": episode_id, "retrieved_data": content_data},
                 status="success"
             )
             
             # presigned url
             if "video" in content_data and isinstance(content_data['video'], list):
-                grouped_video = {}
-                for video_item in content_data['video']:
-                    # Generate URL
-                    video_item['url'] = None
-                    if 'filename' in video_item:
-                        url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                        if url:
-                            video_item['url'] = url
-                    
-                    # Determine Keys
-                    res_key = "original"
-                    
-                    if "metadata" in video_item and video_item["metadata"]:
-                        if "Resolution" in video_item["metadata"]:
-                            res_key = video_item["metadata"]["Resolution"].lower()
-
-                    # Build Nested Dict
-                    if res_key not in grouped_video:
-                        grouped_video[res_key] = {}
-                    
-                    grouped_video[res_key] = video_item
-                    video_item.pop("metadata")
-
-                content_data['video'] = grouped_video
+                content_data['video'] = self.process_episode_videos(
+                    episode_id,
+                    content_data['video']
+                )
 
             if "subtitle" in content_data and isinstance(content_data['subtitle'], list):
-                grouped_subs = {}
-                for subs_item in content_data['subtitle']:
-                    # Generate URL
-                    subs_item['url'] = None
-                    if 'filename' in subs_item:
-                        url = self.minio.presigned_get_object(config.minio_bucket, subs_item['filename'])
-                        if url:
-                            subs_item['url'] = url
-                    
-                    # Grouping Logic
-                    lang_key = "other"
-                    if "metadata" in subs_item and subs_item["metadata"] and "Language" in subs_item["metadata"]:
-                        lang_key = subs_item["metadata"]["Language"].lower()
-                    
-                    if lang_key not in grouped_subs:
-                        grouped_subs[lang_key] = {}
-                    
-                    grouped_subs[lang_key] = subs_item                    
-                    subs_item.pop("metadata")
-                    
-                # Replace list with grouped dictionary
-                content_data['subtitle'] = grouped_subs
+                content_data['subtitle'] = self.process_subtitle_items(
+                    episode_id,
+                    content_data['subtitle']
+                )
 
             if "dubbing" in content_data and isinstance(content_data['dubbing'], list):
-                grouped_dubbing = {}
-                for dubbing_item in content_data['dubbing']:
-                    # Generate URL
-                    dubbing_item['url'] = None
-                    if 'filename' in dubbing_item:
-                        url = self.minio.presigned_get_object(config.minio_bucket, dubbing_item['filename'])
-                        if url:
-                            dubbing_item['url'] = url
-                    
-                    # Grouping Logic
-                    lang_key = "other"
-                    if "metadata" in dubbing_item and dubbing_item["metadata"] and "Language" in dubbing_item["metadata"]:
-                        lang_key = dubbing_item["metadata"]["Language"].lower()
-                    
-                    if lang_key not in grouped_dubbing:
-                        grouped_dubbing[lang_key] = {}
-                    
-                    grouped_dubbing[lang_key] = dubbing_item                    
-                    dubbing_item.pop("metadata")
-                    
-                # Replace list with grouped dictionary
-                content_data['dubbing'] = grouped_dubbing
+                content_data['dubbing'] = self.process_dubbing_items(
+                    episode_id,
+                    content_data['dubbing']
+                )
 
             if content_data.get("episode_sponsor") and content_data["episode_sponsor"].get("logo"):
-                    logo_data = content_data["episode_sponsor"]["logo"]
-                    if "filename" in logo_data:
-                        # Generate URL menggunakan MinIO client
-                        url = self.minio.presigned_get_object(config.minio_bucket, logo_data['filename'])
-                        content_data["episode_sponsor"]["logo_url"] = url
+                content_data["episode_sponsor"] = self.add_logo_url(
+                    content_data["episode_sponsor"]
+                )
 
             return ContentDetailResponse(**content_data)
         except PyMongoError as pme:
@@ -358,8 +302,8 @@ class CRUD:
                 self.mongo,
                 action="retrieve",
                 target=self.collection_name,
-                target_id=content_id,
-                details={"_id": content_id},
+                target_id=episode_id,
+                details={"_id": episode_id},
                 status="failure",
                 error_message=str(pme)
             )
@@ -378,23 +322,23 @@ class CRUD:
             logger.exception(f"Unexpected error occurred while finding document: {str(e)}")
             raise
 
-    def update_by_id(self, content_id: str, data):
+    def update_by_id(self, episode_id: str, data):
         """
-        Update a role's data by ID.
+        Update a episode's data by ID.
         """
         collection = self.mongo.get_database()[self.collection_name]
         obj = data.model_dump()
         obj["mod_by"] = self.user_id
         obj["mod_date"] = datetime.now(timezone.utc)
         try:
-            update_content = collection.find_one_and_update({"_id": content_id}, {"$set": obj}, return_document=True)
+            update_content = collection.find_one_and_update({"_id": episode_id}, {"$set": obj}, return_document=True)
             if not update_content:
                 # write audit trail for fail
                 self.audit_trail.log_audittrail(
                     self.mongo,
                     action="update",
                     target=self.collection_name,
-                    target_id=content_id,
+                    target_id=episode_id,
                     details={"$set": obj},
                     status="failure",
                     error_message="Content not found"
@@ -405,7 +349,7 @@ class CRUD:
                 self.mongo,
                 action="update",
                 target=self.collection_name,
-                target_id=content_id,
+                target_id=episode_id,
                 details={"$set": obj},
                 status="success"
             )
@@ -418,7 +362,7 @@ class CRUD:
                 self.mongo,
                 action="update",
                 target=self.collection_name,
-                target_id=content_id,
+                target_id=episode_id,
                 details={"$set": obj},
                 status="failure",
                 error_message=str(pme)
@@ -568,21 +512,19 @@ class CRUD:
                 )
 
             for i, data in enumerate(results):
+                episode_detail_id = data.get('id')
+
                 # presigned url
                 if "video" in data and isinstance(data['video'], list):
-                    for video_item in data['video']:
-                        video_item['url'] = None
-                        if 'filename' in video_item:
-                            url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                            if url:
-                                video_item['url'] = url
+                    data['video'] = self.process_episode_videos(
+                        episode_detail_id,
+                        data['video']
+                    )
                 
                 if data.get("episode_sponsor") and data["episode_sponsor"].get("logo"):
-                    logo_data = data["episode_sponsor"]["logo"]
-                    if "filename" in logo_data:
-                        # Generate URL menggunakan MinIO client
-                        url = self.minio.presigned_get_object(config.minio_bucket, logo_data['filename'])
-                        data["episode_sponsor"]["logo_url"] = url
+                    data["episode_sponsor"] = self.add_logo_url(
+                        data["episode_sponsor"]
+                    )
 
             return {
                 "data": parsed_results,

@@ -46,6 +46,9 @@ from baseapp.services.content_search.api import router as content_search_router 
 
 from baseapp.services.brand.api import router as brand_router # Brand API
 
+from baseapp.services.streaming.api import router as streaming_router # Streaming API
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. BAGIAN STARTUP (Dijalankan sebelum aplikasi menerima request)
@@ -139,6 +142,8 @@ app.include_router(register_router)
 # Content Search
 app.include_router(content_search_router)
 app.include_router(brand_router)
+# Streaming
+app.include_router(streaming_router)
 
 @app.get("/v1/test")
 def read_root():
