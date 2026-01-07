@@ -62,10 +62,17 @@ def main():
             # Test 4: List Objects
             print_header("Bucket Access Tests")
             try:
-                objects = list(client.list_objects(config.minio_bucket, max_keys=5))
+                # MinIO list_objects doesn't have max_keys, use iterator
+                objects_iter = client.list_objects(config.minio_bucket)
+                objects = []
+                for i, obj in enumerate(objects_iter):
+                    objects.append(obj)
+                    if i >= 4:  # Get first 5 objects
+                        break
+                
                 if objects:
                     print_result("List objects in bucket", True, 
-                               f"Found {len(objects)} objects")
+                               f"Found {len(objects)}+ objects")
                     print("\n  Sample objects:")
                     for obj in objects[:3]:
                         print(f"    - {obj.object_name} ({obj.size} bytes)")
