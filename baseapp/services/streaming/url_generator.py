@@ -19,30 +19,30 @@ class StreamingURLGenerator:
     ) -> str:
         """Generate URL untuk video streaming"""
         return (
-            f"{self.api_base_url}/api/stream/video/"
+            f"{self.api_base_url}v1/stream/video/"
             f"{content_id}/{video_type}/{language}/{resolution}"
         )
     
     def generate_poster_url(self, content_id: str, language: str) -> str:
         """Generate URL untuk poster"""
-        return f"{self.api_base_url}/api/stream/poster/{content_id}/{language}"
+        return f"{self.api_base_url}v1/stream/poster/{content_id}/{language}"
     
     def generate_logo_url(self, brand_id: str) -> str:
         """Generate URL untuk brand logo"""
-        return f"{self.api_base_url}/api/stream/logo/{brand_id}"
+        return f"{self.api_base_url}v1/stream/logo/{brand_id}"
     
     def generate_subtitle_url(self, episode_id: str, language: str) -> str:
         """Generate URL untuk subtitle"""
-        return f"{self.api_base_url}/api/stream/subtitle/{episode_id}/{language}"
+        return f"{self.api_base_url}v1/stream/subtitle/{episode_id}/{language}"
     
     def generate_dubbing_url(self, episode_id: str, language: str) -> str:
         """Generate URL untuk dubbing"""
-        return f"{self.api_base_url}/api/stream/dubbing/{episode_id}/{language}"
+        return f"{self.api_base_url}v1/stream/dubbing/{episode_id}/{language}"
     
     def generate_episode_video_url(self, episode_id: str, resolution: str = "original") -> str:
         """Generate URL untuk episode video"""
-        return f"{self.api_base_url}/api/stream/episode-video/{episode_id}/{resolution}"
+        return f"{self.api_base_url}v1/stream/episode-video/{episode_id}/{resolution}"
     
     def generate_file_url(self, filename: str) -> str:
         """Generate generic URL untuk file by filename"""
-        return f"{self.api_base_url}/api/stream/file/{filename}"
+        return f"{self.api_base_url}v1/stream/file/{filename}"

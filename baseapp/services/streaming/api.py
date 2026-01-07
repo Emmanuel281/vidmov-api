@@ -13,7 +13,7 @@ from baseapp.utils.logger import Logger
 config = setting.get_settings()
 permission_checker = PermissionChecker()
 logger = Logger("baseapp.services.streaming.resolver")
-router = APIRouter(prefix="/v1/content", tags=["Content"])
+router = APIRouter(prefix="/v1/stream", tags=["Streaming"])
 
 @router.get("/video/{content_id}/{video_type}/{language}/{resolution}")
 async def stream_video(
