@@ -56,7 +56,7 @@ class MediaResolver:
                 query["metadata.Language"] = language.upper()
             
             if resolution:
-                query["metadata.Resolution"] = resolution
+                query["metadata.Resolution"] = resolution.upper()
             
             # Find file
             file_doc = collection.find_one(query, {"filename": 1})
