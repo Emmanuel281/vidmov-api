@@ -57,6 +57,14 @@ def get_minio_client():
         secure = secure_val.lower() == 'true'
     else:
         secure = bool(secure_val)
+        
+    # Debug prints
+    print(f"[DEBUG] MinIO Configuration:")
+    print(f"  Endpoint: {endpoint}")
+    print(f"  Access Key: {access_key}")
+    print(f"  Secret Key: {secret_key[:5]}..." if len(secret_key) > 5 else f"  Secret Key: {secret_key}")
+    print(f"  Secure (SSL): {secure}")
+    print(f"  Secure Type: {type(secure_val)} -> {type(secure)}")
 
     return Minio(
         endpoint,
