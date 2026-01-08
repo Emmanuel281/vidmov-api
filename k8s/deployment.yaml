@@ -267,26 +267,26 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: arena-video-sync-worker
+  name: arena-video-compiler-worker
   namespace: gai-arena
   labels:
-    app: arena-video-sync-worker
+    app: arena-video-compiler-worker
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: arena-video-sync-worker
+      app: arena-video-compiler-worker
   template:
     metadata:
       labels:
-        app: arena-video-sync-worker
+        app: arena-video-compiler-worker
     spec:
       imagePullSecrets:
         - name: gai-registry
       containers:
-        - name: video-sync-worker
+        - name: video-compiler-worker
           image: registry.gai.co.id/gai/vidmov-api:latest
-          args: ["video_worker"]
+          args: ["redis_worker", "--queue", "video_convert_tasks"]
           resources:
             requests:
               memory: "1000Mi"

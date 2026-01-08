@@ -59,3 +59,14 @@ def test_redis_worker():
     except Exception as e:
         logger.error(f"Failed to publish message to Redis: {e}")
         raise
+    
+def test_redis_video_worker():
+    logger.info("Redis worker test connection")
+    try:
+        with redis.RedisConn() as redis_conn:
+            queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name="video_convert_tasks")
+            queue_manager.enqueue_task({"file": "4845cbb7e2384723abeb4ff09bcbf2a.mp4", "output": "processed/4845cbb7e2384723abeb4ff09bcbf2a1"})
+        return "Redis worker: Task enqueued successfully."
+    except Exception as e:
+        logger.error(f"Failed to publish message to Redis: {e}")
+        raise

@@ -27,6 +27,9 @@ GET {{host}}/v1/test/redis
 ### MINIO TESTING
 GET {{host}}/v1/test/minio
 
+### Video task TESTING
+GET {{host}}/v1/test/redis-worker-video-convert
+
 ###
 # GROUP: ENUM
 ###

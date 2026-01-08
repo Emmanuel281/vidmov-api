@@ -37,6 +37,11 @@ async def test_redis_worker() -> ApiResponse:
     resp = test.test_redis_worker()
     return ApiResponse(status=0, message=resp)
 
+@router.get("/redis-worker-video-convert")
+async def test_redis_video_worker() -> ApiResponse:
+    resp = test.test_redis_video_worker()
+    return ApiResponse(status=0, message=resp)
+
 @router.get("/all", response_model=ApiResponse)
 async def test_all_connections() -> ApiResponse:
     results = {}

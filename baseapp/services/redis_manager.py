@@ -14,11 +14,13 @@ logger = logging.getLogger("baseapp.services.redis_manager")
 from baseapp.services._redis_worker.email_worker import EmailWorker
 from baseapp.services._redis_worker.delete_file_worker import DeleteFileWorker
 from baseapp.services._redis_worker.content_sync_worker import ContentSyncWorker
+from baseapp.services._redis_worker.video_worker import VideoWorker
 
 WORKER_MAP = {
     "otp_tasks": EmailWorker,
     "minio_delete_file_tasks": DeleteFileWorker,
-    "content_sync_tasks": ContentSyncWorker
+    "content_sync_tasks": ContentSyncWorker,
+    "video_convert_tasks": VideoWorker
 }
 
 worker = None
