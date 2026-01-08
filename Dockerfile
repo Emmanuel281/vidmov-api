@@ -24,7 +24,7 @@ FROM python:3.12.3-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache libmagic
+RUN apk add --no-cache libmagic ffmpeg
 
 # Buat user non-root untuk keamanan
 RUN addgroup -S app && adduser -S -G app app
