@@ -34,8 +34,7 @@ Content-Type: application/json
     "episode_price":21,
     "episode_sponsor":{
         "org_id":"e190910982024c87a514512467edf47f",
-        "brand_name":"Kopi Kenangan",
-        "campaign_name":"Nusantara Rasa"
+        "brand_id":"e190910982024c87a514512467edf47f"
     },
     "status":"DRAFT" 
 }
@@ -55,8 +54,7 @@ Content-Type: application/json
     "episode_price":21,
     "episode_sponsor":{
         "org_id":"e190910982024c87a514512467edf47f",
-        "brand_name":"Kopi Kenangan",
-        "campaign_name":"Nusantara Rasa"
+        "brand_id":"e190910982024c87a514512467edf47f"
     },
 }
 

@@ -6,10 +6,10 @@ from pydantic import field_validator
 
 class BrandPlacement(BaseModel):
     org_id: str = Field(..., description="ID dari user/organisasi Brand (Authority 8)")
-    brand_name: str = Field(..., description="Nama brand yang akan muncul di player")
-    campaign_name: str
-    # logo_url: str = Field(..., description="URL logo brand yang akan muncul di player")
-    # cta_url: Optional[str] = Field(None, description="Link redirect jika user klik logo")
+    brand_id: str = Field(..., description="ID brand yang dipilih dari brand milik organisasi tersebut")
+    name: Optional[str] = Field(None, description="Nama brand dari hasil lookup")
+    logo: Optional[Dict[str, Any]] = Field(None, description="Logo brand dari hasil lookup")
+    logo_url: Optional[str] = None
 
 class Content(BaseModel):
     title: Dict[str, str] = Field(description="Title in multiple languages. Example: {'id': 'Judul', 'en': 'Title'}")
@@ -46,7 +46,7 @@ class ContentUpdate(BaseModel):
     release_date: datetime = Field(description="Release date of the short drama (YYYY-MM-DD). example: 2025-03-20T00:00:00Z")
     cast: Optional[List[str]] = Field(default=None, description="Cast of short drama.")
     tags: Optional[List[str]] = Field(default=None, description="Tags of the short drama.")
-    license_from: str = Field(description="License from whom the content is acquired. E.g., 'Turkey, Korea, Indonesia'")
+    license_from: Optional[str] = Field(default=None, description="License from whom the content is acquired. E.g., 'Turkey, Korea, Indonesia'")
     licence_date_start: Optional[datetime] = Field(default=None, description="License date (start) of the short drama (YYYY-MM-DD). example: 2025-03-20T00:00:00Z")
     licence_date_end: Optional[datetime] = Field(default=None, description="License date (end) of the short drama (YYYY-MM-DD). example: 2025-03-20T00:00:00Z")
     origin: Optional[str] = Field(default="Indonesia", description="Origin country of the content.")

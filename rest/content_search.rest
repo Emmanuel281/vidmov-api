@@ -1,0 +1,403 @@
+@prod = https://arena.gai.co.id/service
+@dev = http://localhost:17178
+@host = {{prod}}
+
+# --- TOKENS ---
+# Token Owner (Arena)
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiZjc4ODZhOTliNmIyNGVmZmFiYjczYmQ1M2YzYzliMDQiLCJyb2xlcyI6WyI3ZTU3YzBkOTQxYTc0YWE3YTZlZDhhNTI2MGI3MzVkNiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6IjcxNDgwMTc1NDI5ODQ4NDliYTE3YTlkOGZiMTBiMGZiIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6MTUsIl9kbXNkb2N0eXBlIjo3LCJfZG1zYnJvd3NlIjoxNTksImNvbnRlbnQiOjE5MSwid2FsbGV0Ijo3LCJ0b3B1cCI6NywiYWRzIjoxLCJxcl9wcm9kdWN0IjoxLCJidW5kbGluZyI6MSwiZ2l2ZWF3YXkiOjF9LCJiaXR3cyI6eyJWSUVXIjoxLCJBREQiOjIsIkVESVQiOjQsIkRFTEVURSI6OCwiRVhQT1JUIjoxNiwiSU1QT1JUIjozMiwiQVBQUk9WQUwiOjY0LCJTRVRUSU5HIjoxMjh9LCJzZXNzaW9uX2lkIjoiMTQ1YmY0MjM4ZDgxNDk5NmE1NjJiYjgxMTIwYTExOTIiLCJleHAiOjE3Njc2MDQzNzksImp0aSI6Ijk1MDUwMDRiMDY0ZjRjODJhMmFjNWQ2OTIxYjQ3MTdmIn0.X_Of2EDbvOy4IafUoi3okcJYNuo7TXgH2k9I75yaMEE
+# Token Partner
+@partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
+# Token Client
+@client = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbGV4X3BlamF0ZW5AZ21haWwuY29tIiwiaWQiOiIxZDYzODQ4Yy0xMzYyLTQwMzQtOTBiNS0xMmVmODYzZGMzZTMiLCJyb2xlcyI6WyJlNTBiMTdlYS0wM2E0LTQ0OWUtYThhZS1kOGY3M2FjMDM3NzEiXSwiYXV0aG9yaXR5Ijo0LCJvcmdfaWQiOiIyYjIyYjE1MS00NjQ0LTQ4NTMtYmM4ZS0zMTYyMjdkMTQxMzAiLCJmZWF0dXJlcyI6eyJfdXNlciI6NywiX3JvbGUiOjE1LCJfZW51bSI6MSwiX2F1ZGl0dHJhaWwiOjEsIl9mZWF0dXJlIjo1LCJfZGFzaGJvYXJkIjoxLCJfbXlvcmciOjUsIl9teXByb2ZpbGUiOjUsIl9kbXNpbmRleGxpc3QiOjE1LCJfZG1zZG9jdHlwZSI6MTUsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTd9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIyMTQxODd9.XfMS9TBBa9U-lI5bG9RHNO48i_H-LFKQmJqCcCQ5Jws
+
+# DEFAULT TOKEN (Ubah variabel ini untuk mengganti role aktif)
+@token = {{owner}}
+
+###
+# ====================================================================
+# GROUP: CONTENT SEARCH (Public API - Mobile Apps)
+# ====================================================================
+###
+
+### Basic Search - Simple text query
+# Query: cinta
+# Returns: Content with "cinta" in title, synopsis, cast, or tags
+GET {{host}}/v1/content/search/?q=kasih
+Authorization: Bearer {{token}}
+
+### Search with Language Preference
+# Language: id (Indonesian) or en (English)
+# Default: id
+GET {{host}}/v1/content/search/?q=love&language=id
+
+### Search with Pagination
+# page: Page number (default: 1)
+# page_size: Items per page (default: 20, max: 100)
+GET {{host}}/v1/content/search/?q=kasih&page=1&page_size=10
+
+### Search with Genre Filter
+# genres: Comma-separated genre IDs
+GET {{host}}/v1/content/search/?genres=9a4c0f5a9c2a4b15bfaee6db589d6068
+Authorization: Bearer {{token}}
+
+### Search with Multiple Genres
+GET {{host}}/v1/content/search/?genres=9a4c0f5a9c2a4b15bfaee6db589d6068,genre2,genre3
+Authorization: Bearer {{token}}
+
+### Search with Tags Filter
+# tags: Comma-separated tags
+GET {{host}}/v1/content/search/?tags=CEO love triangle,Money and Power
+Authorization: Bearer {{token}}
+
+### Search with Cast Filter
+# cast: Filter by actor/actress name
+GET {{host}}/v1/content/search/?cast=Alex
+Authorization: Bearer {{token}}
+
+### Search with Origin Filter
+# origin: Country of origin
+GET {{host}}/v1/content/search/?origin=Indonesia
+Authorization: Bearer {{token}}
+
+### Search with Territory Filter
+# territory: Available territories
+GET {{host}}/v1/content/search/?territory=Indonesia
+Authorization: Bearer {{token}}
+
+### Search with Rating Filter
+# min_rating: Minimum rating (0.0 - 10.0)
+# max_rating: Maximum rating (0.0 - 10.0)
+GET {{host}}/v1/content/search/?min_rating=4.0&max_rating=5.0
+Authorization: Bearer {{token}}
+
+### Search with Mature Content Filter
+# mature_content: true/false
+GET {{host}}/v1/content/search/?mature_content=false
+Authorization: Bearer {{token}}
+
+### Search with Sorting - By Rating
+# sort_by: relevance, rating, views, release_date
+# Default: relevance
+GET {{host}}/v1/content/search/?sort_by=rating
+Authorization: Bearer {{token}}
+
+### Search with Sorting - By Views
+GET {{host}}/v1/content/search/?sort_by=views
+Authorization: Bearer {{token}}
+
+### Search with Sorting - By Release Date
+GET {{host}}/v1/content/search/?sort_by=release_date
+Authorization: Bearer {{token}}
+
+### Complex Search - Multiple Filters
+# Combine: query + genres + rating + mature_content + sort + pagination
+GET {{host}}/v1/content/search/?q=kasih&genres=9a4c0f5a9c2a4b15bfaee6db589d6068&min_rating=4.0&mature_content=false&sort_by=rating&page=1&page_size=20
+Authorization: Bearer {{token}}
+
+### Browse All Published Content
+# No query - returns all published content
+GET {{host}}/v1/content/search/?page=1&page_size=50
+Authorization: Bearer {{token}}
+
+### Genre-specific Browse
+# Browse content by specific genre only
+GET {{host}}/v1/content/search/?genres=9a4c0f5a9c2a4b15bfaee6db589d6068&sort_by=views&page_size=30
+Authorization: Bearer {{token}}
+
+###
+# ====================================================================
+# GROUP: CONTENT DETAIL
+# ====================================================================
+###
+
+### Get Content Detail by ID
+# Returns: Full content details with all media files (poster, videos)
+# Includes: Presigned URLs for all media (valid 7 days)
+GET {{host}}/v1/content/search/8a66f138350e401d919d9125511fc7ab
+Authorization: Bearer {{token}}
+
+###
+# ====================================================================
+# GROUP: AUTOCOMPLETE & SUGGESTIONS
+# ====================================================================
+###
+
+### Autocomplete - Indonesian
+# Returns: Title suggestions based on Indonesian text
+# Use for: Search box autocomplete
+GET {{host}}/v1/content/search/suggest/autocomplete?q=kis&language=id
+
+### Autocomplete - English
+# Returns: Title suggestions based on English text
+GET {{host}}/v1/content/search/suggest/autocomplete?q=school&language=en
+
+### Autocomplete with Limit
+# limit: Max suggestions (default: 10, max: 20)
+GET {{host}}/v1/content/search/suggest/autocomplete?q=kis&language=id&limit=5
+
+###
+# ====================================================================
+# GROUP: DISCOVERY & TRENDING
+# ====================================================================
+###
+
+### Get Trending Content
+# Returns: Popular content based on views and saves
+# Use for: Homepage "Trending Now" section
+GET {{host}}/v1/content/search/discover/trending
+
+### Get Trending with Limit
+# limit: Number of items (default: 20, max: 50)
+GET {{host}}/v1/content/search/discover/trending?limit=10
+
+###
+# ====================================================================
+# GROUP: FILTERS & METADATA
+# ====================================================================
+###
+
+### Get Available Genres
+# Returns: All genres that have content
+# Use for: Genre filter dropdown/chips
+GET {{host}}/v1/content/search/filters/genres
+
+### Get Popular Tags
+# Returns: Most used tags with document count
+# Use for: Tag cloud, trending tags
+GET {{host}}/v1/content/search/filters/tags
+
+### Get Popular Tags with Limit
+# limit: Max tags to return (default: 50, max: 100)
+GET {{host}}/v1/content/search/filters/tags?limit=20
+
+###
+# ====================================================================
+# GROUP: ADMIN ENDPOINTS (Internal/Backend Only)
+# ====================================================================
+###
+
+### Setup OpenSearch Index
+# Creates index with proper mapping
+# Run once during initial deployment
+# Idempotent - safe to run multiple times
+POST {{host}}/v1/content/search/admin/setup
+Authorization: Bearer {{owner}}
+
+### Sync Single Content
+# Manually sync specific content from MongoDB to OpenSearch
+# Use when: Need to re-index specific content
+POST {{host}}/v1/content/search/admin/sync/fc3d27cf64274413ab74b3f72122707b
+Authorization: Bearer {{owner}}
+
+### Bulk Sync All Content
+# Sync all content from MongoDB to OpenSearch
+# Use for: Initial data load, full re-sync
+# Warning: Can take several minutes for large datasets
+POST {{host}}/v1/content/search/admin/sync/bulk
+Authorization: Bearer {{owner}}
+
+### Bulk Sync with Custom Batch Size
+# batch_size: Number of documents per batch (default: 1000)
+# Smaller batch = slower but safer
+# Larger batch = faster but more memory
+POST {{host}}/v1/content/search/admin/sync/bulk?batch_size=500
+Authorization: Bearer {{owner}}
+
+### Delete Content from Search Index
+# Remove content from OpenSearch (not from MongoDB)
+# Use when: Content deleted from MongoDB
+DELETE {{host}}/v1/content/search/admin/sync/fc3d27cf64274413ab74b3f72122707b
+Authorization: Bearer {{owner}}
+
+### Get Sync Statistics
+# Returns: Sync status between MongoDB and OpenSearch
+# Shows: Document counts, sync status, differences
+GET {{host}}/v1/content/search/admin/stats
+Authorization: Bearer {{owner}}
+
+###
+# ====================================================================
+# MOBILE APP INTEGRATION EXAMPLES
+# ====================================================================
+###
+
+### Example 1: Homepage - For You Section
+# Show trending content when app opens
+GET {{host}}/v1/content/search/discover/trending?limit=20
+
+### Example 2: Search Screen - User Types
+# Real-time autocomplete as user types
+GET {{host}}/v1/content/search/suggest/autocomplete?q=kis&language=id&limit=10
+
+### Example 3: Search Results
+# User submits search query
+GET {{host}}/v1/content/search/?q=kasih&page=1&page_size=20
+
+### Example 4: Genre Browse
+# User taps "Romance" genre
+GET {{host}}/v1/content/search/?genres=9a4c0f5a9c2a4b15bfaee6db589d6068&sort_by=rating&page_size=30
+
+### Example 5: Filter by Rating
+# User applies rating filter (4+ stars)
+GET {{host}}/v1/content/search/?min_rating=4.0&sort_by=rating
+
+### Example 6: Family Friendly Content
+# Filter out mature content
+GET {{host}}/v1/content/search/?mature_content=false&sort_by=views
+
+### Example 7: Actor Search
+# Find all content with specific actor
+GET {{host}}/v1/content/search/?cast=Alex&sort_by=release_date
+
+### Example 8: Advanced Search
+# User applies multiple filters
+GET {{host}}/v1/content/search/?q=kasih&genres=9a4c0f5a9c2a4b15bfaee6db589d6068&origin=Indonesia&min_rating=4.0&mature_content=false&sort_by=rating&page=1&page_size=20
+
+### Example 9: Infinite Scroll - Next Page
+# Load more results when user scrolls
+GET {{host}}/v1/content/search/?q=cinta&page=2&page_size=20
+
+### Example 10: Content Detail
+# User taps on content card
+GET {{host}}/v1/content/search/fc3d27cf64274413ab74b3f72122707b
+
+###
+# ====================================================================
+# TESTING SCENARIOS
+# ====================================================================
+###
+
+### Test 1: Empty Search (Browse All)
+# Should return all published content
+GET {{host}}/v1/content/search/
+
+### Test 2: No Results
+# Should return empty array
+GET {{host}}/v1/content/search/?q=xyznonexistent12345
+
+### Test 3: Case Insensitive
+# Should return same results regardless of case
+GET {{host}}/v1/content/search/?q=CINTA
+GET {{host}}/v1/content/search/?q=cinta
+GET {{host}}/v1/content/search/?q=CiNtA
+
+### Test 4: Multi-language Search
+# Indonesian query
+GET {{host}}/v1/content/search/?q=kasih&language=id
+# English query
+GET {{host}}/v1/content/search/?q=love&language=en
+
+### Test 5: Pagination Limits
+# Max page_size (100)
+GET {{host}}/v1/content/search/?page_size=100
+# Invalid page_size (should use default 20)
+GET {{host}}/v1/content/search/?page_size=1000
+
+### Test 6: Invalid Content ID
+# Should return 404
+GET {{host}}/v1/content/search/invalid-id-12345
+
+### Test 7: Multiple Filters Combination
+# Complex query with all filters
+GET {{host}}/v1/content/search/?q=love&genres=genre1,genre2&tags=romance,drama&cast=Alex&origin=Indonesia&territory=Indonesia&min_rating=3.5&max_rating=5.0&mature_content=false&sort_by=rating&page=1&page_size=25
+
+###
+# ====================================================================
+# PERFORMANCE TESTING
+# ====================================================================
+###
+
+### Performance Test: Simple Query
+# Expected: < 500ms
+GET {{host}}/v1/content/search/?q=test
+
+### Performance Test: Complex Query
+# Expected: < 1000ms
+GET {{host}}/v1/content/search/?q=love&genres=genre1,genre2,genre3&min_rating=4.0&sort_by=rating&page=1&page_size=50
+
+### Performance Test: Autocomplete
+# Expected: < 100ms
+GET {{host}}/v1/content/search/suggest/autocomplete?q=lov
+
+### Performance Test: Trending
+# Expected: < 200ms (recommend caching)
+GET {{host}}/v1/content/search/discover/trending?limit=20
+
+###
+# ====================================================================
+# NOTES & TIPS
+# ====================================================================
+###
+
+# QUERY PARAMETERS SUMMARY:
+# -------------------------
+# q               - Search query (text)
+# language        - id | en (default: id)
+# genres          - Comma-separated genre IDs
+# tags            - Comma-separated tags
+# cast            - Actor/actress name
+# origin          - Country of origin
+# territory       - Available territory
+# min_rating      - 0.0 - 10.0
+# max_rating      - 0.0 - 10.0
+# mature_content  - true | false
+# sort_by         - relevance | rating | views | release_date
+# page            - Page number (≥ 1)
+# page_size       - Items per page (1-100)
+
+# RESPONSE STRUCTURE:
+# -------------------
+# Search Response:
+# {
+#   "status": 0,
+#   "message": "Search completed",
+#   "data": {
+#     "total": 150,
+#     "page": 1,
+#     "page_size": 20,
+#     "total_pages": 8,
+#     "items": [...]
+#   }
+# }
+
+# Content Detail Response:
+# {
+#   "status": 0,
+#   "message": "Content found",
+#   "data": {
+#     "id": "...",
+#     "title": {"id": "...", "en": "..."},
+#     "synopsis": {"id": "...", "en": "..."},
+#     "genre_details": [...],
+#     "poster": {"id": {...}, "en": {...}},
+#     "fyp_1": {"id": {"1080p": {...}, "720p": {...}}},
+#     "fyp_2": {...},
+#     ...
+#   }
+# }
+
+# BEST PRACTICES:
+# ---------------
+# 1. Always use pagination (default page_size: 20)
+# 2. Cache trending results (5-10 minutes)
+# 3. Cache genre/tags lists (1 hour)
+# 4. Implement debounce for autocomplete (300ms)
+# 5. Use language parameter based on user preference
+# 6. Filter mature_content=false for family apps
+# 7. Combine filters for better UX (e.g., genre + rating)
+# 8. Use sort_by=relevance for search queries
+# 9. Use sort_by=rating for browse/discover
+# 10. Monitor response times and adjust caching
+
+# MOBILE APP RECOMMENDATIONS:
+# ---------------------------
+# - Implement infinite scroll with page parameter
+# - Show loading skeleton while fetching
+# - Cache autocomplete suggestions locally
+# - Preload next page for smooth scrolling
+# - Show genre chips for quick filtering
+# - Implement search history
+# - Add "Popular Searches" based on trending tags
+# - Use presigned URLs directly for media display
+# - Implement retry logic for failed requests
+# - Handle empty results gracefully

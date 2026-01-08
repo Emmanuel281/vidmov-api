@@ -9,15 +9,18 @@ from baseapp.utils.logger import Logger
 from baseapp.utils.utility import generate_uuid
 from baseapp.services.content.model import Content, ContentResponse, ContentDetailResponse, ContentListItem
 from baseapp.services.audit_trail_service import AuditTrailService
+from baseapp.services.content_search.hooks import content_search_hooks
+from baseapp.services.streaming.crud import StreamingURLMixin
 
 config = setting.get_settings()
 logger = Logger("baseapp.services.content.crud")
 
-class CRUD:
+class CRUD(StreamingURLMixin):
     def __init__(self, collection_name="content"):
+        super().__init__()
         self.collection_name = collection_name
+        self.colls_content_video = "content_video"
         self.audit_trail = None
-        self.minio_conn = minio.MinioConn()
 
     def __enter__(self):
         self._mongo_context = mongodb.MongoConn()
@@ -49,10 +52,10 @@ class CRUD:
             ip_address=self.ip_address,
             user_agent=self.user_agent
         )
-
+    
     def create(self, data: Content):
         """
-        Insert a new role into the collection.
+        Insert a new content into the collection.
         """
         collection = self.mongo.get_database()[self.collection_name]
 
@@ -64,6 +67,10 @@ class CRUD:
         try:
             result = collection.insert_one(obj)
             obj["id"] = obj.pop("_id")
+            
+            # Enqueue sync task
+            content_search_hooks.after_create(obj["id"], obj)
+
             return ContentResponse(**obj)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
@@ -111,6 +118,7 @@ class CRUD:
             # Aggregation pipeline
             pipeline = [
                 {"$match": query_filter},  # Filter stage
+                # lookup for genre details
                 {
                     "$lookup": {
                         "from": "_enum",  # The collection to join with
@@ -119,19 +127,38 @@ class CRUD:
                         "as": "genre_details"  # Output array field
                     }
                 },
+                # Lookup for brand data
                 {
-                    "$addFields": {
-                        "genre_details": {
-                            "$map": {
-                                "input": "$genre_details",
-                                "as": "genre",
-                                "in": {
-                                    "id": "$$genre._id",
-                                    "value": "$$genre.value",
-                                    "sort": "$$genre.sort",
+                    "$lookup": {
+                        "from": "brand",
+                        "localField": "main_sponsor.brand_id",
+                        "foreignField": "_id",
+                        "as": "brand_info"
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "brand_id": "$main_sponsor.brand_id" },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$brand_id"] },
+                                    "doctype": "28f0634cdbea43f89010a147e365ae98" 
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
                                 }
                             }
-                        }
+                        ],
+                        "as": "brand_logo_data"
                     }
                 },
                 # Lookup for poster data
@@ -160,7 +187,7 @@ class CRUD:
                         "as": "poster_data"
                     }
                 },
-                # Lookup for FYP #1 data
+                # Lookup for FYP data
                 {
                     "$lookup": {
                         "from": "_dmsfile",
@@ -195,7 +222,7 @@ class CRUD:
                             {
                                 "$match": {
                                     "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
-                                    "doctype": "8014149170ad41148f5ae01d9b0aac7b"
+                                    "doctype": "3551a74699394f22b21ecf8277befa39"
                                 }
                             },
                             {
@@ -212,11 +239,39 @@ class CRUD:
                         "as": "fyp_2_data"
                     }
                 },
+                # Add fields for genre_details, poster, fyp, and main_sponsor with logo
                 {
                     "$addFields": {
+                        "genre_details": {
+                            "$map": {
+                                "input": "$genre_details",
+                                "as": "genre",
+                                "in": {
+                                    "id": "$$genre._id",
+                                    "value": "$$genre.value",
+                                    "sort": "$$genre.sort",
+                                }
+                            }
+                        },
                         "poster": "$poster_data",
-                        "fyp_1": "$fyp_1_data", 
-                        "fyp_2": "$fyp_2_data"
+                        "fyp_1": "$fyp_1_data",
+                        "fyp_2": "$fyp_2_data",
+                        "main_sponsor": {
+                            "$cond": {
+                                "if": { "$and": [
+                                    { "$gt": [{ "$size": "$brand_info" }, 0] },
+                                    { "$ne": ["$main_sponsor", None] }
+                                ]},
+                                "then": {
+                                    "$mergeObjects": [
+                                        "$main_sponsor",
+                                        { "$arrayElemAt": ["$brand_info", 0] },
+                                        { "logo": { "$arrayElemAt": ["$brand_logo_data", 0] } }
+                                    ]
+                                },
+                                "else": "$main_sponsor"
+                            }
+                        }
                     }
                 },
                 {"$project": selected_fields}  # Project only selected fields
@@ -247,93 +302,35 @@ class CRUD:
                 action="retrieve",
                 target=self.collection_name,
                 target_id=content_id,
-                details={"_id": content_id, "retrieved_user": content_data},
+                details={"_id": content_id, "retrieved_data": content_data},
                 status="success"
             )
 
             # presigned url
             if "poster" in content_data and isinstance(content_data['poster'], list):
-                grouped_poster = {}
-                for poster_item in content_data['poster']:
-                    # Generate URL
-                    poster_item['url'] = None
-                    if 'filename' in poster_item:
-                        url = self.minio.presigned_get_object(config.minio_bucket, poster_item['filename'])
-                        if url:
-                            poster_item['url'] = url
-                    
-                    # Grouping Logic
-                    lang_key = "other"
-                    if "metadata" in poster_item and poster_item["metadata"] and "Language" in poster_item["metadata"]:
-                        # Mengambil bahasa dari metadata, contoh: "ID" -> "id"
-                        lang_key = poster_item["metadata"]["Language"].lower()
-                    
-                    if lang_key not in grouped_poster:
-                        grouped_poster[lang_key] = {}
-                    
-                    grouped_poster[lang_key] = poster_item
-                    poster_item.pop("metadata")
-
-                # Replace list with grouped dictionary
-                content_data['poster'] = grouped_poster
+                content_data['poster'] = self.process_poster_items(
+                    content_id, 
+                    content_data['poster']
+                )
 
             if "fyp_1" in content_data and isinstance(content_data['fyp_1'], list):
-                grouped_fyp = {}
-                for video_item in content_data['fyp_1']:
-                    # Generate URL
-                    video_item['url'] = None
-                    if 'filename' in video_item:
-                        url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                        if url:
-                            video_item['url'] = url
-                    
-                    # Determine Keys
-                    lang_key = "other"
-                    res_key = "original"
-                    
-                    if "metadata" in video_item and video_item["metadata"]:
-                        if "Language" in video_item["metadata"]:
-                            lang_key = video_item["metadata"]["Language"].lower()
-                        if "Resolution" in video_item["metadata"]:
-                            res_key = video_item["metadata"]["Resolution"].lower()
-
-                    # Build Nested Dict
-                    if lang_key not in grouped_fyp:
-                        grouped_fyp[lang_key] = {}
-                    
-                    grouped_fyp[lang_key][res_key] = video_item
-                    video_item.pop("metadata")
-
-                content_data['fyp_1'] = grouped_fyp
+                content_data['fyp_1'] = self.process_video_items(
+                    content_id,
+                    content_data['fyp_1'],
+                    'fyp_1'
+                )
 
             if "fyp_2" in content_data and isinstance(content_data['fyp_2'], list):
-                grouped_highlight = {}
-                for video_item in content_data['fyp_2']:
-                    # Generate URL
-                    video_item['url'] = None
-                    if 'filename' in video_item:
-                        url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                        if url:
-                            video_item['url'] = url
-                    
-                    # Determine Keys
-                    lang_key = "other"
-                    res_key = "original"
-                    
-                    if "metadata" in video_item and video_item["metadata"]:
-                        if "Language" in video_item["metadata"]:
-                            lang_key = video_item["metadata"]["Language"].lower()
-                        if "Resolution" in video_item["metadata"]:
-                            res_key = video_item["metadata"]["Resolution"].lower()
+                content_data['fyp_2'] = self.process_video_items(
+                    content_id,
+                    content_data['fyp_2'],
+                    'fyp_2'
+                )
 
-                    # Build Nested Dict
-                    if lang_key not in grouped_highlight:
-                        grouped_highlight[lang_key] = {}
-                    
-                    grouped_highlight[lang_key][res_key] = video_item
-                    video_item.pop("metadata")
-                    
-                content_data['fyp_2'] = grouped_highlight
+            if content_data.get("main_sponsor") and content_data["main_sponsor"].get("logo"):
+                content_data["main_sponsor"] = self.add_logo_url(
+                    content_data["main_sponsor"]
+                )
 
             return ContentDetailResponse(**content_data)
         except PyMongoError as pme:
@@ -365,7 +362,7 @@ class CRUD:
 
     def update_by_id(self, content_id: str, data):
         """
-        Update a role's data by ID.
+        Update a content's data by ID.
         """
         collection = self.mongo.get_database()[self.collection_name]
         obj = data.model_dump()
@@ -395,6 +392,10 @@ class CRUD:
                 status="success"
             )
             update_content["id"] = update_content.pop("_id")
+
+            # Enqueue sync task
+            content_search_hooks.after_update(content_id, obj)
+            
             return ContentResponse(**update_content)
         except PyMongoError as pme:
             logger.error(f"Database error occurred: {str(pme)}")
@@ -482,19 +483,38 @@ class CRUD:
                         "as": "genre_details"  # Output array field
                     }
                 },
+                # Lookup for brand data
                 {
-                    "$addFields": {
-                        "genre_details": {
-                            "$map": {
-                                "input": "$genre_details",
-                                "as": "genre",
-                                "in": {
-                                    "id": "$$genre._id",
-                                    "value": "$$genre.value",
-                                    "sort": "$$genre.sort",
+                    "$lookup": {
+                        "from": "brand",
+                        "localField": "main_sponsor.brand_id",
+                        "foreignField": "_id",
+                        "as": "brand_info"
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": "_dmsfile",
+                        "let": { "brand_id": "$main_sponsor.brand_id" },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": { "$eq": ["$refkey_id", "$$brand_id"] },
+                                    "doctype": "28f0634cdbea43f89010a147e365ae98" 
+                                }
+                            },
+                            {
+                                "$project": {
+                                    "id": "$_id",
+                                    "_id": 0,
+                                    "filename": "$filename",
+                                    "metadata": "$metadata",
+                                    "path": "$folder_path",
+                                    "info_file": "$filestat"
                                 }
                             }
-                        }
+                        ],
+                        "as": "brand_logo_data"
                     }
                 },
                 # Lookup for poster data
@@ -523,7 +543,7 @@ class CRUD:
                         "as": "poster_data"
                     }
                 },
-                # Lookup for FYP #1 data
+                # Lookup for FYP data
                 {
                     "$lookup": {
                         "from": "_dmsfile",
@@ -558,7 +578,7 @@ class CRUD:
                             {
                                 "$match": {
                                     "$expr": { "$eq": ["$refkey_id", "$$content_id"] },
-                                    "doctype": "8014149170ad41148f5ae01d9b0aac7b"
+                                    "doctype": "3551a74699394f22b21ecf8277befa39"
                                 }
                             },
                             {
@@ -575,11 +595,39 @@ class CRUD:
                         "as": "fyp_2_data"
                     }
                 },
+                # Add fields for poster, fyp, and main_sponsor with logo
                 {
                     "$addFields": {
+                        "genre_details": {
+                            "$map": {
+                                "input": "$genre_details",
+                                "as": "genre",
+                                "in": {
+                                    "id": "$$genre._id",
+                                    "value": "$$genre.value",
+                                    "sort": "$$genre.sort",
+                                }
+                            }
+                        },
                         "poster": "$poster_data",
-                        "fyp_1": "$fyp_1_data", 
-                        "fyp_2": "$fyp_2_data"
+                        "fyp_1": "$fyp_1_data",
+                        "fyp_2": "$fyp_2_data",
+                        "main_sponsor": {
+                            "$cond": {
+                                "if": { "$and": [
+                                    { "$gt": [{ "$size": "$brand_info" }, 0] },
+                                    { "$ne": ["$main_sponsor", None] }
+                                ]},
+                                "then": {
+                                    "$mergeObjects": [
+                                        "$main_sponsor",
+                                        { "$arrayElemAt": ["$brand_info", 0] },
+                                        { "logo": { "$arrayElemAt": ["$brand_logo_data", 0] } }
+                                    ]
+                                },
+                                "else": "$main_sponsor"
+                            }
+                        }
                     }
                 },
                 {"$skip": skip},  # Pagination skip stage
@@ -607,88 +655,33 @@ class CRUD:
                 )
 
             for i, data in enumerate(results):
+                content_id = data.get('id')
+
                 # presigned url
                 if "poster" in data and isinstance(data['poster'], list):
-                    grouped_poster = {}
-                    for poster_item in data['poster']:
-                        # Generate URL
-                        poster_item['url'] = None
-                        if 'filename' in poster_item:
-                            url = self.minio.presigned_get_object(config.minio_bucket, poster_item['filename'])
-                            if url:
-                                poster_item['url'] = url
-                        
-                        # Grouping Logic
-                        lang_key = "other"
-                        if "metadata" in poster_item and poster_item["metadata"] and "Language" in poster_item["metadata"]:
-                            lang_key = poster_item["metadata"]["Language"].lower()
-                        
-                        if lang_key not in grouped_poster:
-                            grouped_poster[lang_key] = {}
-                        
-                        grouped_poster[lang_key] = poster_item                    
-                        poster_item.pop("metadata")
-                        
-                    # Replace list with grouped dictionary
-                    data['poster'] = grouped_poster
+                    data['poster'] = self.process_poster_items(
+                        content_id,
+                        data['poster']
+                    )
 
                 if "fyp_1" in data and isinstance(data['fyp_1'], list):
-                    grouped_fyp = {}
-                    for video_item in data['fyp_1']:
-                        # Generate URL
-                        video_item['url'] = None
-                        if 'filename' in video_item:
-                            url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                            if url:
-                                video_item['url'] = url
-                        
-                        # Determine Keys
-                        lang_key = "other"
-                        res_key = "original"
-                        
-                        if "metadata" in video_item and video_item["metadata"]:
-                            if "Language" in video_item["metadata"]:
-                                lang_key = video_item["metadata"]["Language"].lower()
-                            if "Resolution" in video_item["metadata"]:
-                                res_key = video_item["metadata"]["Resolution"].lower()
-
-                        # Build Nested Dict
-                        if lang_key not in grouped_fyp:
-                            grouped_fyp[lang_key] = {}
-                        
-                        grouped_fyp[lang_key][res_key] = video_item
-                        video_item.pop("metadata")
-
-                    data['fyp_1'] = grouped_fyp
+                    data['fyp_1'] = self.process_video_items(
+                        content_id,
+                        data['fyp_1'],
+                        'fyp_1'
+                    )
 
                 if "fyp_2" in data and isinstance(data['fyp_2'], list):
-                    grouped_highlight = {}
-                    for video_item in data['fyp_2']:
-                        # Generate URL
-                        video_item['url'] = None
-                        if 'filename' in video_item:
-                            url = self.minio.presigned_get_object(config.minio_bucket, video_item['filename'])
-                            if url:
-                                video_item['url'] = url
-                        
-                        # Determine Keys
-                        lang_key = "other"
-                        res_key = "original"
-                        
-                        if "metadata" in video_item and video_item["metadata"]:
-                            if "Language" in video_item["metadata"]:
-                                lang_key = video_item["metadata"]["Language"].lower()
-                            if "Resolution" in video_item["metadata"]:
-                                res_key = video_item["metadata"]["Resolution"].lower()
+                    data['fyp_2'] = self.process_video_items(
+                        content_id,
+                        data['fyp_2'],
+                        'fyp_2'
+                    )
 
-                        # Build Nested Dict
-                        if lang_key not in grouped_highlight:
-                            grouped_highlight[lang_key] = {}
-                        
-                        grouped_highlight[lang_key][res_key] = video_item
-                        video_item.pop("metadata")
-                        
-                    data['fyp_2'] = grouped_highlight
+                if data.get("main_sponsor") and data["main_sponsor"].get("logo"):
+                    data["main_sponsor"] = self.add_logo_url(
+                        data["main_sponsor"]
+                    )
 
             parsed_results = [ContentListItem(**item) for item in results]
 
@@ -727,3 +720,71 @@ class CRUD:
         except Exception as e:
             logger.exception(f"Unexpected error during deletion: {str(e)}")
             raise
+
+    def get_content_by_brand(self, brand_id: str, title_contains: Optional[str] = None):
+        """
+        Mengambil konten berdasarkan brand_id (Sponsor Utama atau Sponsor Episode)
+        dengan tambahan filter pencarian judul menggunakan regex.
+        """
+        collection = self.mongo.get_database()[self.collection_name]
+        
+        try:
+            # Match dasar untuk Brand (Sponsor Utama atau di dalam array episodes)
+            match_condition = {
+                "$or": [
+                    {"main_sponsor.brand_id": brand_id},
+                    {"episodes.episode_sponsor.brand_id": brand_id}
+                ]
+            }
+
+            # Tambahkan filter Regex untuk judul jika parameter title_contains diberikan
+            if title_contains:
+                # Menggunakan title.id karena field title adalah dictionary dan 'id' wajib ada
+                match_condition["title.id"] = {
+                    "$regex": f".*{title_contains}.*", 
+                    "$options": "i"
+                }
+
+            pipeline = [
+                # 1. Join dengan koleksi content_video
+                {
+                    "$lookup": {
+                        "from": self.colls_content_video,
+                        "localField": "_id",
+                        "foreignField": "content_id",
+                        "as": "episodes"
+                    }
+                },
+                # 2. Filter gabungan (Brand + Title Regex)
+                {"$match": match_condition},
+                # 3. Project output
+                {
+                    "$project": {
+                        "_id": 0,
+                        "id": "$_id",
+                        "title": 1,
+                        "status": 1
+                    }
+                }
+            ]
+
+            cursor = collection.aggregate(pipeline)
+            results = list(cursor)
+
+            if self.audit_trail:
+                self.audit_trail.log_audittrail(
+                    self.mongo,
+                    action="retrieve_by_brand_search",
+                    target=self.collection_name,
+                    target_id=brand_id,
+                    details={"brand_id": brand_id, "search": title_contains},
+                    status="success"
+                )
+
+            return {
+                "data": results
+            }
+
+        except PyMongoError as pme:
+            logger.error(f"Database error in get_content_by_brand: {str(pme)}")
+            raise ValueError("Gagal mencari data.") from pme

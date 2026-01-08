@@ -22,6 +22,16 @@ services:
     networks:
       - my-shared-network
 
+  # Setup OpenSearch index
+  opensearch_setup:
+    build: .
+    command: init_opensearch
+    networks:
+      - my-shared-network
+    depends_on:
+      mongodb_migration:
+        condition: service_completed_successfully
+
   # Run the API service
   api:
     build: .
@@ -36,6 +46,8 @@ services:
       mongodb_migration:
         condition: service_completed_successfully
       storage_setup:
+        condition: service_completed_successfully
+      opensearch_setup:
         condition: service_completed_successfully
 
   # Run the worker service for processing other tasks using RabbitMQ
@@ -72,6 +84,26 @@ services:
       mongodb_migration:
         condition: service_completed_successfully
       storage_setup:
+        condition: service_completed_successfully
+
+  # Run the worker service for syncing content to OpenSearch using Redis
+  content_sync_worker:
+    build: .
+    command: redis_worker --queue content_sync_tasks
+    restart: always
+    # Uncomment untuk scale worker jika traffic tinggi
+    # deploy:
+    #   replicas: 2
+    networks:
+      - my-shared-network
+    depends_on:
+      postgresql_migration:
+        condition: service_completed_successfully
+      mongodb_migration:
+        condition: service_completed_successfully
+      storage_setup:
+        condition: service_completed_successfully
+      opensearch_setup:
         condition: service_completed_successfully
 
 # Definisikan network di level atas

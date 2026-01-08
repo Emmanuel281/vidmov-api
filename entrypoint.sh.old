@@ -26,13 +26,6 @@ case "$1" in
         # Jalankan consumer sebagai modul dengan sisa argumennya
         exec python -m baseapp.services.redis_manager "$@"
         ;;
-    video_worker)
-        echo "Starting Video worker..."
-        # Hapus argumen pertama ('worker') dan jalankan sisanya
-        shift
-        # Jalankan consumer sebagai modul dengan sisa argumennya
-        exec python -m baseapp.services._redis_worker.video_worker "$@"
-        ;;
     postgresql_migrate)
         echo "Running PostgreSQL Migrations..."
         # 1. Jalankan Alembic untuk membuat tabel (Upgrade schema)

@@ -1,11 +1,11 @@
 @prod = https://arena.gai.co.id/service
 @dev = http://localhost:17178
-@host = {{dev}}
+@host = {{prod}}
 @upload_host = {{prod}}
 
 # --- TOKENS ---
 # Token Owner (Arena)
-@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiODY5Y2RjZDcwZjFmNDM4ZGFhMDEyOTFmZjZlZDRjZGIiLCJyb2xlcyI6WyIwNTRhODBlYTA3Mzk0YTg0YTc0MWRjYWQ4OWM1ZjBiZiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6ImJhYzUxODk3NWMzZDQ1MGU4NDYxOGYxNjk0ZmVkNzcyIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6NywiX2Rtc2RvY3R5cGUiOjcsIl9kbXNicm93c2UiOjE1OSwiY29udGVudCI6MTkxLCJ3YWxsZXQiOjcsInRvcHVwIjo3LCJhZHMiOjEsInFyX3Byb2R1Y3QiOjEsImJ1bmRsaW5nIjoxLCJnaXZlYXdheSI6MX0sImJpdHdzIjp7IlZJRVciOjEsIkFERCI6MiwiRURJVCI6NCwiREVMRVRFIjo4LCJFWFBPUlQiOjE2LCJJTVBPUlQiOjMyLCJBUFBST1ZBTCI6NjQsIlNFVFRJTkciOjEyOH0sInNlc3Npb25faWQiOiIwZDgzMGVkOTcxMTA0MmMzODAyMmNiYTA1MzIzM2M5YSIsImV4cCI6MTc2NTk1OTk0MSwianRpIjoiMjk0MGI0MDEyMzQ0NDc1OThhMzZjNjNkZjIwNzM0ZmYifQ.FI4poPZYkX5I0MWcqVaad6kULg9yEad5GPgDzcTmfH8
+@owner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBhcmVuYS5jby5pZCIsImlkIjoiZjc4ODZhOTliNmIyNGVmZmFiYjczYmQ1M2YzYzliMDQiLCJyb2xlcyI6WyI3ZTU3YzBkOTQxYTc0YWE3YTZlZDhhNTI2MGI3MzVkNiJdLCJhdXRob3JpdHkiOjEsIm9yZ19pZCI6IjcxNDgwMTc1NDI5ODQ4NDliYTE3YTlkOGZiMTBiMGZiIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjo3LCJfZW51bSI6MTUsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX21lbnUiOjUsIl9vcmdhbml6YXRpb24iOjcsIl9kYXNoYm9hcmQiOjEsIl9teW9yZyI6NSwiX215cHJvZmlsZSI6NSwiX2Rtc2luZGV4bGlzdCI6MTUsIl9kbXNkb2N0eXBlIjo3LCJfZG1zYnJvd3NlIjoxNTksImNvbnRlbnQiOjE5MSwid2FsbGV0Ijo3LCJ0b3B1cCI6NywiYWRzIjoxLCJxcl9wcm9kdWN0IjoxLCJidW5kbGluZyI6MSwiZ2l2ZWF3YXkiOjF9LCJiaXR3cyI6eyJWSUVXIjoxLCJBREQiOjIsIkVESVQiOjQsIkRFTEVURSI6OCwiRVhQT1JUIjoxNiwiSU1QT1JUIjozMiwiQVBQUk9WQUwiOjY0LCJTRVRUSU5HIjoxMjh9LCJzZXNzaW9uX2lkIjoiMTQ1YmY0MjM4ZDgxNDk5NmE1NjJiYjgxMTIwYTExOTIiLCJleHAiOjE3Njc2MDQzNzksImp0aSI6Ijk1MDUwMDRiMDY0ZjRjODJhMmFjNWQ2OTIxYjQ3MTdmIn0.X_Of2EDbvOy4IafUoi3okcJYNuo7TXgH2k9I75yaMEE
 # Token Partner
 @partner = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBwZWphdGVuLXBoLmNvbSIsImlkIjoiMzY3Mjg1YzUtYWJiYS00NjgzLWJkYzItNTU0ZTQzZWQ1YzM2Iiwicm9sZXMiOlsiY2E3MDQwNGQtYjY1NC00ZGFiLThkMDQtNDFiN2E1YjA0MTQ4IiwiOWQyOTgxNjgtMmMzMi00YjVkLWE5MTUtMmFkNzVhZjdhYWMwIl0sImF1dGhvcml0eSI6Miwib3JnX2lkIjoiNjdiODFmYzAtNTk1NC00YTkzLWJlOGUtNTllZmU2ZWFhNGNlIiwiZmVhdHVyZXMiOnsiX3VzZXIiOjcsIl9yb2xlIjoxNSwiX2VudW0iOjEsIl9hdWRpdHRyYWlsIjoxLCJfZmVhdHVyZSI6NSwiX29yZ2FuaXphdGlvbiI6NywiX2Rhc2hib2FyZCI6MSwiX215b3JnIjo1LCJfbXlwcm9maWxlIjo1LCJfZG1zaW5kZXhsaXN0IjoxLCJfZG1zZG9jdHlwZSI6MSwiX2Rtc2Jyb3dzZSI6MTU5LCJjb250ZW50IjoxODN9LCJiaXR3cyI6eyJhZGQiOjIsImFwcHJvdmFsIjo2NCwiZGVsZXRlIjo4LCJlZGl0Ijo0LCJleHBvcnQiOjE2LCJpbXBvcnQiOjMyLCJzZXR0aW5nIjoxMjgsInZpZXciOjF9LCJleHAiOjE3NTIxMzU5MjF9.12jBjfswWoeFtR_CvLct-yfsKe4sDj_WcOBmvW_VtuA
 # Token Client
@@ -72,7 +72,8 @@ Content-Type: application/json
     "tags":["CEO love triangle", "Money and Power"], 
     "mature_content": false, 
     "license_from": null, 
-    "licence_date": null,
+    "licence_date_start": null,
+    "licence_date_end": null,
     "origin": "Indonesia", 
     "territory": ["Indonesia"], 
     "is_full_paid": true,
@@ -83,7 +84,8 @@ Content-Type: application/json
 
 
 ### Update
-PUT {{host}}/v1/content/update/728f1a79-b8e2-42ca-860d-6535aaa45a57
+# main_sponsor=null → optional, jika terisi {org_id, brand_name, campaign_name}
+PUT {{host}}/v1/content/update/8a66f138350e401d919d9125511fc7ab
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -96,27 +98,27 @@ Content-Type: application/json
         "en":"Love Story",
         "id":"Kisah Kasih"
     },
-    "genre":["9a4c0f5a9c2a4b15bfaee6db589d6068"],
+    "genre":["9a4c0f5a9c2a4b15bfaee6db589d6068","6ee3557896624c599d091bd174d2abab"],
     "release_date": "2025-03-20T00:00:00Z", 
     "cast":["Alex", "Siska"], 
     "tags":["CEO love triangle", "Money and Power"], 
     "mature_content": false,  
     "license_from": null, 
-    "licence_date": null,
+    "licence_date_start": null,
+    "licence_date_end": null,
     "origin":"Indonesia", 
     "territory":["Indonesia"], 
     "is_full_paid":true,
     "full_price_coins":840,
     "main_sponsor": {
         "org_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b",
-        "brand_name":"BrandX",
-        "campaign_name":"Campaign Spring"
-    }, // optional default null
+        "brand_id":"8a8f5e1e-3f4b-4f4b- ninth-8d6e5c6f7a2b"
+    }
 }
 
 
 ### Set Published
-PUT {{host}}/v1/content/update_status/fc3d27cf64274413ab74b3f72122707b
+PUT {{host}}/v1/content/update_status/8a66f138350e401d919d9125511fc7ab
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -132,6 +134,11 @@ Authorization: Bearer {{token}}
 
 ### Find By ID
 GET {{host}}/v1/content/find/fc3d27cf64274413ab74b3f72122707b
+Authorization: Bearer {{token}}
+
+### Find By Brand
+# /{brand_id}?title_contains=string
+GET {{host}}/v1/content/by-brand/fc3d27cf64274413ab74b3f72122707b
 Authorization: Bearer {{token}}
 
 
@@ -201,7 +208,7 @@ fyp
 --boundary--
 
 
-### Upload Hightlight
+### Upload FYP 2
 POST {{upload_host}}/v1/_dms/upload
 Authorization: Bearer {{token}}
 Content-Type: multipart/form-data; boundary=boundary
@@ -212,7 +219,7 @@ Content-Disposition: form-data; name="file"; filename="highlight.mp4"
 --boundary
 Content-Disposition: form-data; name="doctype"
 
-8014149170ad41148f5ae01d9b0aac7b
+3551a74699394f22b21ecf8277befa39
 --boundary
 Content-Disposition: form-data; name="metadata"
 

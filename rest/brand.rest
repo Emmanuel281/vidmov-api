@@ -1,7 +1,7 @@
 @prod = https://arena.gai.co.id/service
 @dev = http://localhost:17178
 @host = {{prod}}
-@upload_host = {{dev}}
+@upload_host = {{prod}}
 
 # --- TOKENS ---
 # Token Owner (Arena)
@@ -18,116 +18,74 @@
 
 
 ###
-# GROUP: AUTH (LOGIN)
+# GROUP: BRAND
 ###
 
-### Login Owner
-POST {{host}}/v1/auth/login
-Content-Type: application/json
-X-Client-Type: web
-
-{ 
-    "username": "admin@arena.co.id", 
-    "password": "arena123" 
-}
-
-### Login Partner
-POST {{host}}/v1/auth/login
-Content-Type: application/json
-X-Client-Type: web
-
-{ 
-    "username": "admin@kopken.com", 
-    "password": "kopken123" 
-}
-
-### Login Client
-POST {{host}}/v1/auth/login
-Content-Type: application/json
-X-Client-Type: mobile
-
-{ 
-    "username": "aldian.gnusa@gmail.com", 
-    "password": "SecurePassword123" 
-}
-
-### Auth Status
-POST {{host}}/v1/auth/status
-Authorization: Bearer {{token}}
-
-### Refresh Token
-POST {{host}}/v1/auth/refresh-token
-Authorization: Bearer {{refresh_token}}
-X-Client-Type: mobile
-
-
-
-###
-# GROUP: AUTH (OTP)
-###
-POST {{host}}/v1/auth/request-otp
-Content-Type: application/json
-
-{ 
-    "username": "aldian@gai.co.id", 
-    "password": "SecurePassword123" 
-}
-
-
-
-###
-# GROUP: FORGOT PASSWORD
-###
-# Send OTP
-POST {{host}}/v1/forgot-password/send-otp
-Content-Type: application/json
-
-{ 
-    "email":"admin@playup.com" 
-}
-
-### Verify OTP
-POST {{host}}/v1/forgot-password/verify-otp
-Content-Type: application/json
-
-{ 
-    "email":"admin@playup.com", 
-    "otp":"" 
-}
-
-### Reset Password
-POST {{host}}/v1/forgot-password/reset-password
-Content-Type: application/json
-
-{ 
-    "email":"admin@playup.com", 
-    "reset_token":"", 
-    "new_password":"" 
-}
-
-
-
-###
-# GROUP: OAUTH GOOGLE
-###
-
-### Linked Account
-PUT {{host}}/v1/oauth/link-google-account
+### CREATE
+POST {{host}}/v1/brand/create
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { 
-    "access_token":"ya29.a0AZYkNZhPzqHTFZ28GCnWI4VnoSKQPHGh1OAXLgHiGQ9EPHjTcqL4OP2F0TzMoySZIM30tWhzIP-8d_zQnI0Ci6omHzcCnZ6jTCpIPc2UNq0r2enHLWXxaIO0yyH3XXJyc0tUYkPe3_TbIaRCV0YAKbynBIlKEz_GKweSd-x-aCgYKAbASARUSFQHGX2MiLNDiLXUYJxvSOifr7RRc9g0175" 
+    "name":"Kopi Kenangan", 
+    "org_id":"ecf92ed972b045b4ae548b3eb93c162c",
+    "status":"ACTIVE" 
 }
 
-### Unlinked Account
-DELETE {{host}}/v1/oauth/unlink-google-account
+### UPDATE
+PUT {{host}}/v1/brand/update/5892d554706a48539ba7954e0278bfd7
 Authorization: Bearer {{token}}
-
-### Login
-POST {{host}}/v1/oauth/login-google-account
 Content-Type: application/json
 
 { 
-    "access_token":"ya29.a0AZYkNZiwHcRdgRLqGkefTrbHarQ90qNLUwCWCCxGpHDHBbKRU3o4chWG94nujS95Mp1GX60d8duZQl1Nq6MDlM6eK-VQ3Ow3TMZaQVnh2fhy9Enqa5Pn5ucg2i0-32y3z_VyL1mG_X_WXCZwhm8KheZoR5dFJYi5F-gw8xNeaCgYKAc8SARUSFQHGX2MiGhh20ZE82W_enZGNjh2sTw0175" 
+    "name":"Kopi Kenangan Mantan"
 }
+
+### DELETE
+DELETE {{host}}/v1/brand/delete/5892d554706a48539ba7954e0278bfd7
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+### GET by Options
+GET {{host}}/v1/brand?org_id=String&status=ACTIVE&name_contains=kopi
+Authorization: Bearer {{token}}
+
+### GET by ID
+GET {{host}}/v1/brand/find/5892d554706a48539ba7954e0278bfd7
+Authorization: Bearer {{token}}
+
+
+###
+# GROUP: ATTACHMENT
+# docs_type for Brand Logo: "Logo Brand"
+###
+
+### Upload Logo Brand
+POST {{upload_host}}/v1/_dms/upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="5c413e87e562f5654dd5c3dceb51b75182c9495b.png"
+< ./path/to/5c413e87e562f5654dd5c3dceb51b75182c9495b.png
+--boundary
+Content-Disposition: form-data; name="doctype"
+
+28f0634cdbea43f89010a147e365ae98
+--boundary
+Content-Disposition: form-data; name="metadata"
+
+{"Brand ID":"5892d554706a48539ba7954e0278bfd7", "Title":"Kopi Kenangan Mantan"}
+--boundary
+Content-Disposition: form-data; name="refkey_id"
+
+5892d554706a48539ba7954e0278bfd7
+--boundary
+Content-Disposition: form-data; name="refkey_table"
+
+brand
+--boundary
+Content-Disposition: form-data; name="refkey_name"
+
+logo
+--boundary--

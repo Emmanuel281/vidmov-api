@@ -7,7 +7,7 @@ config = setting.get_settings()
 logger = Logger("baseapp.config.redis")
 
 class RedisConn:
-    def __init__(self,):
+    def __init__(self):
         self.host = config.redis_host
         self.port = config.redis_port
         self.password = config.redis_pass

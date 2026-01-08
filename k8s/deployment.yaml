@@ -24,7 +24,7 @@ spec:
         - name: gai-registry
       containers:
         - name: migration
-          image: registry.gai.co.id/gai/arena-api:latest
+          image: registry.gai.co.id/gai/vidmov-api:latest
           args: ["postgresql_migrate"]
           resources:
             requests:
@@ -58,7 +58,7 @@ spec:
         - name: gai-registry
       containers:
         - name: migration
-          image: registry.gai.co.id/gai/arena-api:latest
+          image: registry.gai.co.id/gai/vidmov-api:latest
           args: ["mongodb_migrate"]
           resources:
             requests:
@@ -227,32 +227,31 @@ spec:
           envFrom:
             - secretRef:
                 name: arena-env
-
 ---
-# Video Worker Deployment
+# Content Sync Worker Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: arena-video-worker
+  name: arena-content-sync-worker
   namespace: gai-arena
   labels:
-    app: arena-video-worker
+    app: arena-content-sync-worker
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: arena-video-worker
+      app: arena-content-sync-worker
   template:
     metadata:
       labels:
-        app: arena-video-worker
+        app: arena-content-sync-worker
     spec:
       imagePullSecrets:
         - name: gai-registry
       containers:
-        - name: video-worker
+        - name: content-sync-worker
           image: registry.gai.co.id/gai/vidmov-api:latest
-          args: ["video_worker"]
+          args: ["redis_worker", "--queue", "content_sync_tasks"]
           resources:
             requests:
               memory: "1000Mi"

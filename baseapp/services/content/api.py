@@ -2,8 +2,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Query, Depends
 
 from baseapp.config import setting
-from baseapp.model.common import ApiResponse, CurrentUser, RoleAction
-from baseapp.utils.jwt import get_current_user, get_current_user_optional
+from baseapp.model.common import ApiResponse, CurrentUser, RoleAction, Authority
+from baseapp.utils.jwt import get_current_user
 
 from baseapp.services.permission_check_service import PermissionChecker
 from baseapp.services.content.model import Content, ContentUpdate, ContentUpdateStatus
@@ -18,7 +18,6 @@ async def create(
     req: Content,
     cu: CurrentUser = Depends(get_current_user)
 ) -> ApiResponse:
-    
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.ADD.value, mongo_conn=_crud.mongo):  # 2 untuk izin simpan baru
             raise PermissionError("Access denied")
@@ -34,7 +33,6 @@ async def create(
     
 @router.put("/update/{content_id}", response_model=ApiResponse)
 async def update_by_id(content_id: str, req: ContentUpdate, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.EDIT.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
             raise PermissionError("Access denied")
@@ -50,7 +48,6 @@ async def update_by_id(content_id: str, req: ContentUpdate, cu: CurrentUser = De
 
 @router.put("/update_status/{content_id}", response_model=ApiResponse)
 async def update_status(content_id: str, req: ContentUpdateStatus, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.EDIT.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
             raise PermissionError("Access denied")
@@ -70,7 +67,7 @@ async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
         sort_field: str = Query("_id", description="Field to sort by"),
-        sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
+        sort_order: str = Query("asc", pattern="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         cu: CurrentUser = Depends(get_current_user),
         name: str = Query(None, description="Name of content (exact match)"),
         name_contains: str = Query(None, description="Name contains (case insensitive)"),
@@ -82,7 +79,10 @@ async def get_all_data(
         type_content: str = Query(None, description="Type of content"),
         status: str = Query(None, description="Status of content")
     ) -> ApiResponse:
-
+    # check authority is not owner
+    if cu.authority != Authority.OWNER.value:
+        raise PermissionError("Access denied")
+    
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "content", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
             raise PermissionError("Access denied")
@@ -137,7 +137,8 @@ async def get_all_data(
     return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
     
 @router.get("/find/{content_id}", response_model=ApiResponse)
-async def find_by_id(content_id: str, cu: CurrentUser = Depends(get_current_user_optional)) -> ApiResponse:
+async def find_by_id(content_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    
     with CRUD() as _crud:
         if cu:
             if not permission_checker.has_permission(cu.roles, "content", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
@@ -151,58 +152,33 @@ async def find_by_id(content_id: str, cu: CurrentUser = Depends(get_current_user
         response = _crud.get_by_id(content_id)
     return ApiResponse(status=0, message="Data found", data=response)
 
-@router.get("/fyp", response_model=ApiResponse)
-async def get_fyp(
-        page: int = Query(1, ge=1, description="Page number"),
-        per_page: int = Query(10, ge=1, le=100, description="Items per page"),
-        sort_field: str = Query("_id", description="Field to sort by"),
-        sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
-        cu: Optional[CurrentUser] = Depends(get_current_user_optional),
-        title: str = Query(None, description="Title of role (exact match)"),
-        title_contains: str = Query(None, description="Title contains (case insensitive)"),
-        synopsis_contains: str = Query(None, description="Synopsis contains (case insensitive)"),
-        genre: Optional[str] = Query(None, description="Filter by genre ID"),
-        genres: Optional[List[str]] = Query(None, description="Filter by multiple genre IDs"),
-        status: str = Query(None, description="Status of content")
-    ) -> ApiResponse:
+@router.get("/by-brand/{brand_id}", response_model=ApiResponse)
+async def get_by_brand(
+    brand_id: str, 
+    title_contains: Optional[str] = Query(None, description="Cari judul konten (case-insensitive)"),
+    cu: CurrentUser = Depends(get_current_user)
+) -> ApiResponse:
 
-    # Build filters dynamically
-    filters = {}
-
+    if cu.authority != Authority.OWNER.value:
+        raise PermissionError("Access denied")
+    
     with CRUD() as _crud:
-        if cu:
-            _crud.set_context(
-                user_id=cu.id,
-                org_id=cu.org_id,
-                ip_address=cu.ip_address,  # Jika ada
-                user_agent=cu.user_agent   # Jika ada
-            )
-
-        if title:
-            filters["title"] = title  # exact match
-        elif title_contains:
-            filters["title"] = {"$regex": f".*{title_contains}.*", "$options": "i"}
-        
-        if synopsis_contains:
-            filters["synopsis"] = {"$regex": f".*{synopsis_contains}.*", "$options": "i"}
-
-        if status:
-            filters["status"] = status
-
-        # Filter by single role
-        if genre:
-            filters["genre"] = genre
-        
-        # Filter by multiple roles
-        if genres:
-            filters["genre"] = genres  # Akan diubah ke $in dalam CRUD
-
-        # Call CRUD function
-        response = _crud.get_all(
-            filters=filters,
-            page=page,
-            per_page=per_page,
-            sort_field=sort_field,
-            sort_order=sort_order,
+        if not permission_checker.has_permission(cu.roles, "content", RoleAction.VIEW.value, mongo_conn=_crud.mongo):
+            raise PermissionError("Access denied")
+            
+        _crud.set_context(
+            user_id=cu.id,
+            org_id=cu.org_id
         )
-    return ApiResponse(status=0, message="Data loaded", data=response["data"], pagination=response["pagination"])
+        
+        # 3. Eksekusi pencarian dengan regex
+        response = _crud.get_content_by_brand(
+            brand_id=brand_id, 
+            title_contains=title_contains
+        )
+        
+    return ApiResponse(
+        status=0, 
+        message="Data loaded", 
+        data=response
+    )

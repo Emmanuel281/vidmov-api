@@ -23,13 +23,14 @@ async def create(req: model.InitRequest) -> ApiResponse:
 
 @router.post("/init_partner", response_model=ApiResponse)
 async def create(req: model.InitRequest, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
+    # check authority is not owner
+    if cu.authority != Authority.OWNER.value:
+        raise PermissionError("Access denied")
+        
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "_organization", RoleAction.ADD.value, mongo_conn=_crud.mongo):  # 2 untuk izin simpan baru
             raise PermissionError("Access denied")
         
-        # check authority is not owner
-        if cu.authority != Authority.OWNER.value:
-            raise PermissionError("Access denied")
         _crud.set_context(
             user_id=cu.id,
             org_id=cu.org_id,
@@ -47,13 +48,12 @@ async def get_all_data(
         page: int = Query(1, ge=1, description="Page number"),
         per_page: int = Query(10, ge=1, le=100, description="Items per page"),
         sort_field: str = Query("_id", description="Field to sort by"),
-        sort_order: str = Query("asc", regex="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
+        sort_order: str = Query("asc", pattern="^(asc|desc)$", description="Sort order: 'asc' or 'desc'"),
         org_name: Optional[str] = Query(None, description="Filter by organization name"),
         status: Optional[str] = Query(None, description="Filter by status"),
         authority: Optional[int] = Query(None, description="Filter by authority"),
         cu: CurrentUser = Depends(get_current_user)
     ) -> ApiResponse:
-
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "_organization", RoleAction.VIEW.value, mongo_conn=_crud.mongo):  # 1 untuk izin baca
             raise PermissionError("Access denied")
@@ -104,7 +104,6 @@ async def find_by_id(org_id: str, cu: CurrentUser = Depends(get_current_user)) -
 
 @router.put("/update/{org_id}", response_model=ApiResponse)
 async def update_by_id(org_id: str, req: model.OrganizationUpdate, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    
     with CRUD() as _crud:
         if not (permission_checker.has_permission(cu.roles, "_organization", RoleAction.EDIT.value, mongo_conn=_crud.mongo) or permission_checker.has_permission(cu.roles, "_myorg", 4, mongo_conn=_crud.mongo)):  # 4 untuk izin simpan perubahan
             raise PermissionError("Access denied")
@@ -120,7 +119,6 @@ async def update_by_id(org_id: str, req: model.OrganizationUpdate, cu: CurrentUs
 
 @router.put("/update_status/{org_id}", response_model=ApiResponse)
 async def update_status_by_id(org_id: str, req: UpdateStatus, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    
     with CRUD() as _crud:
         if not (permission_checker.has_permission(cu.roles, "_organization", RoleAction.EDIT.value, mongo_conn=_crud.mongo)):  # 4 untuk izin simpan perubahan
             raise PermissionError("Access denied")
@@ -136,7 +134,6 @@ async def update_status_by_id(org_id: str, req: UpdateStatus, cu: CurrentUser = 
 
 @router.delete("/delete/{org_id}", response_model=ApiResponse)
 async def update_status(org_id: str, cu: CurrentUser = Depends(get_current_user)) -> ApiResponse:
-    
     with CRUD() as _crud:
         if not permission_checker.has_permission(cu.roles, "_organization", RoleAction.EDIT.value, mongo_conn=_crud.mongo):  # 4 untuk izin simpan perubahan
             raise PermissionError("Access denied")

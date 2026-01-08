@@ -19,6 +19,7 @@ logger = Logger("baseapp.app")
 
 from baseapp.config.mongodb import MongoConn
 from baseapp.config.postgresql import PostgreSQLConn
+from baseapp.config.opensearch import OpenSearchConn
 
 from baseapp.test_connection.api import router as testconn_router # test connection
 from baseapp.services._enum.api import router as enum_router # enum
@@ -41,6 +42,13 @@ from baseapp.services.content_detail.api import router as content_detail_router 
 
 from baseapp.services.register.api import router as register_router # Register (Traditional)
 
+from baseapp.services.content_search.api import router as content_search_router # Content Search API
+
+from baseapp.services.brand.api import router as brand_router # Brand API
+
+from baseapp.services.streaming.api import router as streaming_router # Streaming API
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. BAGIAN STARTUP (Dijalankan sebelum aplikasi menerima request)
@@ -57,6 +65,11 @@ async def lifespan(app: FastAPI):
         # Init PostgreSQL (Jika pakai)
         PostgreSQLConn.initialize_pool()
         logger.info("PostgreSQL Connection Pool initialized.")
+
+        # Initialize OpenSearch connection
+        logger.info("Initializing OpenSearch connection...")
+        OpenSearchConn.initialize()
+        logger.info("OpenSearch connection initialized")
         
     except Exception as e:
         logger.error(f"Startup Failed: {e}")
@@ -71,6 +84,7 @@ async def lifespan(app: FastAPI):
     try:
         MongoConn.close_connection()
         PostgreSQLConn.close_pool()
+        OpenSearchConn.close_connection()
         
     except Exception as e:
         logger.error(f"Shutdown error: {e}")
@@ -125,6 +139,11 @@ app.include_router(content_router)
 app.include_router(content_detail_router)
 # Register
 app.include_router(register_router)
+# Content Search
+app.include_router(content_search_router)
+app.include_router(brand_router)
+# Streaming
+app.include_router(streaming_router)
 
 @app.get("/v1/test")
 def read_root():
