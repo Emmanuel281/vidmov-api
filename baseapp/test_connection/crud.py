@@ -65,7 +65,7 @@ def test_redis_video_worker():
     try:
         with redis.RedisConn() as redis_conn:
             queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name="video_convert_tasks")
-            queue_manager.enqueue_task({"content_id": "4845cbb7e2384723abeb4ff09bcbf2a", "file": "4845cbb7e2384723abeb4ff09bcbf2a.mp4"})
+            queue_manager.enqueue_task({"content_id": "4845cbb7e2384723abeb4ff09bcbf2a", "file": "4845cbb7e2384723abeb4ff09bcbf2a1.mp4"})
         return "Redis worker: Task enqueued successfully."
     except Exception as e:
         logger.error(f"Failed to publish message to Redis: {e}")
