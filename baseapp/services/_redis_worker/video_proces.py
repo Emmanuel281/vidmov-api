@@ -7,7 +7,7 @@ from baseapp.utils.logger import Logger
 config = setting.get_settings()
 logger = Logger("baseapp.services._redis_worker.video_proces")
 
-class video_proces(BaseWorker):
+class VideoWorker(BaseWorker):
     def __init__(self, queue_manager, max_retries: int = 3):
         super().__init__(queue_manager, max_retries)
         self.collection_file = "_dmsfile"
