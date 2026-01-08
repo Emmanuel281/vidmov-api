@@ -14,7 +14,7 @@ logger = logging.getLogger("baseapp.services.redis_manager")
 from baseapp.services._redis_worker.email_worker import EmailWorker
 from baseapp.services._redis_worker.delete_file_worker import DeleteFileWorker
 from baseapp.services._redis_worker.content_sync_worker import ContentSyncWorker
-from baseapp.services._redis_worker.video_worker import VideoWorker
+from baseapp.services._redis_worker.video_proces import VideoWorker
 
 WORKER_MAP = {
     "otp_tasks": EmailWorker,
