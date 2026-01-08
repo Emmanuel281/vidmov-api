@@ -45,11 +45,13 @@ deploy-app:
     - kubectl rollout restart deployment/arena-api -n "$NAMESPACE"
     - kubectl rollout restart deployment/arena-webhook-worker -n "$NAMESPACE"
     - kubectl rollout restart deployment/arena-otp-worker -n "$NAMESPACE"
+    - kubectl rollout restart deployment/arena-content-sync-worker -n "$NAMESPACE"
+    - kubectl rollout restart deployment/arena-video-compiler-worker -n "$NAMESPACE"
     # 5. Cleanup Stuck Pods (Updated for multiple apps)
     - echo "--- Checking for stuck pods ---"
     # This selector finds pods for all 3 apps in Terminating state
     - >
-      PODS_TO_DELETE=$(kubectl get pods -n "$NAMESPACE" -l 'app in (arena-api, arena-webhook-worker, arena-otp-worker)' --field-selector=status.phase=Terminating -o jsonpath='{.items[*].metadata.name}')
+      PODS_TO_DELETE=$(kubectl get pods -n "$NAMESPACE" -l 'app in (arena-api, arena-webhook-worker, arena-otp-worker, arena-content-sync-worker, arena-video-compiler-worker)' --field-selector=status.phase=Terminating -o jsonpath='{.items[*].metadata.name}')
     - |
       if [ -n "$PODS_TO_DELETE" ]; then
         echo "Found stuck pods: $PODS_TO_DELETE. Force-deleting..."
@@ -63,7 +65,9 @@ deploy-app:
     - kubectl rollout status deployment/arena-api -n "$NAMESPACE"
     - kubectl rollout status deployment/arena-webhook-worker -n "$NAMESPACE"
     - kubectl rollout status deployment/arena-otp-worker -n "$NAMESPACE"
-    
+    - kubectl rollout status deployment/arena-content-sync-worker -n "$NAMESPACE"
+    - kubectl rollout status deployment/arena-video-compiler-worker -n "$NAMESPACE"
+
     - echo "--- Deployment Complete ---"
     - kubectl get all -n "$NAMESPACE"
 
