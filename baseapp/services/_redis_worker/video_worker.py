@@ -4,11 +4,21 @@ import logging
 import subprocess
 import json
 import tempfile
+import argparse
 import redis
 from minio import Minio
 from minio.error import S3Error
-from baseapp.config import redis as redis_config
-from baseapp.config import minio as minio_config
+
+# Try importing config, handle failure gracefully
+try:
+    from baseapp.config import redis as redis_config
+except ImportError:
+    redis_config = None
+
+try:
+    from baseapp.config import minio as minio_config
+except ImportError:
+    minio_config = None
 
 # Setup logging
 logging.basicConfig(
@@ -17,24 +27,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger("video_worker")
 
+def get_conf(obj, attr, env_name, default):
+    """Helper to get config from module attribute or environment variable"""
+    if obj and hasattr(obj, attr):
+        return getattr(obj, attr)
+    return os.getenv(env_name, default)
+
 def get_redis_connection():
+    host = get_conf(redis_config, 'REDIS_HOST', 'REDIS_HOST', 'redis')
+    port = int(get_conf(redis_config, 'REDIS_PORT', 'REDIS_PORT', 6379))
+    db = int(get_conf(redis_config, 'REDIS_DB', 'REDIS_DB', 0))
+    password = get_conf(redis_config, 'REDIS_PASSWORD', 'REDIS_PASSWORD', None)
+
     return redis.Redis(
-        host=redis_config.REDIS_HOST,
-        port=redis_config.REDIS_PORT,
-        db=redis_config.REDIS_DB,
-        password=redis_config.REDIS_PASSWORD,
+        host=host,
+        port=port,
+        db=db,
+        password=password,
         decode_responses=True
     )
 
 def get_minio_client():
-    """Initialize MinIO client using project config"""
-    # Mengambil konfigurasi MinIO, dengan fallback ke env var jika perlu
-    endpoint = getattr(minio_config, 'MINIO_ENDPOINT', os.getenv('MINIO_ENDPOINT', 'minio:9000'))
-    access_key = getattr(minio_config, 'MINIO_ACCESS_KEY', os.getenv('MINIO_ACCESS_KEY', 'minioadmin'))
-    secret_key = getattr(minio_config, 'MINIO_SECRET_KEY', os.getenv('MINIO_SECRET_KEY', 'minioadmin'))
+    endpoint = get_conf(minio_config, 'MINIO_ENDPOINT', 'MINIO_ENDPOINT', 'minio:9000')
+    access_key = get_conf(minio_config, 'MINIO_ACCESS_KEY', 'MINIO_ACCESS_KEY', 'minioadmin')
+    secret_key = get_conf(minio_config, 'MINIO_SECRET_KEY', 'MINIO_SECRET_KEY', 'minioadmin')
     
-    # Perbaikan: pastikan secure adalah boolean
-    secure_val = getattr(minio_config, 'MINIO_USE_SSL', os.getenv('MINIO_USE_SSL', 'False'))
+    secure_val = get_conf(minio_config, 'MINIO_USE_SSL', 'MINIO_USE_SSL', 'False')
     if isinstance(secure_val, str):
         secure = secure_val.lower() == 'true'
     else:
@@ -53,13 +71,12 @@ def convert_and_upload(client, bucket, object_name, output_bucket, output_prefix
     """
     start_time = time.time()
     
-    # Gunakan temporary directory agar file otomatis terhapus setelah selesai
     with tempfile.TemporaryDirectory() as temp_dir:
         input_file = os.path.join(temp_dir, "input_video")
         output_hls_dir = os.path.join(temp_dir, "hls")
         os.makedirs(output_hls_dir, exist_ok=True)
         
-        # 1. DOWNLOAD dari MinIO
+        # 1. DOWNLOAD
         logger.info(f"Downloading {bucket}/{object_name}...")
         try:
             client.fget_object(bucket, object_name, input_file)
@@ -69,27 +86,22 @@ def convert_and_upload(client, bucket, object_name, output_bucket, output_prefix
 
         download_time = time.time()
         
-        # 2. CONVERT dengan FFmpeg
+        # 2. CONVERT
         playlist_file = os.path.join(output_hls_dir, "playlist.m3u8")
         segment_filename = os.path.join(output_hls_dir, "segment_%03d.ts")
         
-        # Command FFmpeg untuk HLS
         cmd = [
             "ffmpeg",
             "-i", input_file,
-            "-c:v", "libx264",     # Video codec H.264
-            "-c:a", "aac",         # Audio codec AAC
-            "-hls_time", "10",     # Durasi per segmen (detik)
-            "-hls_list_size", "0", # Masukkan semua segmen ke playlist
+            "-c:v", "libx264",
+            "-c:a", "aac",
+            "-hls_time", "10",
+            "-hls_list_size", "0",
             "-hls_segment_filename", segment_filename,
-            "-f", "hls",           # Format HLS
+            "-f", "hls",
             playlist_file
         ]
         
-        # Opsional: Uncomment baris di bawah untuk scaling (misal ke 720p)
-        # cmd.insert(2, "-vf")
-        # cmd.insert(3, "scale=-2:720")
-
         logger.info("Starting FFmpeg conversion...")
         try:
             subprocess.run(
@@ -105,17 +117,15 @@ def convert_and_upload(client, bucket, object_name, output_bucket, output_prefix
             
         conversion_time = time.time()
 
-        # 3. UPLOAD ke MinIO
+        # 3. UPLOAD
         logger.info(f"Uploading results to {output_bucket}/{output_prefix}...")
         uploaded_files = 0
         try:
             for root, _, files in os.walk(output_hls_dir):
                 for filename in files:
                     local_path = os.path.join(root, filename)
-                    # Buat path remote, misal: movies/matrix/playlist.m3u8
                     remote_path = os.path.join(output_prefix, filename) 
                     
-                    # Tentukan Content-Type
                     content_type = "application/octet-stream"
                     if filename.endswith(".m3u8"):
                         content_type = "application/x-mpegURL"
@@ -147,7 +157,7 @@ def convert_and_upload(client, bucket, object_name, output_bucket, output_prefix
         logger.info(f"Task Completed. Metrics: {metrics}")
         return metrics
 
-def run_worker():
+def run_worker(queue_name):
     r = get_redis_connection()
     try:
         minio_client = get_minio_client()
@@ -155,13 +165,10 @@ def run_worker():
         logger.error(f"Failed to initialize MinIO client: {e}")
         return
 
-    queue_name = "video_conversion_queue"
-    
     logger.info(f"MinIO Video Worker started. Listening on '{queue_name}'...")
     
     while True:
         try:
-            # Blocking pop - tunggu sampai ada tugas
             task = r.brpop(queue_name, timeout=5)
             
             if task:
@@ -193,4 +200,9 @@ def run_worker():
             time.sleep(1)
 
 if __name__ == "__main__":
-    run_worker()
+    parser = argparse.ArgumentParser(description="Video Conversion Worker")
+    parser.add_argument("--queue", default="video_conversion_queue", help="Redis queue name to listen on")
+    
+    args = parser.parse_args()
+    
+    run_worker(args.queue)

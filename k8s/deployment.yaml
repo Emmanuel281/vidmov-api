@@ -262,3 +262,38 @@ spec:
           envFrom:
             - secretRef:
                 name: arena-env
+---
+# Video Sync Worker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arena-video-sync-worker
+  namespace: gai-arena
+  labels:
+    app: arena-video-sync-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arena-video-sync-worker
+  template:
+    metadata:
+      labels:
+        app: arena-video-sync-worker
+    spec:
+      imagePullSecrets:
+        - name: gai-registry
+      containers:
+        - name: video-sync-worker
+          image: registry.gai.co.id/gai/vidmov-api:latest
+          args: ["video_worker"]
+          resources:
+            requests:
+              memory: "1000Mi"
+              cpu: "1000m"
+            limits:
+              memory: "2000Mi"
+              cpu: "2000m"
+          envFrom:
+            - secretRef:
+                name: arena-env
