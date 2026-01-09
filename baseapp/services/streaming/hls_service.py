@@ -1,4 +1,5 @@
 from typing import Optional, Dict, List
+from datetime import timedelta
 from minio.error import S3Error
 from baseapp.config import setting, minio
 from baseapp.utils.logger import Logger
@@ -21,7 +22,8 @@ class HLSPresignedURLService:
             expires_seconds: URL expiration time in seconds (default: 1 hour)
         """
         self.bucket_name = config.minio_bucket
-        self.expires = expires_seconds
+        self.expires_seconds = expires_seconds
+        self.expires_timedelta = timedelta(seconds=expires_seconds)
         self._minio_context = None
         self.minio = None
     
@@ -61,6 +63,7 @@ class HLSPresignedURLService:
             playlist_path = f"{base_path}/{playlist_filename}"
             
             logger.info(f"[HLS] Looking for playlist: {playlist_path}")
+            logger.info(f"[HLS] Bucket: {self.bucket_name}")
             
             # Check if playlist exists
             try:
@@ -69,14 +72,33 @@ class HLSPresignedURLService:
             except S3Error as e:
                 if e.code == 'NoSuchKey':
                     logger.warning(f"[HLS] Playlist not found: {playlist_path}")
+                    logger.info(f"[HLS] Attempting to list files in folder to debug...")
+                    
+                    # Debug: List what's actually in the folder
+                    try:
+                        objects = list(self.minio.list_objects(
+                            self.bucket_name,
+                            prefix=f"{content_id}/",
+                            recursive=True
+                        ))
+                        
+                        if objects:
+                            logger.info(f"[HLS] Found {len(objects)} files under {content_id}/:")
+                            for obj in objects[:10]:  # Show first 10
+                                logger.info(f"[HLS]   - {obj.object_name}")
+                        else:
+                            logger.warning(f"[HLS] No files found under {content_id}/")
+                    except Exception as list_err:
+                        logger.error(f"[HLS] Could not list files: {list_err}")
+                    
                     return None
                 raise
             
-            # Generate presigned URL for playlist
+            # Generate presigned URL for playlist (using timedelta)
             playlist_url = self.minio.presigned_get_object(
                 self.bucket_name,
                 playlist_path,
-                expires=self.expires
+                expires=self.expires_timedelta
             )
             
             # List all files in the HLS folder
@@ -90,11 +112,11 @@ class HLSPresignedURLService:
             total_size = 0
             
             for obj in objects:
-                # Generate presigned URL for each file
+                # Generate presigned URL for each file (using timedelta)
                 presigned_url = self.minio.presigned_get_object(
                     self.bucket_name,
                     obj.object_name,
-                    expires=self.expires
+                    expires=self.expires_timedelta
                 )
                 
                 file_info = {
@@ -122,7 +144,7 @@ class HLSPresignedURLService:
                 "segments": segments,
                 "total_files": len(segments),
                 "total_size_mb": round(total_size / (1024*1024), 2),
-                "expires_in_seconds": self.expires,
+                "expires_in_seconds": self.expires_seconds,
                 "expires_at": None  # Could add timestamp calculation if needed
             }
         
@@ -165,11 +187,11 @@ class HLSPresignedURLService:
                     return None
                 raise
             
-            # Generate presigned URL
+            # Generate presigned URL (using timedelta)
             playlist_url = self.minio.presigned_get_object(
                 self.bucket_name,
                 playlist_path,
-                expires=self.expires
+                expires=self.expires_timedelta
             )
             
             return playlist_url

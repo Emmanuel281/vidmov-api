@@ -244,3 +244,13 @@ highlight
 ###
 GET {{host}}/v1/_dms/browse/key/content/fc3d27cf64274413ab74b3f72122707b
 Authorization: Bearer {{token}}
+
+###
+# HLS: Video Check
+###
+GET {{host}}/v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a/check
+
+###
+# HLS: Video Check
+###
+GET {{host}}/v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a?folder_name=4845cbb7e2384723abeb4ff09bcbf2a1
