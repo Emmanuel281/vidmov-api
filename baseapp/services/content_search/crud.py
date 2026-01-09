@@ -2,13 +2,18 @@ from typing import Dict, List, Optional, Any
 import time
 
 from baseapp.config import mongodb, opensearch, minio, setting
-from baseapp.model.common import ContentStatus
+from baseapp.model.common import (
+    ContentStatus,
+    DOCTYPE_POSTER,
+    DOCTYPE_FYP_1,
+    DOCTYPE_FYP_2
+)
 from baseapp.utils.logger import Logger
 from baseapp.services.content_search.model import (
     ContentOpenSearchDocument,
-    MediaFile,
     GenreDetail
 )
+from baseapp.services.streaming.crud import StreamingURLMixin
 
 config = setting.get_settings()
 logger = Logger("services.content_search.crud")
@@ -97,9 +102,10 @@ CONTENT_INDEX_MAPPING = {
     }
 }
 
-class ContentSearchCRUD:
+class ContentSearchCRUD(StreamingURLMixin):
     
     def __init__(self, opensearch_index="content_search"):
+        super().__init__()
         self.opensearch_index = opensearch_index
         self.mongodb_collection = "content"
         self.user_id = None
@@ -262,36 +268,24 @@ class ContentSearchCRUD:
             self.mongo.get_database()['_dmsfile'].find(
                 {
                     "refkey_id": content_id,
-                    "doctype": "64c1c7ba4a5246648bf224bfd19fe118"  # Poster doctype
+                    "doctype": DOCTYPE_POSTER
                 },
                 {
-                    "_id": 1,
-                    "filename": 1,
-                    "metadata": 1,
-                    "folder_path": 1,
-                    "filestat": 1
+                    "id": "$_id",
+                    "_id": 0,
+                    "filename": "$filename",
+                    "metadata": "$metadata",
+                    "path": "$folder_path",
+                    "info_file": "$filestat"
                 }
             )
         )
         
         # Group poster by language
-        grouped_poster = {}
-        for poster in poster_files:
-            lang_key = "other"
-            if poster.get("metadata") and "Language" in poster["metadata"]:
-                lang_key = poster["metadata"]["Language"].lower()
-            
-            url = self.minio.presigned_get_object(config.minio_bucket, poster['filename'])
-            
-            grouped_poster[lang_key] = MediaFile(
-                id=str(poster['_id']),
-                filename=poster['filename'],
-                url=url,
-                path=poster.get('folder_path'),
-                info_file=poster.get('filestat')
-            )
-        
-        content['poster'] = grouped_poster
+        content['poster'] = self.process_poster_items(
+            content_id,
+            poster_files
+        )
         
         # Get video files if requested
         if include_videos:
@@ -300,86 +294,46 @@ class ContentSearchCRUD:
                 self.mongo.get_database()['_dmsfile'].find(
                     {
                         "refkey_id": content_id,
-                        "doctype": "31c557f0f4574f7aae55c1b6860a2e19"
+                        "doctype": DOCTYPE_FYP_1
                     },
                     {
-                        "_id": 1,
-                        "filename": 1,
-                        "metadata": 1,
-                        "folder_path": 1,
-                        "filestat": 1
+                        "id": "$_id",
+                        "_id": 0,
+                        "filename": "$filename",
+                        "metadata": "$metadata",
+                        "path": "$folder_path",
+                        "info_file": "$filestat"
                     }
                 )
             )
-            
-            grouped_fyp = {}
-            for video in fyp_files:
-                lang_key = "other"
-                res_key = "original"
-                
-                if video.get("metadata"):
-                    if "Language" in video["metadata"]:
-                        lang_key = video["metadata"]["Language"].lower()
-                    if "Resolution" in video["metadata"]:
-                        res_key = video["metadata"]["Resolution"].lower()
-                
-                url = self.minio.presigned_get_object(config.minio_bucket, video['filename'])
-                
-                if lang_key not in grouped_fyp:
-                    grouped_fyp[lang_key] = {}
-                
-                grouped_fyp[lang_key][res_key] = MediaFile(
-                    id=str(video['_id']),
-                    filename=video['filename'],
-                    url=url,
-                    path=video.get('folder_path'),
-                    info_file=video.get('filestat')
-                )
-            
-            content['fyp_1'] = grouped_fyp
+            content['fyp_1'] = self.process_video_items(
+                content_id,
+                fyp_files,
+                'fyp_1'
+            )
 
             # FYP #2 videos
             fyp_files = list(
                 self.mongo.get_database()['_dmsfile'].find(
                     {
                         "refkey_id": content_id,
-                        "doctype": "3551a74699394f22b21ecf8277befa39"
+                        "doctype": DOCTYPE_FYP_2
                     },
                     {
-                        "_id": 1,
-                        "filename": 1,
-                        "metadata": 1,
-                        "folder_path": 1,
-                        "filestat": 1
+                        "id": "$_id",
+                        "_id": 0,
+                        "filename": "$filename",
+                        "metadata": "$metadata",
+                        "path": "$folder_path",
+                        "info_file": "$filestat"
                     }
                 )
             )
-            
-            grouped_fyp = {}
-            for video in fyp_files:
-                lang_key = "other"
-                res_key = "original"
-                
-                if video.get("metadata"):
-                    if "Language" in video["metadata"]:
-                        lang_key = video["metadata"]["Language"].lower()
-                    if "Resolution" in video["metadata"]:
-                        res_key = video["metadata"]["Resolution"].lower()
-                
-                url = self.minio.presigned_get_object(config.minio_bucket, video['filename'])
-                
-                if lang_key not in grouped_fyp:
-                    grouped_fyp[lang_key] = {}
-                
-                grouped_fyp[lang_key][res_key] = MediaFile(
-                    id=str(video['_id']),
-                    filename=video['filename'],
-                    url=url,
-                    path=video.get('folder_path'),
-                    info_file=video.get('filestat')
-                )
-            
-            content['fyp_2'] = grouped_fyp
+            content['fyp_2'] = self.process_video_items(
+                content_id,
+                fyp_files,
+                'fyp_2'
+            )
         
         return content
     

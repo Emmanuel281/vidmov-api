@@ -1,6 +1,15 @@
 from typing import Optional
 from baseapp.config import mongodb
 from baseapp.utils.logger import Logger
+from baseapp.model.common import (
+    DOCTYPE_POSTER,
+    DOCTYPE_FYP_1,
+    DOCTYPE_FYP_2,
+    DOCTYPE_LOGO,
+    DOCTYPE_VIDEO,
+    DOCTYPE_SUBTITLE,
+    DOCTYPE_DUBBING
+)
 
 logger = Logger("baseapp.services.streaming.resolver")
 
@@ -8,15 +17,6 @@ class MediaResolver:
     """
     Resolver untuk mencari filename dari MongoDB berdasarkan metadata
     """
-    
-    # Document type IDs
-    DOCTYPE_POSTER = "64c1c7ba4a5246648bf224bfd19fe118"
-    DOCTYPE_FYP_1 = "31c557f0f4574f7aae55c1b6860a2e19"
-    DOCTYPE_FYP_2 = "3551a74699394f22b21ecf8277befa39"
-    DOCTYPE_LOGO = "28f0634cdbea43f89010a147e365ae98"
-    DOCTYPE_VIDEO = "d67d38fe623b40ccb0ddb4671982c0d3"
-    DOCTYPE_SUBTITLE = "ab176d7597704fe0b10f6521ca5b96bd"
-    DOCTYPE_DUBBING = "4a626e3ebb8242a7b448a6203af4aefb"
     
     def __init__(self):
         self._mongo_context = None
@@ -83,9 +83,9 @@ class MediaResolver:
         """
         # Determine doctype based on video_type
         if video_type == "fyp_1":
-            doctype = self.DOCTYPE_FYP_1
+            doctype = DOCTYPE_FYP_1
         elif video_type == "fyp_2":
-            doctype = self.DOCTYPE_FYP_2
+            doctype = DOCTYPE_FYP_2
         else:
             logger.error(f"Invalid video_type: {video_type}")
             return None
@@ -105,7 +105,7 @@ class MediaResolver:
         """Resolve poster filename"""
         return self._find_file(
             refkey_id=content_id,
-            doctype=self.DOCTYPE_POSTER,
+            doctype=DOCTYPE_POSTER,
             language=language
         )
     
@@ -113,7 +113,7 @@ class MediaResolver:
         """Resolve brand logo filename"""
         return self._find_file(
             refkey_id=brand_id,
-            doctype=self.DOCTYPE_LOGO
+            doctype=DOCTYPE_LOGO
         )
     
     def resolve_episode_video_filename(
@@ -124,7 +124,7 @@ class MediaResolver:
         """Resolve episode video filename"""
         return self._find_file(
             refkey_id=episode_id,
-            doctype=self.DOCTYPE_VIDEO,
+            doctype=DOCTYPE_VIDEO,
             resolution=resolution
         )
     
@@ -136,7 +136,7 @@ class MediaResolver:
         """Resolve subtitle filename"""
         return self._find_file(
             refkey_id=episode_id,
-            doctype=self.DOCTYPE_SUBTITLE,
+            doctype=DOCTYPE_SUBTITLE,
             language=language
         )
     
@@ -148,7 +148,7 @@ class MediaResolver:
         """Resolve dubbing filename"""
         return self._find_file(
             refkey_id=episode_id,
-            doctype=self.DOCTYPE_DUBBING,
+            doctype=DOCTYPE_DUBBING,
             language=language
         )
     
@@ -162,7 +162,7 @@ class MediaResolver:
             
             query = {
                 "refkey_id": episode_id,
-                "doctype": self.DOCTYPE_VIDEO
+                "doctype": DOCTYPE_VIDEO
             }
             
             files = collection.find(query, {
@@ -194,7 +194,7 @@ class MediaResolver:
         try:
             collection = self.mongo.get_database()['_dmsfile']
             
-            doctype = self.DOCTYPE_FYP_1 if video_type == "fyp_1" else self.DOCTYPE_FYP_2
+            doctype = DOCTYPE_FYP_1 if video_type == "fyp_1" else DOCTYPE_FYP_2
             
             query = {
                 "refkey_id": content_id,
