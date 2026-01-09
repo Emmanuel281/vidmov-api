@@ -1,5 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Query, Depends, Request, Header, HTTPException
+from fastapi.responses import StreamingResponse
 
 from baseapp.config import setting
 from baseapp.model.common import CurrentUser, RoleAction, Authority
@@ -9,6 +10,10 @@ from baseapp.services.permission_check_service import PermissionChecker
 from baseapp.services.streaming.service import StreamingService
 from baseapp.services.streaming.resolver import MediaResolver
 from baseapp.utils.logger import Logger
+from baseapp.config import minio, setting
+
+from baseapp.services.streaming.hls_service import HLSPresignedURLService
+
 
 config = setting.get_settings()
 permission_checker = PermissionChecker()
@@ -196,4 +201,242 @@ async def stream_file_direct(
         raise
     except Exception as e:
         logger.exception(f"Error in stream_file_direct: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    
+@router.get("/hls/{content_id}")
+async def get_hls_stream_urls(
+    content_id: str,
+    folder_name: Optional[str] = Query(None, description="Folder name (default: same as content_id)"),
+    expires: int = Query(3600, ge=300, le=86400, description="URL expiration in seconds (5 min - 24 hours)")
+):
+    """
+    Get presigned URLs for HLS streaming
+    
+    Returns playlist URL and all segment URLs that expire after specified time.
+    
+    Path Parameters:
+        content_id: The content ID (e.g., "4845cbb7e2384723abeb4ff09bcbf2a")
+    
+    Query Parameters:
+        folder_name: Optional folder name. If not provided, uses content_id as folder name.
+        expires: URL expiration time in seconds (default: 3600 = 1 hour)
+    
+    Response:
+        {
+            "success": true,
+            "data": {
+                "content_id": "4845cbb7e2384723abeb4ff09bcbf2a",
+                "playlist_url": "https://minio.gai.co.id/arena/...",
+                "segments": [...],
+                "total_files": 6,
+                "total_size_mb": 17.99,
+                "expires_in_seconds": 3600
+            }
+        }
+    
+    Example:
+        GET /v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a
+        GET /v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a?folder_name=4845cbb7e2384723abeb4ff09bcbf2a1
+        GET /v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a?expires=7200
+    """
+    try:
+        with HLSPresignedURLService(expires_seconds=expires) as hls_service:
+            result = hls_service.get_hls_urls(content_id, folder_name)
+            
+            if not result:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"HLS content not found for content_id: {content_id}"
+                )
+            
+            return {
+                "success": True,
+                "data": result
+            }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error getting HLS URLs: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/hls/{content_id}/playlist")
+async def get_hls_playlist_url_only(
+    content_id: str,
+    folder_name: Optional[str] = Query(None, description="Folder name (default: same as content_id)"),
+    expires: int = Query(3600, ge=300, le=86400, description="URL expiration in seconds")
+):
+    """
+    Get only the presigned URL for the HLS playlist (faster endpoint)
+    
+    Use this when you only need the playlist URL and don't need segment details.
+    This is faster than the full endpoint.
+    
+    Path Parameters:
+        content_id: The content ID
+    
+    Query Parameters:
+        folder_name: Optional folder name
+        expires: URL expiration time in seconds
+    
+    Response:
+        {
+            "success": true,
+            "data": {
+                "content_id": "4845cbb7e2384723abeb4ff09bcbf2a",
+                "folder_name": "4845cbb7e2384723abeb4ff09bcbf2a1",
+                "playlist_url": "https://minio.gai.co.id/arena/...",
+                "expires_in_seconds": 3600
+            }
+        }
+    
+    Example:
+        GET /v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a/playlist
+    """
+    try:
+        with HLSPresignedURLService(expires_seconds=expires) as hls_service:
+            playlist_url = hls_service.get_hls_playlist_url_only(content_id, folder_name)
+            
+            if not playlist_url:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"HLS playlist not found for content_id: {content_id}"
+                )
+            
+            return {
+                "success": True,
+                "data": {
+                    "content_id": content_id,
+                    "folder_name": folder_name or content_id,
+                    "playlist_url": playlist_url,
+                    "expires_in_seconds": expires
+                }
+            }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error getting HLS playlist URL: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/hls/{content_id}/check")
+async def check_hls_availability(
+    content_id: str,
+    folder_name: Optional[str] = Query(None, description="Folder name (default: same as content_id)")
+):
+    """
+    Check if HLS content exists and is ready to stream
+    
+    Useful for validating before attempting to stream or showing UI indicators.
+    
+    Path Parameters:
+        content_id: The content ID
+    
+    Query Parameters:
+        folder_name: Optional folder name
+    
+    Response:
+        {
+            "success": true,
+            "data": {
+                "content_id": "4845cbb7e2384723abeb4ff09bcbf2a",
+                "folder_name": "4845cbb7e2384723abeb4ff09bcbf2a1",
+                "exists": true
+            }
+        }
+    
+    Example:
+        GET /v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a/check
+    """
+    try:
+        with HLSPresignedURLService() as hls_service:
+            exists = hls_service.check_hls_exists(content_id, folder_name)
+            
+            return {
+                "success": True,
+                "data": {
+                    "content_id": content_id,
+                    "folder_name": folder_name or content_id,
+                    "exists": exists
+                }
+            }
+    
+    except Exception as e:
+        logger.exception(f"Error checking HLS existence: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/hls/batch")
+async def get_batch_hls_urls(
+    request: Request,
+    content_ids: List[str],
+    folder_names: Optional[List[str]] = None,
+    expires: int = Query(3600, ge=300, le=86400, description="URL expiration in seconds")
+):
+    """
+    Get HLS URLs for multiple content IDs in a single request
+    
+    Useful for batch processing or loading multiple videos at once.
+    More efficient than making individual requests.
+    
+    Request Body:
+        {
+            "content_ids": ["id1", "id2", "id3"],
+            "folder_names": ["folder1", "folder2", "folder3"]  // optional, must match content_ids length
+        }
+    
+    Query Parameters:
+        expires: URL expiration time in seconds
+    
+    Response:
+        {
+            "success": true,
+            "data": {
+                "results": {
+                    "id1": {...hls_data...},
+                    "id2": {...hls_data...},
+                    "id3": null  // if not found
+                },
+                "total": 3,
+                "success_count": 2,
+                "failed_count": 1
+            }
+        }
+    
+    Example:
+        POST /v1/stream/hls/batch
+        Body: {
+            "content_ids": ["4845cbb7e2384723abeb4ff09bcbf2a", "abc123def456"]
+        }
+    """
+    try:
+        if folder_names and len(folder_names) != len(content_ids):
+            raise HTTPException(
+                status_code=400,
+                detail="folder_names length must match content_ids length"
+            )
+        
+        with HLSPresignedURLService(expires_seconds=expires) as hls_service:
+            results = hls_service.get_multiple_hls_urls(content_ids, folder_names)
+            
+            # Count successes and failures
+            success_count = sum(1 for v in results.values() if v is not None)
+            failed_count = len(results) - success_count
+            
+            return {
+                "success": True,
+                "data": {
+                    "results": results,
+                    "total": len(content_ids),
+                    "success_count": success_count,
+                    "failed_count": failed_count
+                }
+            }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error getting batch HLS URLs: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
