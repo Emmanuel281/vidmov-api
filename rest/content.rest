@@ -251,6 +251,6 @@ Authorization: Bearer {{token}}
 GET {{host}}/v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a/check
 
 ###
-# HLS: Video Check
+# HLS: Video Get URL
 ###
 GET {{host}}/v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a?folder_name=4845cbb7e2384723abeb4ff09bcbf2a1

@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Query, Depends, Request, Header, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 
 from baseapp.config import setting
 from baseapp.model.common import CurrentUser, RoleAction, Authority
@@ -202,7 +202,62 @@ async def stream_file_direct(
     except Exception as e:
         logger.exception(f"Error in stream_file_direct: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/hls/{content_id}/playlist.m3u8")
+async def get_hls_playlist_file(
+    content_id: str,
+    folder_name: Optional[str] = Query(None, description="Folder name (default: same as content_id)"),
+    expires: int = Query(3600, ge=300, le=86400, description="URL expiration in seconds")
+):
+    """
+    Get the rewritten M3U8 playlist with presigned URLs for all segments
     
+    This endpoint returns the actual playlist file that video players should use.
+    All segment URLs in the playlist are rewritten to use presigned URLs.
+    
+    Path Parameters:
+        content_id: The content ID
+    
+    Query Parameters:
+        folder_name: Optional folder name
+        expires: URL expiration time in seconds
+    
+    Response:
+        M3U8 playlist file with presigned URLs
+    
+    Example:
+        <video>
+            <source src="https://yourapi.com/v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a/playlist.m3u8?folder_name=4845cbb7e2384723abeb4ff09bcbf2a1" type="application/x-mpegURL">
+        </video>
+    """
+    try:
+        with HLSPresignedURLService(expires_seconds=expires) as hls_service:
+            playlist_content = hls_service.get_hls_playlist_content(content_id, folder_name)
+            
+            if not playlist_content:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"HLS playlist not found for content_id: {content_id}"
+                )
+            
+            return Response(
+                content=playlist_content,
+                media_type="application/vnd.apple.mpegurl",
+                headers={
+                    "Content-Type": "application/vnd.apple.mpegurl",
+                    "Cache-Control": "no-cache",
+                    "Access-Control-Allow-Origin": "*"
+                }
+            )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error serving HLS playlist: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    
+
 @router.get("/hls/{content_id}")
 async def get_hls_stream_urls(
     content_id: str,
@@ -210,9 +265,10 @@ async def get_hls_stream_urls(
     expires: int = Query(3600, ge=300, le=86400, description="URL expiration in seconds (5 min - 24 hours)")
 ):
     """
-    Get presigned URLs for HLS streaming
+    Get HLS streaming information including the playlist URL
     
-    Returns playlist URL and all segment URLs that expire after specified time.
+    Returns the URL to the rewritten playlist that contains presigned segment URLs.
+    Use the playlist_url in your video player.
     
     Path Parameters:
         content_id: The content ID (e.g., "4845cbb7e2384723abeb4ff09bcbf2a")
@@ -226,7 +282,7 @@ async def get_hls_stream_urls(
             "success": true,
             "data": {
                 "content_id": "4845cbb7e2384723abeb4ff09bcbf2a",
-                "playlist_url": "https://minio.gai.co.id/arena/...",
+                "playlist_url": "https://yourapi.com/v1/stream/hls/.../playlist.m3u8",
                 "segments": [...],
                 "total_files": 6,
                 "total_size_mb": 17.99,
@@ -235,9 +291,7 @@ async def get_hls_stream_urls(
         }
     
     Example:
-        GET /v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a
         GET /v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a?folder_name=4845cbb7e2384723abeb4ff09bcbf2a1
-        GET /v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a?expires=7200
     """
     try:
         with HLSPresignedURLService(expires_seconds=expires) as hls_service:
@@ -249,9 +303,12 @@ async def get_hls_stream_urls(
                     detail=f"HLS content not found for content_id: {content_id}"
                 )
             
+            # Remove the playlist_content from response (it's large)
+            result_without_content = {k: v for k, v in result.items() if k != 'playlist_content'}
+            
             return {
                 "success": True,
-                "data": result
+                "data": result_without_content
             }
     
     except HTTPException:

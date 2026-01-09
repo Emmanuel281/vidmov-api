@@ -3,6 +3,7 @@ from datetime import timedelta
 from minio.error import S3Error
 from baseapp.config import setting, minio
 from baseapp.utils.logger import Logger
+import re
 
 config = setting.get_settings()
 logger = Logger("baseapp.services.streaming.hls_service")
@@ -37,6 +38,54 @@ class HLSPresignedURLService:
             return self._minio_context.__exit__(exc_type, exc_value, traceback)
         return False
     
+    def _rewrite_playlist_with_presigned_urls(
+        self, 
+        playlist_content: str, 
+        base_path: str
+    ) -> str:
+        """
+        Rewrite M3U8 playlist to use presigned URLs for all segments
+        
+        Args:
+            playlist_content: Original M3U8 content
+            base_path: Base path for the segments
+        
+        Returns:
+            Modified M3U8 content with presigned URLs
+        """
+        lines = playlist_content.split('\n')
+        modified_lines = []
+        
+        for line in lines:
+            stripped = line.strip()
+            
+            # Skip empty lines, comments, and tags
+            if not stripped or stripped.startswith('#'):
+                modified_lines.append(line)
+                continue
+            
+            # This line should be a segment filename
+            # Check if it's already a full URL
+            if stripped.startswith('http://') or stripped.startswith('https://'):
+                modified_lines.append(line)
+                continue
+            
+            # It's a relative filename - generate presigned URL
+            try:
+                segment_path = f"{base_path}/{stripped}"
+                presigned_url = self.minio.presigned_get_object(
+                    self.bucket_name,
+                    segment_path,
+                    expires=self.expires_timedelta
+                )
+                modified_lines.append(presigned_url)
+                logger.debug(f"[HLS] Rewrote segment: {stripped} -> presigned URL")
+            except Exception as e:
+                logger.error(f"[HLS] Failed to generate presigned URL for {stripped}: {e}")
+                modified_lines.append(line)  # Keep original on error
+        
+        return '\n'.join(modified_lines)
+    
     def get_hls_urls(
         self, 
         content_id: str,
@@ -65,10 +114,23 @@ class HLSPresignedURLService:
             logger.info(f"[HLS] Looking for playlist: {playlist_path}")
             logger.info(f"[HLS] Bucket: {self.bucket_name}")
             
-            # Check if playlist exists
+            # Check if playlist exists and get it
             try:
                 playlist_stat = self.minio.stat_object(self.bucket_name, playlist_path)
                 logger.info(f"[HLS] Playlist found: {playlist_path} ({playlist_stat.size} bytes)")
+                
+                # Download the playlist content
+                response = self.minio.get_object(self.bucket_name, playlist_path)
+                playlist_content = response.read().decode('utf-8')
+                response.close()
+                response.release_conn()
+                
+                # Rewrite playlist with presigned URLs
+                modified_playlist = self._rewrite_playlist_with_presigned_urls(
+                    playlist_content, 
+                    base_path
+                )
+                
             except S3Error as e:
                 if e.code == 'NoSuchKey':
                     logger.warning(f"[HLS] Playlist not found: {playlist_path}")
@@ -94,12 +156,12 @@ class HLSPresignedURLService:
                     return None
                 raise
             
-            # Generate presigned URL for playlist (using timedelta)
-            playlist_url = self.minio.presigned_get_object(
-                self.bucket_name,
-                playlist_path,
-                expires=self.expires_timedelta
-            )
+            # Generate presigned URL for the modified playlist
+            # Note: We can't serve the modified playlist directly via MinIO presigned URL
+            # We'll need to serve it through our API endpoint
+            playlist_url = f"/v1/stream/hls/{content_id}/playlist.m3u8"
+            if folder_name != content_id:
+                playlist_url += f"?folder_name={folder_name}"
             
             # List all files in the HLS folder
             objects = self.minio.list_objects(
@@ -140,12 +202,13 @@ class HLSPresignedURLService:
                 "folder_name": folder_name,
                 "base_path": base_path,
                 "playlist_url": playlist_url,
+                "playlist_content": modified_playlist,  # Include modified content
                 "playlist_filename": playlist_filename,
                 "segments": segments,
                 "total_files": len(segments),
                 "total_size_mb": round(total_size / (1024*1024), 2),
                 "expires_in_seconds": self.expires_seconds,
-                "expires_at": None  # Could add timestamp calculation if needed
+                "expires_at": None
             }
         
         except S3Error as e:
@@ -155,49 +218,44 @@ class HLSPresignedURLService:
             logger.exception(f"[HLS] Unexpected error: {str(e)}")
             return None
     
-    def get_hls_playlist_url_only(
+    def get_hls_playlist_content(
         self,
         content_id: str,
         folder_name: Optional[str] = None
     ) -> Optional[str]:
         """
-        Get only the presigned URL for the HLS playlist
-        Faster alternative when you only need the playlist URL
+        Get the rewritten M3U8 playlist content with presigned URLs
         
         Args:
             content_id: Content ID
-            folder_name: Optional folder name (default: uses content_id)
+            folder_name: Optional folder name
         
         Returns:
-            Presigned playlist URL or None if not found
+            Modified M3U8 content or None
         """
         try:
             if folder_name is None:
                 folder_name = content_id
             
             base_path = f"{content_id}/{folder_name}"
-            playlist_filename = f"{folder_name}.m3u8"
-            playlist_path = f"{base_path}/{playlist_filename}"
+            playlist_path = f"{base_path}/{folder_name}.m3u8"
             
-            # Check if exists
-            try:
-                self.minio.stat_object(self.bucket_name, playlist_path)
-            except S3Error as e:
-                if e.code == 'NoSuchKey':
-                    return None
-                raise
+            # Download original playlist
+            response = self.minio.get_object(self.bucket_name, playlist_path)
+            playlist_content = response.read().decode('utf-8')
+            response.close()
+            response.release_conn()
             
-            # Generate presigned URL (using timedelta)
-            playlist_url = self.minio.presigned_get_object(
-                self.bucket_name,
-                playlist_path,
-                expires=self.expires_timedelta
+            # Rewrite with presigned URLs
+            modified_playlist = self._rewrite_playlist_with_presigned_urls(
+                playlist_content,
+                base_path
             )
             
-            return playlist_url
-        
+            return modified_playlist
+            
         except Exception as e:
-            logger.error(f"[HLS] Error getting playlist URL: {str(e)}")
+            logger.error(f"[HLS] Error getting playlist content: {str(e)}")
             return None
     
     def check_hls_exists(
@@ -258,60 +316,3 @@ class HLSPresignedURLService:
                 results[content_id] = None
         
         return results
-
-
-# Standalone function for quick use without context manager
-def get_hls_presigned_urls(
-    content_id: str,
-    folder_name: Optional[str] = None,
-    expires_seconds: int = 3600
-) -> Optional[Dict]:
-    """
-    Standalone function to get HLS presigned URLs
-    Can be imported and used anywhere
-    
-    Args:
-        content_id: Content ID
-        folder_name: Optional folder name
-        expires_seconds: URL expiration time
-    
-    Returns:
-        Dict with HLS URLs or None
-    
-    Example:
-        from baseapp.services.streaming.hls_service import get_hls_presigned_urls
-        
-        urls = get_hls_presigned_urls("abc123", "abc1231", expires_seconds=7200)
-        if urls:
-            print(urls['playlist_url'])
-    """
-    with HLSPresignedURLService(expires_seconds=expires_seconds) as hls_service:
-        return hls_service.get_hls_urls(content_id, folder_name)
-
-
-def get_hls_playlist_url(
-    content_id: str,
-    folder_name: Optional[str] = None,
-    expires_seconds: int = 3600
-) -> Optional[str]:
-    """
-    Standalone function to get only the playlist URL
-    Faster than getting all URLs
-    
-    Args:
-        content_id: Content ID
-        folder_name: Optional folder name
-        expires_seconds: URL expiration time
-    
-    Returns:
-        Presigned playlist URL or None
-    
-    Example:
-        from baseapp.services.streaming.hls_service import get_hls_playlist_url
-        
-        url = get_hls_playlist_url("abc123", "abc1231")
-        if url:
-            print(f"Stream at: {url}")
-    """
-    with HLSPresignedURLService(expires_seconds=expires_seconds) as hls_service:
-        return hls_service.get_hls_playlist_url_only(content_id, folder_name)
