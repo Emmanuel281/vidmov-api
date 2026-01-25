@@ -9,10 +9,11 @@ from pathlib import Path
 from fastapi import UploadFile
 
 from baseapp.utils.utility import generate_uuid
-from baseapp.config import setting, mongodb, minio
+from baseapp.config import setting, mongodb, minio, redis
 from baseapp.utils.logger import Logger
 from baseapp.services._dms.upload.model import UploadFile, SetMetaData
 from baseapp.services.audit_trail_service import AuditTrailService
+from baseapp.services.redis_queue import RedisQueueManager
 
 config = setting.get_settings()
 logger = Logger("baseapp.services._dms.upload.crud")
@@ -213,6 +214,11 @@ class CRUD:
 
             # update storage
             collection_org.find_one_and_update({"_id": self.org_id}, {"$set": {"usedstorage":storage_minio+file_size}}, return_document=True)
+            
+            if payload["doctype"] in ['31c557f0f4574f7aae55c1b6860a2e19', '3551a74699394f22b21ecf8277befa39']:
+                with redis.RedisConn() as redis_conn:
+                    queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name="video_convert_tasks")
+                    queue_manager.enqueue_task({"content_id": "4845cbb7e2384723abeb4ff09bcbf2a", "file": "4845cbb7e2384723abeb4ff09bcbf2a1.mp4"})
 
             return {
                 "filename":object_name,
