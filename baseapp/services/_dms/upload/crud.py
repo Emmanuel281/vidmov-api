@@ -218,9 +218,9 @@ class CRUD:
             if payload["doctype"] in ['31c557f0f4574f7aae55c1b6860a2e19', '3551a74699394f22b21ecf8277befa39']:
                 print("enqueue redis video convert task")
                 print(f"content_id: {obj['metadata']['Content ID']}, file: {obj['filename']}")
-                # with redis.RedisConn() as redis_conn:
-                #     queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name="video_convert_tasks")
-                #     queue_manager.enqueue_task({"content_id": obj["metadata"]["Content ID"], "file": obj["filename"]})
+                with redis.RedisConn() as redis_conn:
+                    queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name="video_convert_tasks")
+                    queue_manager.enqueue_task({"content_id": obj["metadata"]["Content ID"], "file": obj["filename"]})
 
             return {
                 "filename":object_name,
