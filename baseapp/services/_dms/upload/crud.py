@@ -216,9 +216,11 @@ class CRUD:
             collection_org.find_one_and_update({"_id": self.org_id}, {"$set": {"usedstorage":storage_minio+file_size}}, return_document=True)
             
             if payload["doctype"] in ['31c557f0f4574f7aae55c1b6860a2e19', '3551a74699394f22b21ecf8277befa39']:
-                with redis.RedisConn() as redis_conn:
-                    queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name="video_convert_tasks")
-                    queue_manager.enqueue_task({"content_id": "4845cbb7e2384723abeb4ff09bcbf2a", "file": "4845cbb7e2384723abeb4ff09bcbf2a1.mp4"})
+                print("enqueue redis video convert task")
+                print(obj["metadata"])
+                # with redis.RedisConn() as redis_conn:
+                #     queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name="video_convert_tasks")
+                #     queue_manager.enqueue_task({"content_id": "4845cbb7e2384723abeb4ff09bcbf2a", "file": "4845cbb7e2384723abeb4ff09bcbf2a1.mp4"})
 
             return {
                 "filename":object_name,
