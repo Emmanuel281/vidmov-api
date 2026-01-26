@@ -30,7 +30,8 @@ class VideoWorker(BaseWorker):
         }
         """
         start_time = time.time()
-        logger.info(f"[BENCHMARK] Starting video processing task: {data}")
+        
+        logger.info(f"[BENCHMARK] Starting video processing task: {data}, Time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}")
         
         # Validate input
         if not data.get("content_id"):
@@ -51,7 +52,25 @@ class VideoWorker(BaseWorker):
         
         try:
             with minio.MinioConn() as minio_client:
-                # Step 1: Download video from MinIO
+                # Step 1: Check if file exists in MinIO
+                logger.info(f"[PROGRESS] Checking if file exists: {source_file} in bucket: {config.minio_bucket}")
+                try:
+                    stat = minio_client.stat_object(config.minio_bucket, source_file)
+                    logger.info(f"[PROGRESS] File found - Size: {stat.size / (1024*1024):.2f} MB, Last Modified: {stat.last_modified}")
+                except S3Error as e:
+                    if e.code == 'NoSuchKey':
+                        logger.error(f"[ERROR] File not found in MinIO: {source_file}")
+                        logger.error(f"[ERROR] Bucket: {config.minio_bucket}, Object: {source_file}")
+                        logger.info("[INFO] Listing files in bucket to help debug:")
+                        try:
+                            objects = minio_client.list_objects(config.minio_bucket, prefix="", recursive=True)
+                            file_list = [obj.object_name for obj in list(objects)[:10]]  # Show first 10 files
+                            logger.info(f"[INFO] Sample files in bucket: {file_list}")
+                        except Exception as list_err:
+                            logger.error(f"[ERROR] Could not list bucket contents: {list_err}")
+                    raise
+                
+                # Step 2: Download video from MinIO
                 download_start = time.time()
                 logger.info(f"[PROGRESS] Step 1/4: Downloading video from MinIO: {source_file}")
                 
@@ -96,6 +115,9 @@ class VideoWorker(BaseWorker):
                 minio_dest_path = f"{content_id}/{file_name_without_ext}"
                 logger.info(f"[PROGRESS] Step 3/4: Uploading HLS files to MinIO: {minio_dest_path}")
                 
+                # Rewrite m3u8 to use full paths before uploading
+                self._rewrite_m3u8_with_full_paths(hls_output_dir, file_name_without_ext, minio_dest_path)
+                
                 uploaded_count = self._upload_hls_to_minio(
                     minio_client,
                     hls_output_dir,
@@ -122,6 +144,7 @@ class VideoWorker(BaseWorker):
                     f"  Input File Size: {file_size_mb:.2f} MB\n"
                     f"  Output Files: {uploaded_count}\n"
                     f"  Output Path: {minio_dest_path}\n"
+                    f"  HLS Folder: {file_name_without_ext}\n"
                     f"  Download Speed: {file_size_mb/download_time:.2f} MB/s\n"
                     f"  Conversion Speed: {file_size_mb/conversion_time:.2f} MB/s\n"
                     f"  Upload Speed: {uploaded_count/upload_time:.2f} files/s\n"
@@ -129,6 +152,15 @@ class VideoWorker(BaseWorker):
                 )
                 
                 logger.info(f"[PROGRESS] Step 4/4: Processing completed successfully!")
+                
+                # Update database with HLS info (optional but recommended)
+                self._update_content_with_hls_info(
+                    content_id=content_id,
+                    hls_folder=file_name_without_ext,
+                    hls_path=minio_dest_path,
+                    total_files=uploaded_count,
+                    total_size_mb=file_size_mb
+                )
                 
                 return uploaded_count
                 
@@ -273,6 +305,57 @@ class VideoWorker(BaseWorker):
             logger.warning(f"Could not get video duration: {e}")
             return 0.0
     
+    def _rewrite_m3u8_with_full_paths(
+        self,
+        hls_dir: str,
+        base_name: str,
+        minio_path: str
+    ):
+        """
+        Rewrite m3u8 playlist to use full paths instead of relative paths.
+        This ensures segments are accessible from MinIO.
+        
+        Args:
+            hls_dir: Local HLS directory
+            base_name: Base name for files
+            minio_path: Destination path in MinIO
+        """
+        try:
+            m3u8_file = os.path.join(hls_dir, f"{base_name}.m3u8")
+            
+            if not os.path.exists(m3u8_file):
+                logger.warning(f"M3U8 file not found: {m3u8_file}")
+                return
+            
+            # Read original m3u8
+            with open(m3u8_file, 'r') as f:
+                content = f.read()
+            
+            # Replace relative paths with full paths
+            # Original: base_name_000.ts
+            # New: {minio_path}/base_name_000.ts
+            lines = content.split('\n')
+            new_lines = []
+            
+            for line in lines:
+                # Check if line is a segment file (ends with .ts)
+                if line.strip().endswith('.ts'):
+                    # Convert to full path
+                    new_line = f"{minio_path}/{line.strip()}"
+                    new_lines.append(new_line)
+                    logger.debug(f"[M3U8] Rewrite: {line.strip()} -> {new_line}")
+                else:
+                    new_lines.append(line)
+            
+            # Write updated m3u8
+            with open(m3u8_file, 'w') as f:
+                f.write('\n'.join(new_lines))
+            
+            logger.info(f"[PROGRESS] Rewrote m3u8 with full paths for {len([l for l in new_lines if l.endswith('.ts')])} segments")
+            
+        except Exception as e:
+            logger.warning(f"Failed to rewrite m3u8: {e}")
+    
     def _upload_hls_to_minio(
         self,
         minio_client,
@@ -360,3 +443,52 @@ class VideoWorker(BaseWorker):
         }
         
         return content_types.get(extension, "application/octet-stream")
+    
+    def _update_content_with_hls_info(
+        self,
+        content_id: str,
+        hls_folder: str,
+        hls_path: str,
+        total_files: int,
+        total_size_mb: float
+    ):
+        """
+        Update content document with HLS conversion information.
+        This helps track which videos have HLS available.
+        
+        Args:
+            content_id: Content ID
+            hls_folder: HLS folder name
+            hls_path: Full path in MinIO
+            total_files: Number of HLS files
+            total_size_mb: Total size in MB
+        """
+        try:
+            with mongodb.MongoConn() as mongo:
+                # Update your content collection (adjust collection name as needed)
+                collection = mongo.get_database()["_content"]  # Change to your collection name
+                
+                from datetime import datetime
+                
+                update_data = {
+                    "hls_status": "ready",
+                    "hls_folder": hls_folder,
+                    "hls_path": hls_path,
+                    "hls_files_count": total_files,
+                    "hls_size_mb": total_size_mb,
+                    "hls_converted_at": datetime.utcnow()
+                }
+                
+                result = collection.update_one(
+                    {"_id": content_id},
+                    {"$set": update_data}
+                )
+                
+                if result.modified_count > 0:
+                    logger.info(f"[PROGRESS] Updated content {content_id} with HLS info")
+                else:
+                    logger.warning(f"[PROGRESS] Content {content_id} not found in database, HLS info not saved")
+                    
+        except Exception as e:
+            # Don't fail the whole process if DB update fails
+            logger.warning(f"Failed to update database with HLS info: {e}")
