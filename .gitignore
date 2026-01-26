@@ -32,6 +32,7 @@ share/
 temp/
 
 .env
+!k8s/.env
 .venv
 venv
 bin/

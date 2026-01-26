@@ -13,6 +13,18 @@ DOCTYPE_VIDEO = "d67d38fe623b40ccb0ddb4671982c0d3"
 DOCTYPE_SUBTITLE = "ab176d7597704fe0b10f6521ca5b96bd"
 DOCTYPE_DUBBING = "4a626e3ebb8242a7b448a6203af4aefb"
 
+class DocumentType(str, Enum):
+    POSTER = DOCTYPE_POSTER
+    FYP_1 = DOCTYPE_FYP_1
+    FYP_2 = DOCTYPE_FYP_2
+    LOGO = DOCTYPE_LOGO
+    VIDEO = DOCTYPE_VIDEO
+    SUBTITLE = DOCTYPE_SUBTITLE
+    DUBBING = DOCTYPE_DUBBING
+    
+class HLS(BaseModel):
+    rules: List[DocumentType]
+
 class Status(str, Enum):
     """Status of a user and client"""
     ACTIVE = "ACTIVE"
