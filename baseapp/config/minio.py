@@ -36,7 +36,9 @@ class MinioConn:
                 "success",
                 duration_ms=round(duration_ms, 2),
                 host=self.host,
-                port=self.port
+                port=self.port,
+                access_key=self.access_key,
+                secret_key=self.secret_key,
             )
             return self._conn
         except S3Error as e:
