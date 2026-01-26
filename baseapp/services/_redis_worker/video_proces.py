@@ -52,38 +52,70 @@ class VideoWorker(BaseWorker):
         
         try:
             with minio.MinioConn() as minio_client:
-                # Step 1: Check if file exists in MinIO
-                logger.info(f"[PROGRESS] Checking if file exists: {source_file} in bucket: {config.minio_bucket}")
-                try:
-                    stat = minio_client.stat_object(config.minio_bucket, source_file)
-                    logger.info(f"[PROGRESS] File found - Size: {stat.size / (1024*1024):.2f} MB, Last Modified: {stat.last_modified}")
-                except S3Error as e:
-                    if e.code == 'NoSuchKey':
-                        logger.error(f"[ERROR] File not found in MinIO: {source_file}")
-                        logger.error(f"[ERROR] Bucket: {config.minio_bucket}, Object: {source_file}")
-                        logger.info("[INFO] Listing files in bucket to help debug:")
-                        try:
-                            objects = minio_client.list_objects(config.minio_bucket, prefix="", recursive=True)
-                            file_list = [obj.object_name for obj in list(objects)[:10]]  # Show first 10 files
-                            logger.info(f"[INFO] Sample files in bucket: {file_list}")
-                        except Exception as list_err:
-                            logger.error(f"[ERROR] Could not list bucket contents: {list_err}")
-                    raise
-                
-                # Step 2: Download video from MinIO
+                # Step 1: Download video from MinIO (with retry for race condition)
                 download_start = time.time()
                 logger.info(f"[PROGRESS] Step 1/4: Downloading video from MinIO: {source_file}")
                 
                 local_video_path = os.path.join(temp_dir, source_file)
                 
-                minio_client.fget_object(
-                    config.minio_bucket,
-                    source_file,
-                    local_video_path
-                )
+                # Retry download with exponential backoff (handles race conditions & access issues)
+                max_download_retries = 5
+                download_successful = False
+                file_size_mb = 0
+                
+                for attempt in range(max_download_retries):
+                    try:
+                        logger.info(f"[PROGRESS] Download attempt {attempt + 1}/{max_download_retries}")
+                        
+                        # Try to download the file
+                        minio_client.fget_object(
+                            config.minio_bucket,
+                            source_file,
+                            local_video_path
+                        )
+                        
+                        # If successful, get file info
+                        file_size_mb = os.path.getsize(local_video_path) / (1024 * 1024)
+                        logger.info(
+                            f"[PROGRESS] Download successful on attempt {attempt + 1}! "
+                            f"File size: {file_size_mb:.2f} MB"
+                        )
+                        download_successful = True
+                        break
+                        
+                    except S3Error as e:
+                        error_code = e.code
+                        error_msg = str(e.message) if hasattr(e, 'message') else str(e)
+                        
+                        # Retry on AccessDenied or NoSuchKey (file might still be uploading)
+                        if error_code in ['AccessDenied', 'NoSuchKey'] and attempt < max_download_retries - 1:
+                            wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s, 8s, 16s
+                            logger.warning(
+                                f"[PROGRESS] Download attempt {attempt + 1} failed: {error_code}. "
+                                f"File may still be uploading or permissions being set. "
+                                f"Retrying in {wait_time}s... (Error: {error_msg})"
+                            )
+                            time.sleep(wait_time)
+                        else:
+                            # Last attempt or different error - show debug info
+                            logger.error(f"[ERROR] Download failed after {attempt + 1} attempts with error: {error_code}")
+                            
+                            # Try to list files for debugging
+                            if error_code == 'NoSuchKey':
+                                logger.info("[DEBUG] Listing files in bucket to help debug...")
+                                try:
+                                    objects = minio_client.list_objects(config.minio_bucket, prefix="", recursive=True)
+                                    file_list = [obj.object_name for obj in list(objects)[:10]]
+                                    logger.info(f"[DEBUG] Sample files in bucket: {file_list}")
+                                except Exception as list_err:
+                                    logger.error(f"[DEBUG] Could not list bucket: {list_err}")
+                            
+                            raise  # Re-raise if last attempt or different error
+                
+                if not download_successful:
+                    raise ValueError(f"Download failed after {max_download_retries} attempts")
                 
                 download_time = time.time() - download_start
-                file_size_mb = os.path.getsize(local_video_path) / (1024 * 1024)
                 logger.info(
                     f"[BENCHMARK] Download completed in {download_time:.2f}s "
                     f"({file_size_mb:.2f} MB at {file_size_mb/download_time:.2f} MB/s)"
