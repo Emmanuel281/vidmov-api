@@ -44,6 +44,10 @@ Authorization: Bearer {{token}}
 GET {{host}}/v1/_enum/from/common/Territory
 Authorization: Bearer {{token}}
 
+### GET HLS Filter
+GET {{host}}/v1/_enum/from/common/DocumentTypeFilterHLS
+Authorization: Bearer {{token}}
+
 ###
 # GROUP: CONTENT
 ###
