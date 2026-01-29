@@ -14,6 +14,7 @@ from baseapp.utils.logger import Logger
 from baseapp.services._dms.upload.model import UploadFile, SetMetaData
 from baseapp.services.audit_trail_service import AuditTrailService
 from baseapp.services.redis_queue import RedisQueueManager
+from baseapp.model.common import DocumentTypeFilterHLS
 
 config = setting.get_settings()
 logger = Logger("baseapp.services._dms.upload.crud")
@@ -215,13 +216,34 @@ class CRUD:
             # update storage
             collection_org.find_one_and_update({"_id": self.org_id}, {"$set": {"usedstorage":storage_minio+file_size}}, return_document=True)
             
-            if payload["doctype"] in ['31c557f0f4574f7aae55c1b6860a2e19', '3551a74699394f22b21ecf8277befa39']:
-                print("enqueue redis video convert task")
-                print(f"content_id: {obj['metadata']['Content ID']}, file: {obj['filename']}")
+            if payload["doctype"] in [DocumentTypeFilterHLS.FYP_1, DocumentTypeFilterHLS.FYP_2]:
+                print(f"enqueue redis video FYP convert task for content_id: {obj['metadata']['Content ID']}")
                 with redis.RedisConn() as redis_conn:
                     queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name="video_convert_tasks")
-                    queue_manager.enqueue_task({"content_id": obj["metadata"]["Content ID"], "file": obj["filename"]})
-
+                    # queue_manager.enqueue_task({"content_id": obj["metadata"]["Content ID"], "file": obj["filename"]})
+                    queue_manager.enqueue_task({
+                        "content_id": obj["metadata"]["Content ID"],
+                        "file": obj["filename"],
+                        "resolution": obj["metadata"]["Resolution"],
+                        "language": obj["metadata"]["Language"],
+                        "doctype": obj["doctype"],
+                        "refkey_name": obj["refkey_name"]
+                    })
+            elif payload["doctype"] in [DocumentTypeFilterHLS.VIDEO]:
+                print(f"enqueue redis video EPISODE convert task for content_id: {obj['metadata']['Content ID']}")
+                with redis.RedisConn() as redis_conn:
+                    queue_manager = RedisQueueManager(redis_conn=redis_conn, queue_name="video_convert_tasks")
+                    # queue_manager.enqueue_task({"content_id": obj["metadata"]["Content ID"], "file": obj["filename"]})
+                    queue_manager.enqueue_task({
+                        "content_id": obj["metadata"]["Content ID"],
+                        "file": obj["filename"],
+                        "resolution": obj["metadata"]["Resolution"],
+                        "language": obj["metadata"]["Language"],
+                        "doctype": obj["doctype"],
+                        "refkey_name": obj["refkey_name"],
+                        "episode_id": obj["metadata"]["Episode ID"]
+                    })
+                
             return {
                 "filename":object_name,
                 "id":insert_metadata.inserted_id,
