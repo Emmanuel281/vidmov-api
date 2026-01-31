@@ -557,14 +557,15 @@ class VideoWorker(BaseWorker):
             width = video_info.get('width', self.bitrate_map.get(resolution, {}).get('width', 854))
             height = video_info.get('height', self.bitrate_map.get(resolution, {}).get('height', 480))
             
-            # Add variant to master
+            # Add variant to master (using RELATIVE path)
             master_lines.append(f"# {resolution} Variant")
             master_lines.append(
                 f"#EXT-X-STREAM-INF:BANDWIDTH={bitrate},"
                 f"RESOLUTION={width}x{height},"
                 f"NAME=\"{resolution}\""
             )
-            master_lines.append(f"{base_hls_path}/{resolution.lower()}/{resolution.lower()}.m3u8")
+            # Use relative path since master.m3u8 is in the same base folder
+            master_lines.append(f"{resolution.lower()}/{resolution.lower()}.m3u8")
             master_lines.append("")
         
         master_content = "\n".join(master_lines)

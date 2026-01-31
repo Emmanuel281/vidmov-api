@@ -258,3 +258,8 @@ GET {{host}}/v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a/check
 # HLS: Video Get URL
 ###
 GET {{host}}/v1/stream/hls/4845cbb7e2384723abeb4ff09bcbf2a?folder_name=4845cbb7e2384723abeb4ff09bcbf2a1
+
+###
+# HLS: Video Get URL New
+###
+GET {{host}}/v1/stream/hls/e2a64aef3e844bf394aa5ab913ad51d7/fyp_1
