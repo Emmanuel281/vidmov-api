@@ -497,3 +497,104 @@ async def get_batch_hls_urls(
     except Exception as e:
         logger.exception(f"Error getting batch HLS URLs: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+    
+@router.get("/hls/{content_id}/{video_type}")
+async def get_hls_master_playlist(
+    content_id: str,
+    video_type: str,  # fyp_1, fyp_2, or episode_id
+    expires: int = Query(3600, ge=300, le=86400, description="URL expiration in seconds")
+):
+    """
+    Get adaptive bitrate master playlist URL
+    
+    Path Parameters:
+        content_id: Content ID
+        video_type: Video type (fyp_1, fyp_2, or episode_id for episodes)
+    
+    Example:
+        GET /v1/stream/hls/e2a64aef3e844bf394aa5ab913ad51d7/fyp_1
+    
+    Response:
+        {
+            "success": true,
+            "data": {
+                "master_playlist_url": "https://minio.../master.m3u8",
+                "variants": {
+                    "hd": {...},
+                    "sd": {...}
+                }
+            }
+        }
+    """
+    try:
+        from datetime import timedelta
+        
+        with minio.MinioConn() as minio_client:
+            # Master playlist path
+            master_path = f"{content_id}/hls/{video_type}/master.m3u8"
+            
+            # Check if master exists
+            try:
+                minio_client.stat_object(config.minio_bucket, master_path)
+            except S3Error as e:
+                if e.code == 'NoSuchKey':
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Master playlist not found for {content_id}/{video_type}"
+                    )
+                raise
+            
+            # Generate presigned URL for master
+            master_url = minio_client.presigned_get_object(
+                config.minio_bucket,
+                master_path,
+                expires=timedelta(seconds=expires)
+            )
+            
+            # Get all variants from MongoDB
+            from baseapp.config import mongodb
+            with mongodb.MongoConn() as mongo:
+                collection = mongo.get_database()["_hls_conversion"]
+                
+                variants = {}
+                conversions = collection.find({
+                    "content_id": content_id,
+                    "video_type": video_type,
+                    "status": "completed"
+                })
+                
+                for conv in conversions:
+                    resolution = conv['resolution'].lower()
+                    video_info = conv.get('video_info', {})
+                    
+                    # Generate presigned URL for variant playlist
+                    variant_path = f"{content_id}/hls/{video_type}/{resolution}/{resolution}.m3u8"
+                    variant_url = minio_client.presigned_get_object(
+                        config.minio_bucket,
+                        variant_path,
+                        expires=timedelta(seconds=expires)
+                    )
+                    
+                    variants[resolution] = {
+                        "playlist_url": variant_url,
+                        "bitrate": video_info.get('bitrate', 0),
+                        "resolution": f"{video_info.get('width', 0)}x{video_info.get('height', 0)}",
+                        "size_mb": conv.get('segment_count', 0) * 1.0  # Approximate
+                    }
+            
+            return {
+                "success": True,
+                "data": {
+                    "content_id": content_id,
+                    "video_type": video_type,
+                    "master_playlist_url": master_url,
+                    "variants": variants,
+                    "expires_in_seconds": expires
+                }
+            }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error getting master playlist: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
